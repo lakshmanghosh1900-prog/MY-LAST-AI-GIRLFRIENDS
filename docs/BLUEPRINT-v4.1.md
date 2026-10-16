@@ -1,56 +1,146 @@
-# JARVIS OMEGA v4.1 — Implemented Vertical-Slice Blueprint
+# MY LAST AI GIRLFRIENDS — v4.1 Implementation Blueprint
 
-**Project:** MY LAST AI GIRLFRIENDS  
-**Release:** 0.1.0  
-**Review/build date:** 17 October 2026  
-**Implementation status:** The files in this repository are implemented locally;
-the release gates in `docs/FINAL-AUDIT.md` are the authority for what is and is
-not proven.
+**Product:** MY LAST AI GIRLFRIENDS
+**Assistant:** My Companion
+**Release:** 0.2.0
+**Runtime:** Python 3.12.11
+**Scope:** single-user, loopback-first, read-only personal companion
 
-## Product meaning
+## Product meaning and responsibility
 
-“MY LAST AI GIRLFRIENDS” is the product umbrella: a personal assistant that can
-represent multiple companion roles while keeping one owner, one explicit
-capability boundary and one auditable source of truth. “JARVIS OMEGA” is the
-engine name: it coordinates requests, tools and model providers. “Omega” means
-the end-to-end boundary is designed first; it does not mean unlimited or
-error-free autonomy.
+MY LAST AI GIRLFRIENDS is a personal companion application that can eventually
+support multiple roles while sharing one owner, one auditable data store and one
+explicit capability boundary. My Companion is the current assistant display
+name. The product is capable of real conversation but does not claim unlimited
+autonomy or perfect semantic accuracy.
 
-## First user flow
+The model proposes text. Ordinary code remains responsible for authentication,
+data classification, local consent, file/network boundaries, budget reservation,
+provider response validation and task state. No future companion role may
+bypass those checks.
 
-1. The owner creates `.env` from `.env.example` and sets a long token.
-2. The service starts on `127.0.0.1` and initializes SQLite in `data/`.
-3. The owner opens the local UI and supplies the token in the browser session.
-4. A conversation is created; each message becomes a bounded task.
-5. Deterministic policy classifies the data before the provider is called.
-6. `/file relative.txt` uses only the approved `workspace/` root; `/fetch
-   https://...` uses only the constrained HTTPS fetcher.
-7. The provider output is schema-checked and the task is marked `SUCCEEDED`
-   only after the result is persisted. Unsafe, over-budget, unavailable or
-   uncertain work becomes a visible safe-stop state.
+## Current user flow
+
+1. Run `scripts/setup.ps1 -GenerateToken -Doctor` on Windows, or configure an
+   ignored `.env` manually.
+2. Select `MLAG_MODE=offline` for a deterministic local demo or `MLAG_MODE=real`
+   with a privately supplied Gemini key.
+3. Start `uv run --locked my-last-ai-girlfriends` and open the local browser UI.
+4. Enter the local token, select an existing conversation or create a new one.
+5. Write in English, Bengali or Banglish. Enter sends; Shift+Enter inserts a
+   newline.
+6. In real mode, ordinary personal text requires both configuration and the
+   local consent checkbox. Sensitive/prohibited content remains blocked.
+7. Use `/file relative.txt` for an approved local text preview or `/fetch
+   https://...` for a safe public readable-text preview. Real mode can summarize
+   public extracted text; offline mode only previews it and says it is not AI.
 
 ## Architecture
 
 ```text
-Browser UI
-   │ Authorization: Bearer token; exact origin/host checks
+Responsive browser UI
+   │ Bearer token, exact host/origin checks, mlag-* session storage
    ▼
-Local HTTP API (127.0.0.1 by default)
+Authenticated local HTTP API
    ▼
-Lifecycle + request validation
+Lifecycle + deterministic policy + local remote-consent state
+   ├── SQLite task/history/provider/budget/audit records
+   └── transactional budget ledger
    ▼
-Deterministic Policy Engine ── Budget Ledger (SQLite BEGIN IMMEDIATE)
+Bounded conversation context builder
+   ├── OfflineDemoProvider (no network, not AI)
+   └── GeminiProvider (explicit real mode, owner key, no fake fallback)
    ▼
-Bounded Orchestrator
-   ├── Fake provider (default, offline)
-   ├── OpenAI-compatible provider (explicit opt-in)
-   ├── Read-only file tool (approved root)
-   └── HTTPS fetch tool (public IP + redirect + size/type checks)
-   ▼
-SQLite task/message/provider/audit records
+Read-only tools
+   ├── approved workspace text reader
+   └── HTTPS public fetcher with DNS/IP/redirect/size/type controls
 ```
 
-## Task state
+## Provider modes
+
+### Offline demo
+
+`MLAG_MODE=offline` selects `OfflineDemoProvider`. It performs no remote call,
+returns deterministic text/preview responses and sets `ai_generated=false`.
+The UI labels the result “Offline demo” or “not AI”.
+
+### Real AI
+
+`MLAG_MODE=real` selects `GeminiProvider` with:
+
+```text
+model: gemini-3.8-flash
+base URL: https://generativelanguage.googleapis.com/v1beta/openai/
+request: <base URL>/chat/completions, appended exactly once
+auth: Authorization: Bearer <owner-supplied key>
+```
+
+The endpoint, model and prices are configuration values. A timeout, quota,
+authentication error or invalid response becomes a visible provider failure or
+reconciliation state. The system never substitutes the offline provider.
+
+Official references used for the provider adapter:
+
+- <https://ai.google.dev/gemini-api/docs/openai>
+- <https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash>
+- <https://ai.google.dev/gemini-api/docs/pricing>
+
+## Context and privacy
+
+The context builder reads only recent messages from the selected conversation,
+excludes the current message by ID before appending the current prompt once,
+preserves chronological order, and drops older content when the configured
+input-token limit is reached. Sensitive/prohibited history is not sent to the
+remote provider.
+
+Data classes:
+
+- `PUBLIC`: public fetched text; may be sent to the configured provider.
+- `PERSONAL`: ordinary conversation; real mode requires config plus local
+  consent.
+- `SENSITIVE`: health, finance, notifications, private documents and similar;
+  blocked from remote processing.
+- `PROHIBITED`: passwords, API keys, PINs, OTPs, session cookies and tokens;
+  rejected and replaced with a safe placeholder in local history.
+
+## Web and file boundaries
+
+The file reader accepts only clean relative paths inside `workspace/`, supported
+text suffixes, regular files without NUL bytes and configured size limits.
+
+The web reader accepts only HTTPS port 443, rejects credentials and fragments,
+resolves all addresses and blocks non-global IPs, pins the selected IP for the
+TLS connection, validates every redirect and bounds bytes/content types. HTML is
+parsed with Python's standard-library `HTMLParser`; scripts, styles, noscript,
+templates and executable markup are removed. Only extracted text enters the
+conversation context. The browser receives text via `textContent`, never raw
+HTML.
+
+## Storage and migration
+
+Canonical database: `data/my_last_ai_girlfriends.sqlite3`. The migration helper
+recognizes the former filename only as an explicit legacy recoverability path.
+It checks integrity, checkpoints WAL, creates a timestamped backup, copies to a
+new canonical destination, adds current schema columns without dropping data,
+and refuses to proceed when both legacy and canonical files exist unexpectedly.
+The old source is preserved in `data/migration-backups/` after a verified local
+migration. Conversation, message, task, provider, budget and audit rows are
+preserved.
+
+## Configuration and token precedence
+
+Precedence is deterministic:
+
+```text
+process MLAG_* > MLAG_* values in .env > legacy compatibility values in .env > defaults
+```
+
+`my-last-ai-girlfriends doctor` reports source, conflict names, selected mode,
+provider/model and token status without printing values. `generate-token`
+rotates the ignored `.env` after saving a timestamped backup. The prior token is
+not reused. `.env` and database files remain ignored by Git.
+
+## Task state and truthful outcomes
 
 ```text
 CREATED → RUNNING → VERIFYING → SUCCEEDED
@@ -58,48 +148,31 @@ CREATED → RUNNING → VERIFYING → SUCCEEDED
        └──────────→ NEEDS_RECONCILIATION
 ```
 
-`SAFE_STOP` is an intentional user-visible result, not a hidden retry. It is
-used when policy, limits, provider schema, tool validation or local execution
-cannot prove a safe result. `NEEDS_RECONCILIATION` is reserved for a remote
-provider timeout where usage/outcome is not knowable locally; the adapter never
-automatically resends that call.
+`SAFE_STOP` is visible and is not an automatic fake answer. A remote timeout or
+unknown provider result becomes `NEEDS_RECONCILIATION` and is never silently
+retried. `SUCCEEDED` means the response passed deterministic output checks and
+was persisted.
 
-## Responsibility split
+## Capability roadmap truth
 
-| Concern | Owner | What is independently checked |
-|---|---|---|
-| User intent | Owner/UI | Exact message and explicit command |
-| Capability | Policy engine | Static allowlist, data class, provider boundary |
-| Cost | Budget ledger | Reservation before call, settlement after call |
-| Model text | Provider adapter | Timeout, size, schema and tool-call rejection |
-| File access | File tool | Relative path, root containment, no symlink, type/size |
-| Web access | Fetch tool | HTTPS, public DNS result, redirect, content and byte limits |
-| Success | Orchestrator | Persisted assistant text and terminal task state |
+| Capability | Current status |
+|---|---|
+| Offline conversation | IMPLEMENTED AND TESTED |
+| Gemini real-AI conversation | IMPLEMENTED, REQUIRES OWNER CONFIGURATION |
+| Contextual history | IMPLEMENTED AND TESTED |
+| Read-only file access | IMPLEMENTED AND TESTED |
+| HTML text extraction | IMPLEMENTED AND TESTED |
+| Privacy/consent/budget | IMPLEMENTED AND TESTED |
+| Document processing | LIMITED text preview only |
+| Research/citations | LIMITED public source URL only |
+| Voice | NOT IMPLEMENTED |
+| Long-term memory | NOT IMPLEMENTED |
+| Android companion | NOT IMPLEMENTED; REQUIRES PLATFORM REVIEW |
+| Scheduling/background agents | NOT IMPLEMENTED |
+| MCP/skills | NOT IMPLEMENTED; REQUIRES SECURITY REVIEW |
+| External actions/approval | NOT IMPLEMENTED; REQUIRES SECURITY REVIEW |
+| Multi-user/public hosting | NOT IMPLEMENTED; REQUIRES PRIVACY/SECURITY REVIEW |
 
-## Data policy
-
-- `PUBLIC`: public fetch content may use an approved remote provider.
-- `PERSONAL`: local fake provider by default; remote use requires explicit
-  configuration.
-- `SENSITIVE`: local-only by default; local file content never goes to the
-  remote provider unless the owner explicitly enables personal-data transfer.
-- `PROHIBITED`: passwords, keys, PINs, OTPs and session cookies are rejected.
-
-Provider credentials are never placed in prompts, messages, audit metadata or
-URLs. The fake provider is the default so the project remains useful offline.
-
-## Dependency-aware roadmap
-
-| Stage | Scope | Required evidence before enabling |
-|---|---|---|
-| 0 | Current local read-only slice | Offline tests, compile check, task persistence |
-| 1 | Second provider/fallback | Provider privacy matrix, cost tests, fail-closed routing |
-| 2 | Private PWA access | Device enrollment, revocation, network boundary tests |
-| 3 | Native Android companion | Target-device process/permission tests and distribution review |
-| 4 | Voice | Consent, audio retention, measured cost/battery tests |
-| 5 | MCP/skills | Per-server auth, provenance, sandbox, rollback and denial tests |
-| 6 | External side effects | Action-bound approval, idempotency and reconciliation evidence |
-| 7 | Multi-user/public use | Tenancy, privacy/legal, monitoring, support and incident response |
-
-No later stage is implied by the current code. Each stage must be implemented
-and checked separately.
+Payments, messaging, shell/code execution, banking, Accessibility automation,
+public hosting, autonomous side effects and unreviewed self-learning remain
+disabled exactly as required by the approved blueprint.

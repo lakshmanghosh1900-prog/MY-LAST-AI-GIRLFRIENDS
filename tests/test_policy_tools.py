@@ -6,8 +6,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from jarvis_omega.policy import Decision, PolicyEngine
-from jarvis_omega.tools import SafeFileTool, SafeWebFetcher, ToolError
+from my_last_ai_girlfriends.policy import Decision, PolicyEngine
+from my_last_ai_girlfriends.tools import SafeFileTool, SafeWebFetcher, ToolError, extract_readable_text
 
 
 class PolicyAndToolTests(unittest.TestCase):
@@ -20,7 +20,7 @@ class PolicyAndToolTests(unittest.TestCase):
 
     def test_remote_personal_data_is_safe_stopped(self):
         policy = PolicyEngine(1000, allow_remote_personal_data=False)
-        result = policy.check_message("remember my private journal", "openai-compatible")
+        result = policy.check_message("remember my private journal", "gemini")
         self.assertEqual(result.decision, Decision.SAFE_STOP)
 
     def test_file_tool_blocks_escape_binary_and_oversize(self):
@@ -72,6 +72,16 @@ class PolicyAndToolTests(unittest.TestCase):
         with patch.object(socket, "getaddrinfo", return_value=[(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443))]):
             with self.assertRaisesRegex(ToolError, "public"):
                 fetcher._resolve_public("example.com")
+
+    def test_html_extraction_removes_scripts_styles_and_normalizes_text(self):
+        markup = "<html><head><style>.secret{display:none}</style><script>steal()</script></head><body><h1>Hello &amp; welcome</h1><p>Readable <b>text</b>.</p><ul><li>One</li><li>Two</li></ul><noscript>hidden</noscript></body></html>"
+        text = extract_readable_text(markup)
+        self.assertIn("Hello & welcome", text)
+        self.assertIn("Readable text", text)
+        self.assertIn("One", text)
+        self.assertNotIn("steal", text)
+        self.assertNotIn("secret", text)
+        self.assertNotIn("hidden", text)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Minimal authenticated HTTP API and browser client."""
+"""Authenticated local HTTP API for the companion UI."""
 
 from __future__ import annotations
 
@@ -11,24 +11,24 @@ from urllib.parse import urlsplit
 
 from .auth import AuthManager
 from .redaction import redact
-from .service import JarvisService
+from .service import MyLastAIGirlfriendsService
 
 
 INDEX_HTML = (Path(__file__).parent / "web" / "index.html").read_text(encoding="utf-8")
 
 
-class JarvisHTTPServer(ThreadingHTTPServer):
+class MyLastAIGirlfriendsHTTPServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, address, service: JarvisService):
+    def __init__(self, address, service: MyLastAIGirlfriendsService):
         self.service = service
         self.auth = AuthManager(service.config.auth_token_hash)
-        super().__init__(address, JarvisRequestHandler)
+        super().__init__(address, MyLastAIGirlfriendsRequestHandler)
 
 
-class JarvisRequestHandler(BaseHTTPRequestHandler):
-    server: JarvisHTTPServer
+class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
+    server: MyLastAIGirlfriendsHTTPServer
 
     def log_message(self, format: str, *args) -> None:
         self.server.service.db.add_audit("http", {"message": redact(format % args)})
@@ -51,14 +51,13 @@ class JarvisRequestHandler(BaseHTTPRequestHandler):
         self._send(status, {"error": {"code": code, "message": message}}, request_id)
 
     def _host_ok(self) -> bool:
-        expected = f"{self.server.service.config.host}:{self.server.server_address[1]}"
         host = self.headers.get("Host", "").lower()
         port = self.server.server_address[1]
-        if host in {expected, f"127.0.0.1:{port}", f"localhost:{port}"}:
+        expected = {f"127.0.0.1:{port}", f"localhost:{port}", f"{self.server.service.config.host}:{port}"}
+        if host in expected:
             return True
         if self.server.service.config.host != "127.0.0.1" and ":" in host:
-            host_without_port = host.rsplit(":", 1)[0]
-            return host_without_port in self.server.service.config.trusted_hosts
+            return host.rsplit(":", 1)[0] in self.server.service.config.trusted_hosts
         return host in self.server.service.config.trusted_hosts
 
     def _origin_ok(self) -> bool:
@@ -81,9 +80,8 @@ class JarvisRequestHandler(BaseHTTPRequestHandler):
         return True
 
     def _json_body(self, request_id: str) -> dict | None:
-        raw_length = self.headers.get("Content-Length")
         try:
-            length = int(raw_length or "-1")
+            length = int(self.headers.get("Content-Length", "-1"))
         except ValueError:
             self._error(HTTPStatus.BAD_REQUEST, "CONTENT_LENGTH_INVALID", "Content-Length is invalid.", request_id)
             return None
@@ -115,11 +113,17 @@ class JarvisRequestHandler(BaseHTTPRequestHandler):
             return
         if not self._authorized(request_id):
             return
-        if path in {"/health", "/v1/health"}:
-            self._send(HTTPStatus.OK, self.server.service.health(), request_id)
+        if path in {"/v1/health", "/v1/runtime"}:
+            self._send(HTTPStatus.OK, self.server.service.runtime_info(), request_id)
             return
         if path == "/v1/admin/budget":
             self._send(HTTPStatus.OK, self.server.service.budget_status(), request_id)
+            return
+        if path == "/v1/conversations":
+            self._send(HTTPStatus.OK, {"conversations": self.server.service.list_conversations()}, request_id)
+            return
+        if path == "/v1/settings":
+            self._send(HTTPStatus.OK, {"remote_conversation_consent": self.server.service.remote_consent_enabled()}, request_id)
             return
         parts = [part for part in path.split("/") if part]
         if len(parts) == 3 and parts[0] == "v1" and parts[1] == "conversations":
@@ -140,8 +144,14 @@ class JarvisRequestHandler(BaseHTTPRequestHandler):
             return
         try:
             if path == "/v1/conversations":
-                conversation_id = self.server.service.create_conversation()
-                self._send(HTTPStatus.CREATED, {"id": conversation_id}, request_id)
+                self._send(HTTPStatus.CREATED, {"id": self.server.service.create_conversation()}, request_id)
+                return
+            if path == "/v1/settings/remote-consent":
+                enabled = payload.get("enabled")
+                if not isinstance(enabled, bool):
+                    self._error(HTTPStatus.BAD_REQUEST, "ENABLED_REQUIRED", "enabled must be boolean.", request_id)
+                    return
+                self._send(HTTPStatus.OK, self.server.service.set_remote_consent(enabled), request_id)
                 return
             parts = [part for part in path.split("/") if part]
             if len(parts) == 4 and parts[:2] == ["v1", "conversations"] and parts[3] == "messages":

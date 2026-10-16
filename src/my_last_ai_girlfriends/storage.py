@@ -1,8 +1,9 @@
-"""Small SQLite persistence layer with explicit transactions and migrations."""
+"""SQLite storage, schema migration and safe legacy database preservation."""
 
 from __future__ import annotations
 
 import json
+import shutil
 import sqlite3
 import threading
 import uuid
@@ -12,8 +13,65 @@ from pathlib import Path
 from typing import Iterator
 
 
+class StorageError(RuntimeError):
+    """Raised when storage cannot be migrated or opened safely."""
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def _unique_path(directory: Path, prefix: str, suffix: str = ".sqlite3") -> Path:
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    path = directory / f"{prefix}.{stamp}{suffix}"
+    counter = 1
+    while path.exists():
+        path = directory / f"{prefix}.{stamp}.{counter}{suffix}"
+        counter += 1
+    return path
+
+
+def migrate_legacy_database(data_dir: Path) -> Path | None:
+    """Copy a legacy database into the canonical filename without deleting it.
+
+    The old filename is recognized only as an explicit recoverability path. If
+    both canonical and legacy files exist, the function stops rather than
+    guessing whether they should be merged.
+    """
+
+    data_dir.mkdir(parents=True, exist_ok=True)
+    legacy = data_dir / "jarvis.sqlite3"
+    canonical = data_dir / "my_last_ai_girlfriends.sqlite3"
+    if not legacy.exists():
+        return None
+    if canonical.exists():
+        raise StorageError("legacy and canonical databases both exist; resolve the conflict without automatic merging")
+    backup_dir = data_dir / "migration-backups"
+    backup_dir.mkdir(exist_ok=True)
+    backup = _unique_path(backup_dir, "legacy-source")
+    source = sqlite3.connect(legacy)
+    try:
+        source.execute("PRAGMA wal_checkpoint(FULL)")
+        integrity = source.execute("PRAGMA integrity_check").fetchone()[0]
+        if integrity != "ok":
+            raise StorageError(f"legacy database integrity check failed: {integrity}")
+        backup_connection = sqlite3.connect(backup)
+        try:
+            source.backup(backup_connection)
+        finally:
+            backup_connection.close()
+    finally:
+        source.close()
+    shutil.copy2(backup, canonical)
+    check = sqlite3.connect(canonical)
+    try:
+        integrity = check.execute("PRAGMA integrity_check").fetchone()[0]
+    finally:
+        check.close()
+    if integrity != "ok":
+        canonical.unlink(missing_ok=True)
+        raise StorageError(f"migrated database integrity check failed: {integrity}")
+    return canonical
 
 
 SCHEMA_SQL = """
@@ -23,7 +81,9 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 );
 CREATE TABLE IF NOT EXISTS conversations (
     id TEXT PRIMARY KEY,
-    created_at TEXT NOT NULL
+    title TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS messages (
     id TEXT PRIMARY KEY,
@@ -81,7 +141,12 @@ CREATE TABLE IF NOT EXISTS audit_events (
     metadata_json TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, created_at);
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, created_at, id);
 CREATE INDEX IF NOT EXISTS idx_tasks_conversation ON tasks(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_budget_bucket ON budget_events(bucket_month);
 """
@@ -90,6 +155,7 @@ CREATE INDEX IF NOT EXISTS idx_budget_bucket ON budget_events(bucket_month);
 class Database:
     def __init__(self, path: Path | str):
         self.path = Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
         self.connection = sqlite3.connect(self.path, check_same_thread=False, isolation_level=None)
         self.connection.row_factory = sqlite3.Row
@@ -100,9 +166,20 @@ class Database:
     def initialize(self) -> None:
         with self.transaction():
             self.connection.executescript(SCHEMA_SQL)
+            columns = {row[1] for row in self.connection.execute("PRAGMA table_info(conversations)")}
+            if "title" not in columns:
+                self.connection.execute("ALTER TABLE conversations ADD COLUMN title TEXT")
+                self.connection.execute("UPDATE conversations SET title = 'Imported conversation' WHERE title IS NULL")
+            if "updated_at" not in columns:
+                self.connection.execute("ALTER TABLE conversations ADD COLUMN updated_at TEXT")
+                self.connection.execute("UPDATE conversations SET updated_at = created_at WHERE updated_at IS NULL")
             self.connection.execute(
                 "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (?, ?)",
                 (1, utc_now()),
+            )
+            self.connection.execute(
+                "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                (2, utc_now()),
             )
 
     @contextmanager
@@ -126,10 +203,11 @@ class Database:
 
     def create_conversation(self) -> str:
         conversation_id = self.new_id()
+        now = utc_now()
         with self.transaction():
             self.connection.execute(
-                "INSERT INTO conversations(id, created_at) VALUES (?, ?)",
-                (conversation_id, utc_now()),
+                "INSERT INTO conversations(id, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                (conversation_id, "New conversation", now, now),
             )
         return conversation_id
 
@@ -137,21 +215,49 @@ class Database:
         row = self.connection.execute("SELECT 1 FROM conversations WHERE id = ?", (conversation_id,)).fetchone()
         return row is not None
 
+    def list_conversations(self, limit: int = 50) -> list[dict]:
+        rows = self.connection.execute(
+            "SELECT id, title, created_at, updated_at FROM conversations ORDER BY updated_at DESC, id DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
     def add_message(self, conversation_id: str, role: str, content: str) -> str:
         message_id = self.new_id()
+        now = utc_now()
         with self.transaction():
             self.connection.execute(
                 "INSERT INTO messages(id, conversation_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)",
-                (message_id, conversation_id, role, content, utc_now()),
+                (message_id, conversation_id, role, content, now),
             )
+            if role == "user":
+                self.connection.execute(
+                    "UPDATE conversations SET title = CASE WHEN title = 'New conversation' THEN ? ELSE title END, updated_at = ? WHERE id = ?",
+                    (content[:80] or "New conversation", now, conversation_id),
+                )
+            else:
+                self.connection.execute("UPDATE conversations SET updated_at = ? WHERE id = ?", (now, conversation_id))
         return message_id
 
     def get_messages(self, conversation_id: str) -> list[dict[str, str]]:
         rows = self.connection.execute(
-            "SELECT role, content, created_at FROM messages WHERE conversation_id = ? ORDER BY created_at, id",
+            "SELECT id, role, content, created_at FROM messages WHERE conversation_id = ? ORDER BY created_at, id",
             (conversation_id,),
         ).fetchall()
         return [dict(row) for row in rows]
+
+    def get_recent_messages(self, conversation_id: str, limit: int, exclude_id: str | None = None) -> list[dict[str, str]]:
+        if exclude_id:
+            rows = self.connection.execute(
+                "SELECT id, role, content, created_at FROM messages WHERE conversation_id = ? AND id != ? ORDER BY created_at DESC, id DESC LIMIT ?",
+                (conversation_id, exclude_id, limit),
+            ).fetchall()
+        else:
+            rows = self.connection.execute(
+                "SELECT id, role, content, created_at FROM messages WHERE conversation_id = ? ORDER BY created_at DESC, id DESC LIMIT ?",
+                (conversation_id, limit),
+            ).fetchall()
+        return [dict(row) for row in reversed(rows)]
 
     def create_task(self, conversation_id: str) -> str:
         task_id = self.new_id()
@@ -200,6 +306,17 @@ class Database:
             self.connection.execute(
                 "INSERT INTO audit_events(id, task_id, event, metadata_json, created_at) VALUES (?, ?, ?, ?, ?)",
                 (self.new_id(), task_id, event, json.dumps(metadata, sort_keys=True, separators=(",", ":")), utc_now()),
+            )
+
+    def get_setting(self, key: str, default: str = "") -> str:
+        row = self.connection.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+        return str(row["value"]) if row else default
+
+    def set_setting(self, key: str, value: str) -> None:
+        with self.transaction():
+            self.connection.execute(
+                "INSERT INTO settings(key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",
+                (key, value, utc_now()),
             )
 
     def month_usage(self, bucket_month: str) -> int:

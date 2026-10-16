@@ -38,8 +38,8 @@ class PolicyEngine:
 
     def classify(self, message: str) -> DataClass:
         lower = message.lower()
-        prohibited_markers = ("password", "api key", "apikey", "secret", "otp", "pin", "private key", "session cookie")
-        sensitive_markers = ("health", "medical", "bank", "finance", "account number", "notification", "sms", "/file ")
+        prohibited_markers = ("password", "api key", "apikey", "secret", "otp", "pin", "private key", "session cookie", "access token", "bearer token")
+        sensitive_markers = ("health", "medical", "bank", "finance", "account number", "notification", "sms", "diagnosis", "prescription", "/file ")
         if any(marker in lower for marker in prohibited_markers):
             return DataClass.PROHIBITED
         if any(marker in lower for marker in sensitive_markers):
@@ -48,7 +48,7 @@ class PolicyEngine:
             return DataClass.PUBLIC
         return DataClass.PERSONAL
 
-    def check_message(self, message: str, provider: str) -> PolicyDecision:
+    def check_message(self, message: str, provider: str, remote_consent: bool = False) -> PolicyDecision:
         if not message.strip():
             return PolicyDecision(Decision.DENY, "EMPTY_MESSAGE", "Message is empty.", DataClass.PERSONAL)
         if len(message) > self.max_message_chars:
@@ -56,8 +56,10 @@ class PolicyEngine:
         data_class = self.classify(message)
         if data_class == DataClass.PROHIBITED:
             return PolicyDecision(Decision.DENY, "PROHIBITED_SECRET_DATA", "Credentials and authentication secrets are never sent to a model.", data_class)
-        if provider != "fake" and data_class in {DataClass.PERSONAL, DataClass.SENSITIVE} and not self.allow_remote_personal_data:
-            return PolicyDecision(Decision.SAFE_STOP, "REMOTE_PERSONAL_DATA_DISABLED", "Remote personal-data processing is disabled; local safe mode is required.", data_class)
+        if provider == "gemini" and data_class == DataClass.SENSITIVE:
+            return PolicyDecision(Decision.SAFE_STOP, "SENSITIVE_REMOTE_BLOCKED", "Sensitive content stays local and cannot be sent to the remote provider.", data_class)
+        if provider == "gemini" and data_class == DataClass.PERSONAL and (not self.allow_remote_personal_data or not remote_consent):
+            return PolicyDecision(Decision.SAFE_STOP, "REMOTE_CONSENT_REQUIRED", "Enable local remote-conversation consent before ordinary personal text can leave this device.", data_class)
         return PolicyDecision(Decision.ALLOW, "MESSAGE_ALLOWED", "Message is within the configured data policy.", data_class)
 
     def check_tool(self, name: str, arguments: dict) -> PolicyDecision:

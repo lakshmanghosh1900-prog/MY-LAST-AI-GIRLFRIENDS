@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090d19">
+  <title>MY LAST AI GIRLFRIENDS</title>
+  <style>
+    :root { color-scheme: dark; --bg:#090d19; --panel:#11182a; --panel-2:#161f35; --line:#273452; --text:#edf2ff; --muted:#8e9dbb; --accent:#8a7dff; --accent-2:#4bc2cf; --warning:#ffd27d; --danger:#ff9aab; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:radial-gradient(circle at 80% -10%, #26204c 0, transparent 38%), var(--bg); color:var(--text); }
+    button, input, textarea { font:inherit; }
+    button { border:0; cursor:pointer; }
+    .app { display:grid; grid-template-columns:280px minmax(0,1fr); min-height:100vh; }
+    .sidebar { display:flex; flex-direction:column; gap:18px; padding:22px 16px; background:rgba(12,17,31,.9); border-right:1px solid var(--line); }
+    .brand { display:flex; gap:11px; align-items:center; }
+    .mark { width:36px; height:36px; border-radius:12px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); box-shadow:0 10px 30px #6f65dd55; }
+    .brand strong { display:block; font-size:.8rem; letter-spacing:.14em; }
+    .brand span { color:var(--muted); font-size:.72rem; }
+    .primary { width:100%; padding:12px 14px; border-radius:12px; color:white; background:linear-gradient(135deg,#766bfa,#4f9edc); box-shadow:0 12px 24px #4434a633; }
+    .section-label { color:#657392; text-transform:uppercase; letter-spacing:.14em; font-size:.67rem; }
+    .history { display:flex; flex-direction:column; gap:6px; overflow:auto; min-height:80px; }
+    .history button { text-align:left; padding:10px 11px; border-radius:10px; background:transparent; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .history button:hover, .history button.active { color:var(--text); background:var(--panel-2); }
+    .sidebar-foot { margin-top:auto; display:grid; gap:10px; }
+    .mini { display:flex; justify-content:space-between; gap:8px; color:var(--muted); font-size:.75rem; }
+    .dot { width:8px; height:8px; display:inline-block; border-radius:50%; background:var(--warning); margin-right:6px; }
+    .dot.ready { background:#75e2ae; }
+    .ghost { padding:9px 10px; color:var(--muted); background:transparent; border:1px solid var(--line); border-radius:10px; }
+    .main { min-width:0; display:flex; flex-direction:column; }
+    .topbar { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:18px clamp(18px,4vw,52px); border-bottom:1px solid rgba(39,52,82,.72); }
+    .topbar h1 { margin:0; font-size:clamp(1.05rem,2vw,1.4rem); letter-spacing:.05em; }
+    .topbar p { margin:4px 0 0; color:var(--muted); font-size:.78rem; }
+    .top-actions { display:flex; align-items:center; gap:8px; }
+    .status-pill { padding:8px 11px; border-radius:99px; background:var(--panel); border:1px solid var(--line); color:var(--muted); font-size:.72rem; white-space:nowrap; }
+    .content { width:min(100%,980px); flex:1; margin:0 auto; padding:clamp(22px,5vw,58px) clamp(16px,4vw,48px) 20px; display:flex; flex-direction:column; min-height:0; }
+    .welcome { margin:auto 0 26px; max-width:620px; }
+    .eyebrow { color:var(--accent-2); font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; }
+    .welcome h2 { margin:10px 0 10px; font-size:clamp(2rem,5vw,4.3rem); line-height:1.02; letter-spacing:-.06em; }
+    .welcome p { color:var(--muted); max-width:550px; line-height:1.7; }
+    .messages { display:flex; flex-direction:column; gap:16px; overflow:auto; padding:10px 4px 22px; min-height:0; scroll-behavior:smooth; }
+    .message { display:flex; gap:12px; max-width:min(86%,760px); }
+    .message.user { align-self:flex-end; flex-direction:row-reverse; }
+    .avatar { flex:0 0 30px; height:30px; border-radius:10px; display:grid; place-items:center; color:#fff; background:linear-gradient(135deg,#6c63df,#3c9dae); font-size:.7rem; font-weight:700; }
+    .user .avatar { background:#283652; color:#b9c9e8; }
+    .bubble { padding:12px 15px; border:1px solid var(--line); border-radius:16px; background:var(--panel); white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.6; }
+    .user .bubble { background:#1d2a47; border-color:#33466e; }
+    .bubble-meta { margin:0 3px 5px; color:var(--muted); font-size:.67rem; letter-spacing:.08em; text-transform:uppercase; }
+    .safe .bubble { color:var(--warning); border-color:#806733; }
+    .source { display:block; margin-top:8px; color:var(--accent-2); font-size:.75rem; }
+    .composer-shell { position:sticky; bottom:0; padding-top:12px; background:linear-gradient(transparent,var(--bg) 25%); }
+    .composer { display:flex; gap:10px; align-items:flex-end; padding:11px; border:1px solid #344668; border-radius:17px; background:rgba(17,24,42,.94); box-shadow:0 18px 45px #0007; }
+    textarea { flex:1; min-height:48px; max-height:160px; resize:none; border:0; outline:0; color:var(--text); background:transparent; padding:8px 7px; line-height:1.5; }
+    textarea::placeholder, input::placeholder { color:#667595; }
+    .send { padding:12px 16px; border-radius:12px; color:#fff; background:var(--accent); min-width:76px; }
+    .send:disabled, .primary:disabled { cursor:not-allowed; opacity:.5; }
+    .hint { display:flex; justify-content:space-between; gap:10px; margin-top:8px; padding:0 4px; color:#697898; font-size:.68rem; }
+    .settings { display:none; padding:14px; border:1px solid var(--line); background:var(--panel); border-radius:13px; }
+    .settings.open { display:block; }
+    .settings h3 { margin:0 0 10px; font-size:.85rem; }
+    .settings label { display:flex; gap:8px; align-items:flex-start; color:var(--muted); font-size:.76rem; line-height:1.4; }
+    .settings input { accent-color:var(--accent); }
+    .drawer-toggle { display:none; }
+    @media (max-width:760px) {
+      .app { display:block; }
+      .sidebar { position:fixed; z-index:5; inset:0 auto 0 0; width:min(86vw,310px); transform:translateX(-105%); transition:transform .2s ease; box-shadow:20px 0 60px #0009; }
+      .sidebar.open { transform:translateX(0); }
+      .drawer-toggle { display:inline-grid; place-items:center; width:36px; height:36px; border-radius:10px; color:var(--text); background:var(--panel); border:1px solid var(--line); }
+      .topbar { padding:14px 16px; }
+      .topbar h1 { font-size:.95rem; }
+      .status-pill { max-width:130px; overflow:hidden; text-overflow:ellipsis; }
+      .content { padding:24px 12px 14px; height:calc(100vh - 70px); }
+      .welcome h2 { font-size:2.6rem; }
+      .message { max-width:94%; }
+      .hint { display:block; line-height:1.5; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar" aria-label="Conversations">
+      <div class="brand"><div class="mark" aria-hidden="true"></div><div><strong>MY LAST AI</strong><span>GIRLFRIENDS</span></div></div>
+      <button class="primary" id="newConversation">＋ New conversation</button>
+      <div class="section-label">Your conversations</div>
+      <nav class="history" id="history" aria-label="Conversation history"></nav>
+      <div class="sidebar-foot">
+        <div class="settings" id="settings"><h3>Connection settings</h3><label><input id="consent" type="checkbox"> Allow ordinary personal conversation to be sent to the configured Gemini provider. Sensitive files, credentials and protected data remain blocked.</label></div>
+        <div class="mini"><span><span class="dot" id="statusDot"></span><span id="modeLabel">Not connected</span></span><button class="ghost" id="settingsButton">Settings</button></div>
+        <button class="ghost" id="logout">Clear local session</button>
+      </div>
+    </aside>
+    <section class="main">
+      <header class="topbar"><div class="top-title"><button class="drawer-toggle" id="drawerToggle" aria-label="Open conversations">☰</button><div style="display:inline-block;vertical-align:middle;margin-left:8px"><h1>My Companion</h1><p>Private, thoughtful and transparent by design</p></div></div><div class="top-actions"><span class="status-pill" id="providerStatus">Offline demo</span></div></header>
+      <main class="content">
+        <section class="welcome" id="welcome"><div class="eyebrow">A calm space for your thoughts</div><h2>Good to see you.</h2><p>Start a conversation in English, Bengali or Banglish. My Companion will always show whether the response came from the local offline demo or your configured Gemini model.</p><div id="tokenPanel" style="display:flex;gap:8px;max-width:520px;margin-top:20px"><input id="tokenInput" type="password" autocomplete="off" placeholder="Enter your local access token" aria-label="Local access token" style="flex:1;min-width:0;padding:12px;border-radius:11px;border:1px solid var(--line);background:var(--panel);color:var(--text)"><button class="send" id="tokenConnect">Connect</button></div></section>
+        <section class="messages" id="messages" aria-live="polite" aria-label="Conversation messages"></section>
+        <div class="composer-shell"><div class="composer"><textarea id="composer" rows="1" placeholder="Write a message…" aria-label="Message"></textarea><button class="send" id="send" disabled>Send</button></div><div class="hint"><span>Enter to send · Shift+Enter for a new line</span><span id="connectionHint">Connect a local session to begin</span></div></div>
+      </main>
+    </section>
+  </div>
+  <script>
+  (() => {
+    const $ = (id) => document.getElementById(id);
+    const token = sessionStorage.getItem('mlag-token') || '';
+    let authToken = token, conversationId = null, busy = false, mode = 'offline';
+    const messages = $('messages'), history = $('history'), composer = $('composer');
+    const headers = () => ({'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json'});
+    const nearBottom = () => messages.scrollHeight - messages.scrollTop - messages.clientHeight < 100;
+    const scrollBottom = () => { if (nearBottom()) messages.scrollTop = messages.scrollHeight; };
+    const setStatus = (text, ready=false) => { $('modeLabel').textContent = text; $('connectionHint').textContent = text; $('statusDot').classList.toggle('ready', ready); };
+    const clearNode = (node) => { while (node.firstChild) node.removeChild(node.firstChild); };
+    const addMessage = (role, text, safe=false, source=null) => {
+      const wasNear = nearBottom(); const item = document.createElement('article'); item.className = `message ${role === 'user' ? 'user' : ''} ${safe ? 'safe' : ''}`;
+      const avatar = document.createElement('div'); avatar.className = 'avatar'; avatar.textContent = role === 'user' ? 'YOU' : 'MC';
+      const wrap = document.createElement('div'); const meta = document.createElement('div'); meta.className = 'bubble-meta'; meta.textContent = role === 'user' ? 'You' : (safe ? 'Status' : 'My Companion');
+      const bubble = document.createElement('div'); bubble.className = 'bubble'; bubble.textContent = text;
+      if (source) { const sourceEl = document.createElement('span'); sourceEl.className = 'source'; sourceEl.textContent = `Source: ${source}`; bubble.appendChild(sourceEl); }
+      wrap.append(meta, bubble); item.append(avatar, wrap); messages.appendChild(item); if (wasNear) scrollBottom();
+    };
+    const request = async (url, options={}) => { const response = await fetch(url, {...options, headers:{...headers(), ...(options.headers || {})}}); let body={}; try { body=await response.json(); } catch (_) {} if (!response.ok) throw new Error(body.error?.message || 'The local request did not complete.'); return body; };
+    const renderConversation = (data) => { clearNode(messages); $('welcome').style.display = data.messages.length ? 'none' : ''; data.messages.forEach(item => addMessage(item.role === 'user' ? 'user' : 'assistant', item.content)); scrollBottom(); };
+    const loadHistory = async () => { const data = await request('/v1/conversations'); clearNode(history); data.conversations.forEach(item => { const button=document.createElement('button'); button.type='button'; button.textContent=item.title || 'New conversation'; button.className=item.id===conversationId?'active':''; button.onclick=()=>selectConversation(item.id); history.appendChild(button); }); };
+    const selectConversation = async (id) => { conversationId=id; const data=await request(`/v1/conversations/${encodeURIComponent(id)}`); renderConversation(data); await loadHistory(); $('sidebar').classList.remove('open'); };
+    const createConversation = async () => { const data=await request('/v1/conversations',{method:'POST',body:'{}'}); await selectConversation(data.id); };
+    const connect = async () => {
+      if (!authToken) { setStatus('Enter your local token'); $('tokenPanel').style.display='flex'; return; }
+      try { const info=await request('/v1/health'); mode=info.mode; $('providerStatus').textContent=mode==='real' ? `${info.provider} · ${info.model}` : 'Offline demo · not AI'; $('consent').checked=Boolean(info.remote_conversation_consent); $('send').disabled=false; $('tokenPanel').style.display='none'; setStatus(mode==='real' ? 'Gemini configured' : 'Offline demo ready', true); await loadHistory(); const list=(await request('/v1/conversations')).conversations; if (list.length) await selectConversation(list[0].id); else await createConversation(); } catch (error) { setStatus(error.message); $('providerStatus').textContent='Not connected'; $('send').disabled=true; $('tokenPanel').style.display='flex'; }
+    };
+    $('send').onclick = async () => { const text=composer.value.trim(); if (!text || busy || !conversationId) return; busy=true; $('send').disabled=true; composer.value=''; addMessage('user',text); setStatus('Working…',true); try { const result=await request(`/v1/conversations/${encodeURIComponent(conversationId)}/messages`,{method:'POST',body:JSON.stringify({content:text})}); addMessage('assistant',result.message,result.status!=='SUCCEEDED',result.source_url); setStatus(result.status==='SUCCEEDED' ? (result.ai_generated ? `${result.provider} response verified` : 'Offline demo response') : result.status,true); } catch (error) { addMessage('assistant',error.message,true); setStatus('Safe stop · review the message'); } finally { busy=false; $('send').disabled=false; composer.focus(); } };
+    composer.addEventListener('keydown', event => { if (event.key==='Enter' && !event.shiftKey) { event.preventDefault(); $('send').click(); } });
+    composer.addEventListener('input', () => { composer.style.height='auto'; composer.style.height=Math.min(composer.scrollHeight,160)+'px'; });
+    $('newConversation').onclick=createConversation;
+    $('tokenConnect').onclick=()=>{ authToken=$('tokenInput').value.trim(); if (authToken) { sessionStorage.setItem('mlag-token',authToken); connect(); } };
+    $('settingsButton').onclick=()=>$('settings').classList.toggle('open');
+    $('consent').onchange=async event=>{ try { await request('/v1/settings/remote-consent',{method:'POST',body:JSON.stringify({enabled:event.target.checked})}); setStatus(event.target.checked ? 'Remote conversation consent enabled' : 'Remote conversation consent disabled',true); } catch (error) { event.target.checked=!event.target.checked; addMessage('assistant',error.message,true); } };
+    $('logout').onclick=()=>{ sessionStorage.removeItem('mlag-token'); authToken=''; conversationId=null; clearNode(messages); clearNode(history); $('welcome').style.display=''; $('tokenPanel').style.display='flex'; $('tokenInput').value=''; $('send').disabled=true; $('providerStatus').textContent='Not connected'; setStatus('Session cleared'); };
+    $('drawerToggle').onclick=()=>$('sidebar').classList.toggle('open');
+    connect();
+  })();
+  </script>
+</body>
+</html>

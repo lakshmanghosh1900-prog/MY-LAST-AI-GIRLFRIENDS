@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import http.client
+import html
 import ipaddress
-import os
 import socket
 import ssl
 from dataclasses import dataclass
+from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
@@ -70,6 +71,48 @@ class SafeFileTool:
         if b"\x00" in raw:
             raise ToolError("FILE_BINARY_REJECTED", "Binary content is not accepted.")
         return FileResult(relative_path=relative_path.replace("\\", "/"), text=raw.decode("utf-8", errors="replace"), byte_count=len(raw))
+
+
+class _ReadableHTMLParser(HTMLParser):
+    """Extract readable page text without executing or returning raw markup."""
+
+    ignored_tags = frozenset({"script", "style", "noscript", "template", "svg", "canvas"})
+    block_tags = frozenset({"address", "article", "blockquote", "div", "h1", "h2", "h3", "h4", "h5", "h6", "li", "main", "p", "pre", "section", "table", "tr", "ul", "ol"})
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+        self._ignored_depth = 0
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        tag = tag.lower()
+        if tag in self.ignored_tags:
+            self._ignored_depth += 1
+        elif self._ignored_depth == 0 and tag in self.block_tags:
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag in self.ignored_tags and self._ignored_depth:
+            self._ignored_depth -= 1
+        elif self._ignored_depth == 0 and tag in self.block_tags:
+            self.parts.append("\n")
+
+    def handle_data(self, data: str) -> None:
+        if self._ignored_depth == 0 and data.strip():
+            self.parts.append(data)
+
+    def text(self) -> str:
+        value = html.unescape("".join(self.parts))
+        lines = [" ".join(line.split()) for line in value.splitlines()]
+        return "\n".join(line for line in lines if line).strip()
+
+
+def extract_readable_text(markup: str) -> str:
+    parser = _ReadableHTMLParser()
+    parser.feed(markup)
+    parser.close()
+    return parser.text()
 
 
 def _public_ip(value: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address:
@@ -150,7 +193,7 @@ class SafeWebFetcher:
             connection = _PinnedHTTPSConnection(current.hostname or "", resolved_ip, 443, self.timeout_seconds, context)
             try:
                 target = urlunsplit(("", "", current.path or "/", current.query, ""))
-                connection.request("GET", target, headers={"Host": current.hostname or "", "Accept": "text/plain, text/markdown, text/html, application/json", "Accept-Encoding": "identity", "User-Agent": "jarvis-omega/0.1.0"})
+                connection.request("GET", target, headers={"Host": current.hostname or "", "Accept": "text/plain, text/markdown, text/html, application/json", "Accept-Encoding": "identity", "User-Agent": "my-last-ai-girlfriends/0.2.0"})
                 response = connection.getresponse()
                 if response.status in {301, 302, 303, 307, 308}:
                     location = response.getheader("Location")
@@ -172,7 +215,9 @@ class SafeWebFetcher:
                     raise ToolError("FETCH_TOO_LARGE", "The response exceeds the configured limit.")
                 if b"\x00" in body:
                     raise ToolError("FETCH_BINARY_REJECTED", "Binary web content is not accepted.")
-                return FetchResult(url=urlunsplit(current), content_type=content_type or "text/plain", text=body.decode("utf-8", errors="replace"), byte_count=len(body))
+                raw_text = body.decode("utf-8", errors="replace")
+                readable = extract_readable_text(raw_text) if content_type == "text/html" else raw_text
+                return FetchResult(url=urlunsplit(current), content_type=content_type or "text/plain", text=readable, byte_count=len(body))
             except ToolError:
                 raise
             except (OSError, ssl.SSLError, http.client.HTTPException) as exc:

@@ -1,154 +1,201 @@
-# MY LAST AI GIRLFRIENDS — JARVIS OMEGA
+# MY LAST AI GIRLFRIENDS
 
-JARVIS OMEGA is a local-first personal assistant vertical slice for the project
-named **MY LAST AI GIRLFRIENDS**. The name means a persistent, capable personal
-companion that can grow into many specialized “girlfriend” personas without
-giving any persona permission to bypass the owner, the operating system, the
-budget, or the verified state of an action. In this first build, the name is a
-product identity, not a claim that the system can safely do literally anything.
+**My Companion** is a personal, local-first chat application for the MY LAST AI
+GIRLFRIENDS project. It supports a truthful offline demo and an explicit,
+configured Gemini real-AI mode. It remains single-user, loopback-first and
+read-only in this release.
 
-## What is built
+## What is implemented
 
-This release is a reproducible, single-user, loopback-first service with:
+- Product and Python package branding migrated to `my_last_ai_girlfriends`.
+- Authenticated local browser application with responsive desktop/mobile UI.
+- Conversation creation, bounded history listing and conversation selection.
+- SQLite persistence using `data/my_last_ai_girlfriends.sqlite3`.
+- Safe migration path for the legacy database filename with verified backups.
+- Deterministic policy engine and bounded budget ledger retained from the
+  approved blueprint.
+- Offline demo mode that is explicitly labelled **not AI**.
+- Real Gemini mode using Google's OpenAI-compatible endpoint when the owner
+  supplies a key locally.
+- Recent conversation context, isolated per conversation and bounded by limits.
+- Explicit local consent for ordinary personal text in real-AI mode.
+- Protected/sensitive/file content blocked from remote processing by default.
+- Read-only approved workspace file preview.
+- HTTPS public fetching with IP validation, redirects and byte/type limits.
+- Readable HTML extraction with scripts/styles/noscript removed.
+- Safe text rendering; fetched/model output is never injected as HTML.
 
-- an authenticated local browser UI;
-- a deterministic policy layer outside the model;
-- an explicit task lifecycle and safe-stop states;
-- an offline fake provider for repeatable tests and local development;
-- an opt-in OpenAI-compatible provider adapter with bounded output and timeout;
-- a transactional SQLite budget ledger;
-- a read-only text-file tool rooted at `workspace/`;
-- a constrained HTTPS public-fetch tool with DNS/IP, redirect, size and type checks;
-- redacted audit metadata and a small health/budget API;
-- no phone control, Accessibility automation, payments, messaging, shell, code
-  execution, MCP, dynamic skills, background agents or public hosting.
+## Product responsibility
 
-## Responsibility and execution accuracy
+My Companion can respond conversationally, but it cannot honestly promise 100%
+semantic accuracy. Deterministic code remains responsible for authentication,
+privacy classification, approved tools, budget reservations, provider response
+validation and task state. The model cannot grant itself permission or create a
+fake success after a provider failure.
 
-The assistant's responsibility is to **propose and explain**, while ordinary
-code decides whether a request is permitted, whether a provider call fits the
-budget, and whether the result passed deterministic checks. The model is never
-the authority for permissions, tools, policy, budget or success.
+## Runtime
 
-No AI system can truthfully promise 100% semantic accuracy. This build instead
-uses measurable invariants: unauthorized tools are denied, secrets are not
-accepted as model input, unsafe paths/URLs are blocked, budgets are reserved
-transactionally, and only verified provider text is shown as a successful task.
-Any future feature must add its own tests and release gates before it is
-enabled.
+- Python `3.12.11` pinned in `.python-version`.
+- Distribution: `my-last-ai-girlfriends`.
+- CLI: `my-last-ai-girlfriends`.
+- Python entry point: `my_last_ai_girlfriends.main`.
+- Environment prefix: `MLAG_`.
+- HTTP User-Agent/service identifier: `my-last-ai-girlfriends`.
+- Runtime dependencies remain standard-library only.
+- `uv.lock` is committed.
 
-## Runtime and reproducibility
+## Windows setup
 
-- Python `3.12.11` is pinned in `.python-version`.
-- The application uses the Python standard library at runtime.
-- `uv.lock` is committed for reproducible project metadata.
-- The default provider is offline and deterministic.
-- No provider credential is needed to run the test suite.
-
-## Setup
-
-### Windows PowerShell
+From `C:\Users\User\Desktop\MY LAST AI GIRLFRIENDS`:
 
 ```powershell
 uv python install 3.12.11
-uv venv --python 3.12.11
-Copy-Item .env.example .env
-# Replace JARVIS_AUTH_TOKEN in .env with a random value of at least 32 characters.
+uv sync --locked
+.\scripts\setup.ps1 -GenerateToken -Doctor
+```
+
+The setup command creates or rotates the ignored `.env` and never prints the
+generated token. To intentionally reveal it for pasting into the browser, use:
+
+```powershell
+.\scripts\setup.ps1 -RevealToken
+```
+
+Treat that terminal output as secret. The diagnostic reports provider, mode,
+model, source, conflicts and token validity without displaying secret values.
+
+Start the application:
+
+```powershell
 $env:PYTHONPATH = "$PWD\src"
-python -m jarvis_omega.main
+uv run --locked my-last-ai-girlfriends
 ```
 
-Open <http://127.0.0.1:8787>, paste the same token, and connect. The service
-binds to loopback by default. The `workspace/` directory is the only approved
-file root; use `/file README.txt` in the chat to read a text file.
+Open <http://127.0.0.1:8787>. The first page accepts the local token. The
+application will say **Offline demo · not AI** until real mode is configured and
+an actual Gemini completion succeeds.
 
-### Linux/macOS
+## Real Gemini mode
 
-```bash
-uv python install 3.12.11
-uv venv --python 3.12.11
-cp .env.example .env
-# Replace JARVIS_AUTH_TOKEN in .env with a random value of at least 32 characters.
-export PYTHONPATH="$PWD/src"
-python -m jarvis_omega.main
+The provider uses Google's OpenAI-compatible documentation:
+
+- <https://ai.google.dev/gemini-api/docs/openai>
+- <https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash>
+- <https://ai.google.dev/gemini-api/docs/pricing>
+
+The configured defaults are:
+
+```text
+MLAG_MODE=real
+MLAG_PROVIDER=gemini
+MLAG_MODEL=gemini-3.8-flash
+MLAG_PROVIDER_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
+MLAG_GEMINI_API_KEY=stored-only-in-ignored-.env
 ```
 
-The `.env` loader is intentionally small and does not overwrite an existing
-process environment variable.
+The endpoint builder appends `/chat/completions` exactly once. The model,
+endpoint and token prices are configurable. The provider is never silently
+replaced with the offline demo after a remote error.
 
-## Test and check commands
+Ordinary personal conversation additionally requires:
 
-The canonical offline test command is:
+1. `MLAG_ALLOW_REMOTE_PERSONAL_DATA=true` in local configuration; and
+2. the in-app remote-conversation consent checkbox.
 
-```bash
+Sensitive, health, financial, credential, password, PIN, OTP and authentication
+content remains blocked from remote processing. File contents remain local.
+
+## Offline demo mode
+
+The default is:
+
+```text
+MLAG_MODE=offline
+```
+
+It makes no provider request. Chat responses and file/web previews are
+deterministic and visibly labelled **Offline demo (not AI)** or **Offline demo
+preview (not AI)**. This mode is intended for local testing and UI work.
+
+## Tools
+
+Use the composer commands:
+
+```text
+/file README.txt
+/fetch https://example.com
+```
+
+`/file` can only read supported text files below `workspace/`. `/fetch` accepts
+only HTTPS public destinations, validates every resolved address and redirect,
+caps response size, and extracts readable text from HTML. It does not render
+HTML, execute scripts or load embedded resources.
+
+## Tests and checks
+
+Run the exact pinned-runtime checks:
+
+```powershell
+uv sync --locked
+uv lock --check
+$env:PYTHONPATH = "$PWD\src"
+uv run --locked python -m compileall -q src tests
+uv run --locked python -m unittest discover -s tests -p "test_*.py" -v
+```
+
+The canonical Make commands are also available:
+
+```text
 make test
-```
-
-On Windows, where GNU Make may not be installed, run the same command body:
-
-```powershell
-$env:PYTHONPATH = "$PWD\src"
-python -m unittest discover -s tests -p "test_*.py" -v
-```
-
-The broader check is:
-
-```bash
 make check
 ```
 
-It compiles the source and runs the offline tests. Tests use temporary SQLite
-databases and fake providers; they do not contact an AI service or the public
-internet.
-
-## Optional remote provider
-
-Remote use is disabled by default. To opt in, set:
-
-```text
-JARVIS_PROVIDER=openai-compatible
-JARVIS_PROVIDER_URL=https://your-approved-endpoint.example/v1
-JARVIS_PROVIDER_API_KEY=your-secret-kept-only-in-.env
-JARVIS_ALLOW_REMOTE_PERSONAL_DATA=false
-```
-
-With the default `false`, ordinary personal text and `/file` requests are
-stopped before any remote data transfer. `/fetch https://...` is treated as
-public content but remains untrusted and is subject to the fetcher limits.
-Review the provider's current data-use terms and pricing before enabling it.
+Tests are deterministic and do not require a live API key or paid API call.
+Optional live Gemini testing is intentionally separate and is not claimed by
+the automated suite.
 
 ## Docker
 
-Build and run with the host port bound to loopback:
-
-```bash
-docker run --rm -it --env-file .env -p 127.0.0.1:8787:8787 \
-  -v "$(pwd)/data:/app/data" jarvis-omega:0.1.0
+```powershell
+docker build --tag my-last-ai-girlfriends:0.2.0 .
+docker run --rm -it --env-file .env -e MLAG_HOST=0.0.0.0 -e MLAG_ALLOW_NON_LOOPBACK_BINDING=true -p 127.0.0.1:8787:8787 -v "${PWD}\data:/app/data" my-last-ai-girlfriends:0.2.0
 ```
 
-The container listens on `0.0.0.0` inside the container because Docker's port
-mapping is the boundary. Do not publish it as `-p 8787:8787` on a shared host.
+The container's internal bind is allowed for the port mapping; publish only to
+loopback on the host. Never commit `.env`, provider keys, tokens, databases or
+conversation data.
 
-## Safe scope
+## Capability truth table
 
-The current build deliberately does **not** implement an autonomous Android
-operator, Accessibility automation, SMS/email sending, payments, banking,
-OTP/PIN handling, arbitrary filesystem access, shell/code execution, browser
-login automation, external side effects, MCP, skills, sub-agents, vector DB,
-VPS deployment, multi-user accounts, always-on microphone, or public hosting.
-These are separate features with separate platform, privacy, security and cost
-reviews; they are not hidden behind a UI switch.
+| Capability | Status |
+|---|---|
+| Offline demo conversation | IMPLEMENTED AND TESTED |
+| Gemini real-AI conversation | IMPLEMENTED, REQUIRES OWNER CONFIGURATION and live key |
+| Contextual conversations | IMPLEMENTED AND TESTED |
+| Conversation history | IMPLEMENTED AND TESTED |
+| Read-only file access | IMPLEMENTED AND TESTED |
+| Safe webpage retrieval/extraction | IMPLEMENTED AND TESTED offline fixtures |
+| Local persistence | IMPLEMENTED AND TESTED |
+| Privacy and consent | IMPLEMENTED AND TESTED |
+| Budget tracking | IMPLEMENTED AND TESTED |
+| Document processing | LIMITED to approved text previews |
+| Research and citations | LIMITED to source URL on public fetch |
+| Voice | NOT IMPLEMENTED |
+| Long-term memory | NOT IMPLEMENTED |
+| Android companion | NOT IMPLEMENTED; REQUIRES PLATFORM REVIEW |
+| Scheduling | NOT IMPLEMENTED |
+| MCP and skills | NOT IMPLEMENTED; REQUIRES SECURITY REVIEW |
+| Background agents | NOT IMPLEMENTED |
+| External actions/approval | NOT IMPLEMENTED; requires separate security review |
+| Multi-user/public hosting | NOT IMPLEMENTED; requires privacy/security review |
 
-## Project documents
+Payments, messaging, shell execution, arbitrary code execution, banking,
+Accessibility automation, public hosting, autonomous side effects and unreviewed
+self-learning remain disabled.
 
-- [`docs/FINAL-AUDIT.md`](docs/FINAL-AUDIT.md) — completed documentation-only
-  audit, loop-hole review, status labels, cost arithmetic, source register,
-  release gates, unresolved items and final build decision.
-- [`docs/BLUEPRINT-v4.1.md`](docs/BLUEPRINT-v4.1.md) — the implemented vertical
-  slice blueprint, responsibilities, state machine and dependency-aware roadmap.
+## Documents
 
-## Reset local data
-
-Stop the service, then remove the local `data/` directory. This deletes the
-SQLite conversation and audit database. Do not delete `workspace/` unless its
-sample files are no longer wanted.
+- [`docs/BLUEPRINT-v4.1.md`](docs/BLUEPRINT-v4.1.md) — current product and
+  implementation blueprint.
+- [`docs/FINAL-AUDIT.md`](docs/FINAL-AUDIT.md) — audit, migration evidence,
+  controls, source status and verification record.

@@ -7,9 +7,9 @@ import threading
 import unittest
 from pathlib import Path
 
-from jarvis_omega.auth import AuthManager
-from jarvis_omega.http_api import JarvisHTTPServer
-from jarvis_omega.service import JarvisService
+from my_last_ai_girlfriends.auth import AuthManager
+from my_last_ai_girlfriends.http_api import MyLastAIGirlfriendsHTTPServer
+from my_last_ai_girlfriends.service import MyLastAIGirlfriendsService
 
 from test_budget_service import make_config
 
@@ -17,8 +17,8 @@ from test_budget_service import make_config
 class HttpApiTests(unittest.TestCase):
     def test_api_requires_bearer_and_rejects_bad_origin(self):
         with tempfile.TemporaryDirectory() as raw:
-            service = JarvisService(make_config(Path(raw)))
-            server = JarvisHTTPServer(("127.0.0.1", 0), service)
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            server = MyLastAIGirlfriendsHTTPServer(("127.0.0.1", 0), service)
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
             port = server.server_address[1]
@@ -40,6 +40,10 @@ class HttpApiTests(unittest.TestCase):
                 self.assertEqual(response.status, 201)
                 payload = json.loads(response.read())
                 self.assertIn("id", payload)
+                listing = connection.request("GET", "/v1/conversations", headers={"Authorization": f"Bearer {token}"})
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertTrue(json.loads(response.read())["conversations"])
                 connection.close()
             finally:
                 server.shutdown()
@@ -50,6 +54,28 @@ class HttpApiTests(unittest.TestCase):
         manager = AuthManager("T" * 64)
         self.assertFalse(manager.verify_bearer(None))
         self.assertFalse(manager.verify_bearer("Bearer " + "x" * 600))
+
+    def test_remote_consent_is_explicit_and_readable(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            server = MyLastAIGirlfriendsHTTPServer(("127.0.0.1", 0), service)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            port = server.server_address[1]
+            token = "T" * 48
+            try:
+                connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+                headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+                connection.request("GET", "/v1/settings", headers=headers)
+                response = connection.getresponse()
+                self.assertFalse(json.loads(response.read())["remote_conversation_consent"])
+                connection.request("POST", "/v1/settings/remote-consent", body='{"enabled":true}', headers=headers)
+                response = connection.getresponse()
+                self.assertTrue(json.loads(response.read())["remote_conversation_consent"])
+            finally:
+                server.shutdown()
+                server.server_close()
+                service.close()
 
 
 if __name__ == "__main__":
