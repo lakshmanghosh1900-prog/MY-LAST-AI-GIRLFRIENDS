@@ -1,0 +1,26 @@
+[project]
+name = "jarvis-omega"
+version = "0.1.0"
+description = "JARVIS OMEGA local-first, read-only AI assistant vertical slice"
+requires-python = ">=3.12,<3.13"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Lakshman Ghosh" }]
+dependencies = []
+
+[project.scripts]
+jarvis-omega = "jarvis_omega.main:main"
+
+[build-system]
+requires = ["setuptools>=75,<76"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.uv]
+package = true
+default-groups = []
