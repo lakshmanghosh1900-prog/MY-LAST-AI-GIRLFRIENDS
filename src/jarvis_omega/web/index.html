@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JARVIS OMEGA</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+    body { margin: 0; background: #0d1220; color: #eef3ff; }
+    main { max-width: 840px; margin: 0 auto; padding: 24px; }
+    h1 { letter-spacing: .08em; margin-bottom: 4px; }
+    .subtle { color: #a9b8d6; }
+    .panel { background: #151d31; border: 1px solid #2c3b5c; border-radius: 14px; padding: 16px; margin: 14px 0; }
+    input, textarea, button { font: inherit; border-radius: 9px; border: 1px solid #40547d; padding: 10px; }
+    input, textarea { box-sizing: border-box; width: 100%; background: #0d1220; color: #eef3ff; }
+    textarea { min-height: 100px; resize: vertical; }
+    button { background: #4269d0; color: white; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .row > * { flex: 1; }
+    #messages { white-space: pre-wrap; max-height: 52vh; overflow: auto; }
+    .message { padding: 12px; border-bottom: 1px solid #2c3b5c; }
+    .role { color: #7ea2ff; font-size: .8rem; text-transform: uppercase; }
+    .status { color: #9be7be; }
+    .safe { color: #ffd68a; }
+    code { color: #b8d6ff; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>JARVIS OMEGA</h1>
+  <div class="subtle">Local-first safe mode · Bengali / English / Banglish friendly · read-only tools</div>
+  <section class="panel">
+    <label for="token">Local access token</label>
+    <input id="token" type="password" autocomplete="off" placeholder="Paste JARVIS_AUTH_TOKEN">
+    <div class="row" style="margin-top:10px"><button id="connect">Connect</button><span id="status" class="subtle">Not connected</span></div>
+  </section>
+  <section class="panel">
+    <div id="messages" aria-live="polite"></div>
+    <textarea id="content" placeholder="Ask something, or use /file notes.txt or /fetch https://example.com"></textarea>
+    <div class="row" style="margin-top:10px"><button id="send" disabled>Send</button><span class="subtle">No sending, payments, installs, shell, or phone control in this slice.</span></div>
+  </section>
+</main>
+<script>
+(() => {
+  const token = document.querySelector('#token');
+  const connect = document.querySelector('#connect');
+  const send = document.querySelector('#send');
+  const content = document.querySelector('#content');
+  const status = document.querySelector('#status');
+  const messages = document.querySelector('#messages');
+  let conversationId = null;
+  token.value = sessionStorage.getItem('jarvis-token') || '';
+  const headers = () => ({'Authorization': `Bearer ${token.value}`, 'Content-Type': 'application/json'});
+  const show = (role, text, safe=false) => {
+    const el = document.createElement('div'); el.className = 'message';
+    const label = document.createElement('div'); label.className = 'role'; label.textContent = role;
+    const body = document.createElement('div'); body.textContent = text;
+    if (safe) body.className = 'safe'; el.append(label, body); messages.appendChild(el); messages.scrollTop = messages.scrollHeight;
+  };
+  connect.onclick = async () => {
+    sessionStorage.setItem('jarvis-token', token.value);
+    const response = await fetch('/v1/conversations', {method:'POST', headers:headers(), body:'{}'});
+    if (!response.ok) { status.textContent = 'Authentication or service check did not complete'; return; }
+    conversationId = (await response.json()).id; send.disabled = false; status.textContent = 'Connected · safe mode ready'; show('SYSTEM', 'Connected. Ask a question or use an explicit read-only command.');
+  };
+  send.onclick = async () => {
+    const text = content.value.trim(); if (!text || !conversationId) return;
+    content.value = ''; show('YOU', text); send.disabled = true; status.textContent = 'Working…';
+    try {
+      const response = await fetch(`/v1/conversations/${conversationId}/messages`, {method:'POST', headers:headers(), body:JSON.stringify({content:text})});
+      const result = await response.json();
+      show(result.status === 'SUCCEEDED' ? 'JARVIS' : result.status, result.message, result.status !== 'SUCCEEDED');
+      status.textContent = result.status === 'SUCCEEDED' ? 'Verified response' : 'Safe stop · review the message';
+    } catch (_) { show('SAFE_STOP', 'The local connection did not complete. No action was claimed.'); status.textContent = 'Disconnected'; }
+    send.disabled = false;
+  };
+})();
+</script>
+</body>
+</html>
