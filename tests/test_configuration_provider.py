@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from my_last_ai_girlfriends.config import Config, ConfigError, diagnose_environment, load_environment, token_status
 from my_last_ai_girlfriends.main import main
-from my_last_ai_girlfriends.providers import GeminiProvider, ProviderError, build_chat_completions_url
+from my_last_ai_girlfriends.providers import GeminiProvider, OllamaProvider, ProviderError, build_chat_completions_url
 
 
 class _Response:
@@ -71,6 +71,16 @@ class ConfigurationAndProviderTests(unittest.TestCase):
             with self.subTest(url=url):
                 with self.assertRaises(ConfigError):
                     Config.from_report(load_environment(Path("missing.env"), {**base, "MLAG_PROVIDER_BASE_URL": url}))
+
+    def test_ollama_local_provider_configuration_and_response(self):
+        base = {"MLAG_AUTH_TOKEN": "T" * 48, "MLAG_MODE": "real", "MLAG_PROVIDER": "ollama", "MLAG_MODEL": "llama3.2"}
+        config = Config.from_report(load_environment(Path("missing.env"), base))
+        self.assertEqual(config.provider, "ollama")
+        provider = OllamaProvider("http://127.0.0.1:11434", "llama3.2")
+        with patch("urllib.request.urlopen", lambda *_args, **_kwargs: _Response({"message": {"content": "local answer"}, "prompt_eval_count": 2, "eval_count": 3})):
+            result = provider.complete([{"role": "user", "content": "hello"}], 128, 3)
+        self.assertEqual(result.text, "local answer")
+        self.assertTrue(provider.status()["local"])
 
     def test_placeholder_and_short_tokens_are_not_accepted(self):
         self.assertEqual(token_status("deleted"), "invalid-placeholder")

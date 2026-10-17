@@ -94,6 +94,62 @@ def build_chat_completions_url(base_url: str) -> str:
     return urlunsplit((parsed.scheme, parsed.netloc, path + suffix, "", ""))
 
 
+def build_ollama_chat_url(base_url: str) -> str:
+    parsed = urlsplit(base_url.strip())
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("ollama base URL must be an absolute HTTP(S) URL")
+    path = parsed.path.rstrip("/")
+    if not path.endswith("/api/chat"):
+        path += "/api/chat"
+    return urlunsplit((parsed.scheme, parsed.netloc, path, "", ""))
+
+
+class OllamaProvider(Provider):
+    """Optional local Ollama adapter; no remote credential or fake fallback."""
+
+    name = "ollama"
+    ai_generated = True
+
+    def __init__(self, base_url: str, model: str):
+        self.endpoint = build_ollama_chat_url(base_url)
+        self.model = model
+        self._connected = False
+
+    def estimate_cost(self, input_tokens: int, output_tokens: int) -> int:
+        del input_tokens, output_tokens
+        return 0
+
+    def status(self) -> dict:
+        return {"provider": self.name, "model": self.model, "endpoint": self.endpoint, "connected": self._connected, "ai_generated": True, "local": True}
+
+    def complete(self, messages: Iterable[dict[str, str]], max_output_tokens: int, timeout_seconds: int) -> ProviderResult:
+        items = list(messages)
+        self._connected = False
+        body = json.dumps({"model": self.model, "messages": items, "stream": False, "options": {"num_predict": max_output_tokens}}).encode("utf-8")
+        request = urllib.request.Request(self.endpoint, data=body, method="POST", headers={"Content-Type": "application/json", "Accept": "application/json", "User-Agent": "my-last-ai-girlfriends/0.2.0"})
+        started = time.monotonic()
+        try:
+            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+                raw = response.read(2_000_000)
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, socket.timeout, OSError) as exc:
+            raise ProviderError("LOCAL_PROVIDER_UNAVAILABLE", "The local Ollama provider did not return a completed response.", usage_unknown=True) from exc
+        try:
+            payload = json.loads(raw.decode("utf-8"))
+            text = payload["message"]["content"]
+            if not isinstance(text, str) or not text.strip():
+                raise ProviderError("PROVIDER_EMPTY_OUTPUT", "The local provider returned no text.")
+            if len(text) > max_output_tokens * 8:
+                raise ProviderError("PROVIDER_OUTPUT_TOO_LARGE", "The local provider returned more text than the configured output bound.")
+            input_tokens = int(payload.get("prompt_eval_count", estimate_tokens(" ".join(m["content"] for m in items))))
+            output_tokens = int(payload.get("eval_count", estimate_tokens(text)))
+        except ProviderError:
+            raise
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise ProviderError("PROVIDER_SCHEMA", "The local provider response did not match the expected schema.", usage_unknown=True) from exc
+        self._connected = True
+        return ProviderResult(text, self.name, self.model, input_tokens, output_tokens, None, int((time.monotonic() - started) * 1000), True)
+
+
 class GeminiProvider(Provider):
     """Gemini through Google's documented OpenAI-compatible endpoint."""
 

@@ -144,7 +144,7 @@ def load_environment(path: Path = Path(".env"), environ: Mapping[str, str] | Non
     return EnvReport(values, source, tuple(sorted(set(conflicts))), path)
 
 
-def _validate_provider_base_url(value: str, mode: str) -> str:
+def _validate_provider_base_url(value: str, mode: str, provider: str) -> str:
     parsed = urlsplit(value.strip())
     if (
         parsed.scheme not in {"http", "https"}
@@ -155,8 +155,10 @@ def _validate_provider_base_url(value: str, mode: str) -> str:
         or parsed.fragment
     ):
         raise ConfigError("MLAG_PROVIDER_BASE_URL must be a credential-free absolute HTTP(S) URL")
-    if mode == "real" and parsed.scheme != "https":
+    if mode == "real" and provider == "gemini" and parsed.scheme != "https":
         raise ConfigError("MLAG_PROVIDER_BASE_URL must use HTTPS in real mode")
+    if provider == "ollama" and (parsed.hostname or "").lower() not in {"127.0.0.1", "localhost", "::1"}:
+        raise ConfigError("MLAG_PROVIDER_BASE_URL for ollama must target the local machine")
     return value.strip()
 
 
@@ -244,15 +246,15 @@ class Config:
         if mode not in {"offline", "real"}:
             raise ConfigError("MLAG_MODE must be offline or real")
         provider = values.get("MLAG_PROVIDER", "gemini").strip().lower()
-        if provider != "gemini":
-            raise ConfigError("MLAG_PROVIDER must be gemini; use MLAG_MODE=offline for the local demo")
+        if provider not in {"gemini", "ollama"}:
+            raise ConfigError("MLAG_PROVIDER must be gemini or ollama; use MLAG_MODE=offline for the local demo")
         model = values.get("MLAG_MODEL", "gemini-3.8-flash").strip() or "gemini-3.8-flash"
+        default_base_url = "http://127.0.0.1:11434" if provider == "ollama" else "https://generativelanguage.googleapis.com/v1beta/openai/"
         base_url = _validate_provider_base_url(
-            values.get("MLAG_PROVIDER_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/"),
-            mode,
+            values.get("MLAG_PROVIDER_BASE_URL", default_base_url), mode, provider,
         )
         api_key = values.get("MLAG_GEMINI_API_KEY", "").strip() or None
-        if mode == "real" and not api_key:
+        if mode == "real" and provider == "gemini" and not api_key:
             raise ConfigError("MLAG_GEMINI_API_KEY is required for MLAG_MODE=real")
 
         data_dir = Path(values.get("MLAG_DATA_DIR", "./data")).expanduser().resolve()

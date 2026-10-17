@@ -24,7 +24,7 @@ from .memory import (
 from .governance import GovernanceError, canonical_json, new_nonce, secret_hash, validate_connector_endpoint
 from .orchestration import OrchestrationError, run_bounded_local_pipeline
 from .policy import DataClass, Decision, PolicyEngine
-from .providers import GeminiProvider, OfflineDemoProvider, Provider, ProviderError, estimate_tokens
+from .providers import GeminiProvider, OllamaProvider, OfflineDemoProvider, Provider, ProviderError, estimate_tokens
 from .redaction import redact
 from .research import ResearchError, analyze_claims, fetch_source
 from .scheduler import SchedulerError, validate_schedule
@@ -82,6 +82,8 @@ class MyLastAIGirlfriendsService:
     def _build_provider(self) -> Provider:
         if self.config.mode == "offline":
             return OfflineDemoProvider()
+        if self.config.provider == "ollama":
+            return OllamaProvider(self.config.provider_base_url, self.config.model)
         return GeminiProvider(
             self.config.provider_base_url,
             self.config.gemini_api_key or "",
