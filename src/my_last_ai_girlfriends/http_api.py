@@ -13,6 +13,7 @@ from .auth import AuthManager
 from .documents import DocumentError
 from .memory import MemoryError
 from .research import ResearchError
+from .scheduler import SchedulerError
 from .redaction import redact
 from .service import MyLastAIGirlfriendsService
 
@@ -153,6 +154,14 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
             except KeyError:
                 self._error(HTTPStatus.NOT_FOUND, "RESEARCH_NOT_FOUND", "Research run does not exist.", request_id)
             return
+        if path == "/v1/schedules":
+            query = parse_qs(urlsplit(self.path).query)
+            conversation_id = query.get("conversation_id", [None])[0]
+            try:
+                self._send(HTTPStatus.OK, {"schedules": self.server.service.list_schedules(conversation_id)}, request_id)
+            except KeyError:
+                self._error(HTTPStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND", "Conversation does not exist.", request_id)
+            return
         parts = [part for part in path.split("/") if part]
         if len(parts) == 3 and parts[0] == "v1" and parts[1] == "conversations":
             try:
@@ -212,6 +221,16 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                     return
                 self._send(HTTPStatus.OK, self.server.service.run_research(urls), request_id)
                 return
+            if path == "/v1/schedules":
+                conversation_id = payload.get("conversation_id")
+                title = payload.get("title")
+                prompt = payload.get("prompt")
+                run_at = payload.get("run_at")
+                if not all(isinstance(value, str) for value in (conversation_id, title, prompt, run_at)):
+                    self._error(HTTPStatus.BAD_REQUEST, "SCHEDULE_FIELDS_INVALID", "conversation_id, title, prompt and run_at are required strings.", request_id)
+                    return
+                self._send(HTTPStatus.CREATED, self.server.service.create_schedule(conversation_id, title, prompt, run_at), request_id)
+                return
             parts = [part for part in path.split("/") if part]
             if len(parts) == 4 and parts[:2] == ["v1", "conversations"] and parts[3] == "messages":
                 content = payload.get("content")
@@ -240,6 +259,9 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
         except ResearchError as exc:
             self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
             return
+        except SchedulerError as exc:
+            self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
+            return
         except RuntimeError as exc:
             self._error(HTTPStatus.SERVICE_UNAVAILABLE, "SERVICE_NOT_READY", str(exc), request_id)
             return
@@ -265,5 +287,11 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.OK, {"deleted": self.server.service.delete_document(parts[2])}, request_id)
             except KeyError:
                 self._error(HTTPStatus.NOT_FOUND, "DOCUMENT_NOT_FOUND", "Document does not exist.", request_id)
+            return
+        if len(parts) == 3 and parts[:2] == ["v1", "schedules"]:
+            try:
+                self._send(HTTPStatus.OK, {"cancelled": self.server.service.cancel_schedule(parts[2])}, request_id)
+            except KeyError:
+                self._error(HTTPStatus.NOT_FOUND, "SCHEDULE_NOT_FOUND", "Schedule does not exist.", request_id)
             return
         self._error(HTTPStatus.NOT_FOUND, "NOT_FOUND", "Route not found.", request_id)

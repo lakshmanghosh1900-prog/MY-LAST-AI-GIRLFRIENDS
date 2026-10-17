@@ -303,6 +303,35 @@ class Database:
                     "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
                     (5, utc_now()),
                 )
+                applied.add(5)
+            if 6 not in applied:
+                self.connection.executescript("""
+                CREATE TABLE IF NOT EXISTS schedules (
+                    id TEXT PRIMARY KEY,
+                    conversation_id TEXT NOT NULL REFERENCES conversations(id),
+                    title TEXT NOT NULL,
+                    prompt TEXT NOT NULL,
+                    run_at TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('SCHEDULED', 'CANCELLED', 'COMPLETED')),
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS schedule_runs (
+                    id TEXT PRIMARY KEY,
+                    schedule_id TEXT NOT NULL REFERENCES schedules(id),
+                    idempotency_key TEXT NOT NULL UNIQUE,
+                    status TEXT NOT NULL CHECK(status IN ('PENDING', 'RUNNING', 'SUCCEEDED', 'FAILED', 'CANCELLED')),
+                    task_id TEXT REFERENCES tasks(id),
+                    created_at TEXT NOT NULL,
+                    completed_at TEXT,
+                    reason TEXT
+                );
+                CREATE INDEX IF NOT EXISTS idx_schedules_due ON schedules(status, run_at);
+                """)
+                self.connection.execute(
+                    "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                    (6, utc_now()),
+                )
 
     @contextmanager
     def transaction(self, immediate: bool = True) -> Iterator[sqlite3.Connection]:
@@ -626,6 +655,71 @@ class Database:
             ).fetchall()
         ]
         return result
+
+    def create_schedule(self, conversation_id: str, title: str, prompt: str, run_at: str) -> dict:
+        schedule_id = self.new_id()
+        now = utc_now()
+        with self.transaction():
+            self.connection.execute(
+                "INSERT INTO schedules(id, conversation_id, title, prompt, run_at, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'SCHEDULED', ?, ?)",
+                (schedule_id, conversation_id, title, prompt, run_at, now, now),
+            )
+        return self.get_schedule(schedule_id) or {}
+
+    def get_schedule(self, schedule_id: str) -> dict | None:
+        row = self.connection.execute("SELECT * FROM schedules WHERE id = ?", (schedule_id,)).fetchone()
+        return dict(row) if row else None
+
+    def list_schedules(self, conversation_id: str | None = None) -> list[dict]:
+        if conversation_id:
+            rows = self.connection.execute("SELECT * FROM schedules WHERE conversation_id = ? ORDER BY run_at, id", (conversation_id,)).fetchall()
+        else:
+            rows = self.connection.execute("SELECT * FROM schedules ORDER BY run_at, id").fetchall()
+        return [dict(row) for row in rows]
+
+    def cancel_schedule(self, schedule_id: str) -> bool:
+        with self.transaction():
+            cursor = self.connection.execute(
+                "UPDATE schedules SET status = 'CANCELLED', updated_at = ? WHERE id = ? AND status = 'SCHEDULED'",
+                (utc_now(), schedule_id),
+            )
+        return cursor.rowcount == 1
+
+    def due_schedules(self, now: str) -> list[dict]:
+        rows = self.connection.execute(
+            "SELECT * FROM schedules WHERE status = 'SCHEDULED' AND run_at <= ? ORDER BY run_at, id",
+            (now,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def create_schedule_run(self, schedule_id: str) -> dict:
+        run_id = self.new_id()
+        key = f"schedule:{schedule_id}"
+        now = utc_now()
+        with self.transaction():
+            existing = self.connection.execute("SELECT * FROM schedule_runs WHERE idempotency_key = ?", (key,)).fetchone()
+            if existing:
+                return dict(existing)
+            self.connection.execute(
+                "INSERT INTO schedule_runs(id, schedule_id, idempotency_key, status, created_at) VALUES (?, ?, ?, 'PENDING', ?)",
+                (run_id, schedule_id, key, now),
+            )
+        return self.get_schedule_run(run_id) or {}
+
+    def get_schedule_run(self, run_id: str) -> dict | None:
+        row = self.connection.execute("SELECT * FROM schedule_runs WHERE id = ?", (run_id,)).fetchone()
+        return dict(row) if row else None
+
+    def update_schedule_run(self, run_id: str, status: str, task_id: str | None = None, reason: str | None = None) -> None:
+        with self.transaction():
+            self.connection.execute(
+                "UPDATE schedule_runs SET status = ?, task_id = COALESCE(?, task_id), completed_at = CASE WHEN ? IN ('SUCCEEDED', 'FAILED', 'CANCELLED') THEN ? ELSE completed_at END, reason = ? WHERE id = ?",
+                (status, task_id, status, utc_now(), reason, run_id),
+            )
+
+    def complete_schedule(self, schedule_id: str) -> None:
+        with self.transaction():
+            self.connection.execute("UPDATE schedules SET status = 'COMPLETED', updated_at = ? WHERE id = ?", (utc_now(), schedule_id))
 
     def month_usage(self, bucket_month: str) -> int:
         row = self.connection.execute(

@@ -61,7 +61,7 @@ introduced or falsely enabled.
 | 07 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 07A explicit local memory management is implemented/tested; full Stage 07 is dependency-gated and automatic extraction, remote memory and complete retention/recovery acceptance remain open. |
 | 08 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 08A local text indexing/search is implemented/tested; PDF/DOCX extraction, grounded provider answers, citations and complete document-security acceptance remain open. |
 | 09 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 09A explicit public-URL research and structured source citations are implemented/tested; search, claim verification and conflict handling remain open. |
-| 10 | `NOT STARTED` | Dependency Stage 09 is not closed; persistent scheduler is not implemented. |
+| 10 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 10A durable one-shot local scheduling, cancellation and idempotent due runs are implemented/tested; worker recovery, recurring rules and full scheduler acceptance remain open. |
 | 11 | `NOT STARTED` | Dependency Stage 10 is not closed; voice services/hardware evidence is absent. |
 | 12 | `NOT STARTED` | Dependency Stage 11 is not closed; only existing bounded read-only tools remain enabled. |
 | 13 | `NOT STARTED` | Dependency Stage 12 is not closed; no integrated future-capability evaluation suite exists. |
@@ -143,6 +143,13 @@ Sources persist final URLs, content hashes, excerpts and fetch metadata;
 partial failures are explicit and citations are structured source references.
 No search provider, model-generated citation verification or automatic Gemini
 research answer is enabled.
+
+### Stage 10A safe implementation
+
+Implemented durable one-shot local schedules with UTC timestamp normalization,
+separate run records, cancellation, deterministic idempotency and authenticated
+API routes. The implementation intentionally excludes recurring scheduling,
+background workers, automatic retries and external side effects.
 
 ## 5. Tests and checks actually executed
 
@@ -264,6 +271,13 @@ The targeted research/document/memory/API suite passed 14 tests and the full
 deterministic suite passed 43 tests with zero failures and zero skips. Full
 Stage 09 remains open pending search adapters, claim verification and
 conflicting-source handling.
+
+## Stage 10A evidence
+
+The targeted scheduler/research/document/memory/API suite passed 17 tests and
+the full deterministic suite passed 46 tests with zero failures and zero skips.
+Full Stage 10 remains open pending worker restart recovery, recurring/DST policy
+and complete scheduler operational acceptance.
 
 ## 8. Windows startup, authentication and recovery
 

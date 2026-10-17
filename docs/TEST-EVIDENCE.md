@@ -127,6 +127,21 @@ hashes, structured citations, authenticated API behavior and no automatic
 provider answer. Tests use mocked fetch boundaries; they do not claim live
 internet research quality.
 
+## Stage 10A scheduler evidence
+
+```text
+PYTHONPATH="$PWD/src:$PWD/tests" uv run --locked python -m unittest tests.test_scheduler tests.test_research tests.test_documents tests.test_memory tests.test_http_api -v
+PASS — 17 tests
+
+make check
+PASS — compileall and 46 tests, 46 passed, 0 failed, 0 skipped
+```
+
+Verified behavior includes timezone-required schedule normalization, durable
+one-shot creation, due execution, separate run persistence, idempotent second
+execution, cancellation and existing message-policy/task lifecycle reuse. No
+background worker or external side effect is claimed.
+
 ### Authenticated application smoke
 
 The CLI was started with the ignored local configuration. Without printing the

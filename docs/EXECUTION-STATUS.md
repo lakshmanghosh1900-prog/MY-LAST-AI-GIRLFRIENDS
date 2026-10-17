@@ -95,7 +95,7 @@ for this filesystem condition. No database reset was performed.
 | 07 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 07A explicit local memory management is implemented and tested; Stage 06 is not closed, automatic extraction/remote memory/retrieval remain disabled, and full Stage 07 acceptance is open. |
 | 08 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 08A local text indexing/search is implemented and tested; PDF/DOCX extraction, grounded provider answers, citations and full Stage 08 acceptance remain open. |
 | 09 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 09A explicit public-URL multi-source research and citations are implemented/tested; search-provider integration, claim verification and conflict analysis remain open. |
-| 10 | NOT STARTED | Waiting for Stage 09. |
+| 10 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 10A durable one-shot schedules, cancellation and idempotent due-run execution are implemented/tested; recurring plans, worker lifecycle, retry policy and full scheduler acceptance remain open. |
 | 11 | NOT STARTED | Waiting for Stage 10; audio hardware/services not evidenced. |
 | 12 | NOT STARTED | Waiting for Stage 11; unrestricted automation remains disabled. |
 | 13 | NOT STARTED | Waiting for Stage 12. |
@@ -375,3 +375,23 @@ is treated as verified and no research answer is sent to Gemini automatically.
 Evidence: 3 research tests plus the full 43-test suite passed. Full Stage 09
 remains open pending search adapters, claim extraction/verification and
 conflicting-source handling.
+
+## Stage 10A — Durable one-shot local scheduler
+
+**Status:** `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN`
+
+Implemented as a deterministic local reminder slice:
+
+- Migration 6 adds durable schedules and separate schedule-run records.
+- One-shot UTC timestamps require an explicit timezone and are normalized.
+- Authenticated create/list/cancel APIs are available.
+- Due execution uses a deterministic idempotency key and cannot run a schedule
+  twice after completion.
+- Cancellation prevents execution; execution reuses the existing policy,
+  consent, budget and truthful task lifecycle.
+- No external side effects, recurring rules, background worker, automatic retry
+  or uncertain-outcome retry is enabled.
+
+Evidence: 3 scheduler tests plus the full 46-test suite passed. Full Stage 10
+remains open pending worker restart recovery, recurring/DST policy and complete
+planner/scheduler operational acceptance.

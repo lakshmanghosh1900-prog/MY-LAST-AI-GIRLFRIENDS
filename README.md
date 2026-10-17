@@ -178,7 +178,7 @@ conversation data.
 | Voice | NOT IMPLEMENTED |
 | Long-term memory | LIMITED: explicit local memory management implemented; automatic extraction and remote memory disabled |
 | Android companion | NOT IMPLEMENTED; REQUIRES PLATFORM REVIEW |
-| Scheduling | NOT IMPLEMENTED |
+| Scheduling | LIMITED: authenticated durable one-shot local reminders; recurring/background execution not implemented |
 | MCP and skills | NOT IMPLEMENTED; REQUIRES SECURITY REVIEW |
 | Background agents | NOT IMPLEMENTED |
 | External actions/approval | NOT IMPLEMENTED; requires separate security review |

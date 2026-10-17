@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from .budget import BudgetLedger
 from .config import Config
@@ -13,6 +14,7 @@ from .policy import DataClass, Decision, PolicyEngine
 from .providers import GeminiProvider, OfflineDemoProvider, Provider, ProviderError, estimate_tokens
 from .redaction import redact
 from .research import ResearchError, fetch_source
+from .scheduler import SchedulerError, validate_schedule
 from .storage import Database, migrate_legacy_database
 from .tools import SafeFileTool, SafeWebFetcher, ToolError
 
@@ -244,6 +246,49 @@ class MyLastAIGirlfriendsService:
             for index, source in enumerate(result["sources"])
         ]
         return result
+
+    def create_schedule(self, conversation_id: str, title: str, prompt: str, run_at: str) -> dict:
+        if not self.db.conversation_exists(conversation_id):
+            raise KeyError("conversation not found")
+        spec = validate_schedule(title, prompt, run_at, self.config.max_message_chars)
+        result = self.db.create_schedule(conversation_id, spec.title, spec.prompt, spec.run_at)
+        self.db.add_audit("schedule_created", {"schedule_id": result["id"], "conversation_id": conversation_id})
+        return result
+
+    def list_schedules(self, conversation_id: str | None = None) -> list[dict]:
+        if conversation_id is not None and not self.db.conversation_exists(conversation_id):
+            raise KeyError("conversation not found")
+        return self.db.list_schedules(conversation_id)
+
+    def cancel_schedule(self, schedule_id: str) -> bool:
+        if self.db.get_schedule(schedule_id) is None:
+            raise KeyError("schedule not found")
+        changed = self.db.cancel_schedule(schedule_id)
+        if changed:
+            self.db.add_audit("schedule_cancelled", {"schedule_id": schedule_id})
+        return changed
+
+    def run_due_schedules(self, now: str | None = None) -> list[dict]:
+        current = now or datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+        results: list[dict] = []
+        for schedule in self.db.due_schedules(current):
+            run = self.db.create_schedule_run(schedule["id"])
+            if run["status"] != "PENDING":
+                results.append(run)
+                continue
+            self.db.update_schedule_run(run["id"], "RUNNING")
+            try:
+                response = self.handle_message(schedule["conversation_id"], schedule["prompt"])
+                final_status = "SUCCEEDED" if response.status == "SUCCEEDED" else "FAILED"
+                self.db.update_schedule_run(run["id"], final_status, response.task_id, response.status)
+                if final_status == "SUCCEEDED":
+                    self.db.complete_schedule(schedule["id"])
+                run = self.db.get_schedule_run(run["id"]) or run
+            except Exception as exc:
+                self.db.update_schedule_run(run["id"], "FAILED", reason=type(exc).__name__)
+                run = self.db.get_schedule_run(run["id"]) or run
+            results.append(run)
+        return results
 
     def stop(self) -> str:
         changed = self.lifecycle.begin_stop()
