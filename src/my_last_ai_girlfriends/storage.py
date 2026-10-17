@@ -936,6 +936,9 @@ class Database:
         row = self.connection.execute("SELECT * FROM agent_runs WHERE id = ?", (run_id,)).fetchone()
         return dict(row) if row else {}
 
+    def list_agent_runs(self) -> list[dict]:
+        return [dict(row) for row in self.connection.execute("SELECT * FROM agent_runs ORDER BY created_at, id").fetchall()]
+
     def month_usage(self, bucket_month: str) -> int:
         row = self.connection.execute(
             "SELECT COALESCE(SUM(amount_usd_micros), 0) AS total FROM budget_events WHERE bucket_month = ?",

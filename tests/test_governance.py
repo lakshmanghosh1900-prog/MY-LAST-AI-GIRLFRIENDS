@@ -54,6 +54,8 @@ class GovernanceTests(unittest.TestCase):
             self.assertTrue(service.transition_approval(approval["id"], "APPROVED", "owner-session"))
             with self.assertRaisesRegex(GovernanceError, "disabled"):
                 service.transition_approval(approval["id"], "CONSUMED")
+            with self.assertRaisesRegex(GovernanceError, "future"):
+                service.create_approval("calendar.write", {"title": "expired"}, "2000-01-01T00:00:00Z")
             service.close()
 
     def test_bounded_agent_pipeline_does_not_expand_capabilities(self):
@@ -64,6 +66,7 @@ class GovernanceTests(unittest.TestCase):
             self.assertEqual(result["capability_set"], ["read-only-file", "public-fetch"])
             stored = service.db.connection.execute("SELECT id FROM agent_runs WHERE id = ?", (result["run_id"],)).fetchone()
             self.assertIsNotNone(stored)
+            self.assertEqual(service.list_agent_runs()[0]["id"], result["run_id"])
             service.close()
 
 

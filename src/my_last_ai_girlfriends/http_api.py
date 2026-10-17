@@ -149,6 +149,9 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
         if path == "/v1/approvals":
             self._send(HTTPStatus.OK, {"approvals": self.server.service.list_approvals()}, request_id)
             return
+        if path == "/v1/agents/runs":
+            self._send(HTTPStatus.OK, {"runs": self.server.service.list_agent_runs()}, request_id)
+            return
         if path == "/v1/admin/budget":
             self._send(HTTPStatus.OK, self.server.service.budget_status(), request_id)
             return

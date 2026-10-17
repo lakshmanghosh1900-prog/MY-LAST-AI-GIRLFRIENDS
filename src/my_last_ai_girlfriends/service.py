@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -375,6 +376,12 @@ class MyLastAIGirlfriendsService:
     def create_approval(self, action_type: str, parameters: dict, expires_at: str) -> dict:
         if action_type not in {"calendar.write", "email.send"}:
             raise GovernanceError("ACTION_TYPE_DISABLED", "Only narrowly scoped action types are registered; execution remains disabled.")
+        try:
+            expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise GovernanceError("APPROVAL_EXPIRY_INVALID", "Approval expiry must be a valid ISO timestamp.") from exc
+        if expiry <= datetime.now(timezone.utc):
+            raise GovernanceError("APPROVAL_EXPIRY_INVALID", "Approval expiry must be in the future.")
         normalized = canonical_json(parameters)
         nonce = new_nonce()
         item = self.db.create_approval(action_type, secret_hash(normalized), secret_hash(nonce), expires_at)
@@ -393,10 +400,19 @@ class MyLastAIGirlfriendsService:
     def list_approvals(self) -> list[dict]:
         return self.db.list_approvals()
 
+    def list_agent_runs(self) -> list[dict]:
+        runs = []
+        for row in self.db.list_agent_runs():
+            item = dict(row)
+            item["roles"] = json.loads(item.pop("roles_json"))
+            item["evidence"] = json.loads(item.pop("evidence_json"))
+            runs.append(item)
+        return runs
+
     def run_agents(self, prompt: str) -> dict:
         run_id = self.db.new_id()
         result = run_bounded_local_pipeline(run_id, prompt)
-        import hashlib, json
+        import hashlib
         self.db.create_agent_run(run_id, hashlib.sha256(prompt.encode("utf-8")).hexdigest(), result.status, result.depth, json.dumps(result.roles), json.dumps(result.evidence))
         return result.as_dict()
 

@@ -116,6 +116,15 @@ class HttpApiTests(unittest.TestCase):
                 response = connection.getresponse()
                 self.assertEqual(response.status, 200)
                 self.assertTrue(json.loads(response.read())["verified"])
+
+                connection.request("POST", "/v1/agents/run", body=json.dumps({"prompt": "local plan"}), headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                run_id = json.loads(response.read())["run_id"]
+                connection.request("GET", "/v1/agents/runs", headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(json.loads(response.read())["runs"][0]["id"], run_id)
             finally:
                 connection.close()
                 server.shutdown()
