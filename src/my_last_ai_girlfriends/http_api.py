@@ -411,7 +411,11 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                 if not isinstance(content, str):
                     self._error(HTTPStatus.BAD_REQUEST, "CONTENT_REQUIRED", "content must be a string.", request_id)
                     return
-                result = self.server.service.handle_message(parts[2], content)
+                memory_ids = payload.get("memory_ids")
+                if memory_ids is not None and (not isinstance(memory_ids, list) or not all(isinstance(item, str) for item in memory_ids)):
+                    self._error(HTTPStatus.BAD_REQUEST, "MEMORY_SELECTION_INVALID", "memory_ids must be a list of strings.", request_id)
+                    return
+                result = self.server.service.handle_message(parts[2], content, memory_ids)
                 status = HTTPStatus.OK if result.status == "SUCCEEDED" else HTTPStatus.UNPROCESSABLE_ENTITY
                 self._send(status, result.as_dict(), request_id)
                 return

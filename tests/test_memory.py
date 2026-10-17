@@ -87,6 +87,21 @@ class MemoryTests(unittest.TestCase):
                 service.recall_memories("what is my password")
             service.close()
 
+    def test_selected_memory_is_explicitly_sent_to_provider_only_for_same_conversation(self):
+        with tempfile.TemporaryDirectory() as raw:
+            provider = RecordingProvider()
+            service = MyLastAIGirlfriendsService(make_config(Path(raw), mode="real", allow_remote=True), provider=provider)
+            conversation = service.create_conversation()
+            other = service.create_conversation()
+            memory = service.create_memory("The user's favorite Bengali author is Tagore.", "conversation", conversation)
+            service.set_remote_consent(True)
+            response = service.handle_message(conversation, "What is my favorite author?", [memory["id"]])
+            self.assertEqual(response.status, "SUCCEEDED")
+            self.assertIn("Tagore", "\n".join(item["content"] for item in provider.calls[0]))
+            with self.assertRaisesRegex(MemoryError, "unavailable"):
+                service.handle_message(other, "What is my favorite author?", [memory["id"]])
+            service.close()
+
     def test_authenticated_http_memory_flow_and_isolation(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))
