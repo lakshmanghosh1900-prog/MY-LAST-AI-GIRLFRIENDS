@@ -77,6 +77,40 @@ class HttpApiTests(unittest.TestCase):
                 server.server_close()
                 service.close()
 
+    def test_manual_due_schedule_route_is_authenticated_and_runs_due_work(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            conversation = service.create_conversation()
+            schedule = service.create_schedule(conversation, "Run me", "manual scheduled hello", "2020-01-01T00:00:00Z")
+            server = MyLastAIGirlfriendsHTTPServer(("127.0.0.1", 0), service)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            port = server.server_address[1]
+            connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+            headers = {"Authorization": "Bearer " + "T" * 48, "Content-Type": "application/json"}
+            try:
+                connection.request("POST", "/v1/schedules/run-due", body="{}", headers={"Content-Type": "application/json"})
+                response = connection.getresponse()
+                self.assertEqual(response.status, 401)
+                response.read()
+
+                connection.request(
+                    "POST",
+                    "/v1/schedules/run-due",
+                    body=json.dumps({"now": "2025-01-01T00:00:00Z"}),
+                    headers=headers,
+                )
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                payload = json.loads(response.read())
+                self.assertEqual(payload["runs"][0]["schedule_id"], schedule["id"])
+                self.assertEqual(payload["runs"][0]["status"], "SUCCEEDED")
+            finally:
+                connection.close()
+                server.shutdown()
+                server.server_close()
+                service.close()
+
     def test_capability_readiness_and_governance_routes_are_authenticated(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))

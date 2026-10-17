@@ -14,10 +14,13 @@ class EvaluationTests(unittest.TestCase):
     def test_local_evaluation_is_versioned_and_truthful(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            before = {table: service.db.connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in ("conversations", "messages", "tasks", "memory_items")}
             report = run_local_evaluation(service)
             self.assertEqual(report.version, EVALUATION_VERSION)
             self.assertTrue(report.passed)
             self.assertEqual(len(report.cases), 3)
+            after = {table: service.db.connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in before}
+            self.assertEqual(after, before)
             service.close()
 
 

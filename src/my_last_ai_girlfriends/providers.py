@@ -117,6 +117,7 @@ class GeminiProvider(Provider):
 
     def complete(self, messages: Iterable[dict[str, str]], max_output_tokens: int, timeout_seconds: int) -> ProviderResult:
         items = list(messages)
+        self._connected = False
         body = json.dumps({"model": self.model, "messages": items, "max_tokens": max_output_tokens, "stream": False}).encode("utf-8")
         request = urllib.request.Request(
             self.endpoint,
@@ -159,9 +160,11 @@ class GeminiProvider(Provider):
             output_tokens = int(usage.get("completion_tokens", estimate_tokens(text)))
             if input_tokens < 0 or output_tokens < 0:
                 raise ValueError("negative token usage")
+            if len(text) > max_output_tokens * 8:
+                raise ProviderError("PROVIDER_OUTPUT_TOO_LARGE", "Gemini returned more text than the configured output bound.")
         except ProviderError:
             raise
         except (KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError) as exc:
             raise ProviderError("PROVIDER_SCHEMA", "Gemini response did not match the expected schema.", usage_unknown=True) from exc
         self._connected = True
-        return ProviderResult(text[: max_output_tokens * 8], self.name, str(payload.get("model", self.model)), input_tokens, output_tokens, str(payload.get("id")) if payload.get("id") else None, int((time.monotonic() - started) * 1000), True)
+        return ProviderResult(text, self.name, str(payload.get("model", self.model)), input_tokens, output_tokens, str(payload.get("id")) if payload.get("id") else None, int((time.monotonic() - started) * 1000), True)

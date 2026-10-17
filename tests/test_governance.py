@@ -32,6 +32,8 @@ class GovernanceTests(unittest.TestCase):
             self.assertTrue(service.transition_connector(connector["id"], "REVOKED"))
             with self.assertRaisesRegex(GovernanceError, "credential-free HTTPS"):
                 service.register_connector("unsafe", "http://example.com/mcp", "read:calendar")
+            with self.assertRaisesRegex(GovernanceError, "port 443"):
+                service.register_connector("bad-port", "https://example.com:bad/mcp", "read:calendar")
             service.close()
 
     def test_skills_require_review_and_unsafe_capabilities_are_rejected(self):

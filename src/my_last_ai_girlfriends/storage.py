@@ -676,6 +676,16 @@ class Database:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    def list_document_chunks_for_answer(self, limit: int = 200) -> list[dict]:
+        rows = self.connection.execute(
+            """SELECT d.id AS document_id, d.path, d.content_sha256, c.ordinal, c.content
+               FROM documents d JOIN document_chunks c ON c.document_id = d.id
+               WHERE d.deleted_at IS NULL
+               ORDER BY d.updated_at DESC, d.id DESC, c.ordinal ASC LIMIT ?""",
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
     def delete_document(self, document_id: str) -> bool:
         with self.transaction():
             cursor = self.connection.execute(
@@ -730,6 +740,15 @@ class Database:
         ]
         return result
 
+    def get_research_sources_with_content(self, run_id: str) -> list[dict]:
+        rows = self.connection.execute(
+            """SELECT id, ordinal, requested_url, final_url, content_type, byte_count,
+                      content_sha256, content, excerpt, fetched_at
+               FROM research_sources WHERE run_id = ? ORDER BY ordinal""",
+            (run_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
     def create_schedule(self, conversation_id: str, title: str, prompt: str, run_at: str) -> dict:
         schedule_id = self.new_id()
         now = utc_now()
@@ -779,6 +798,24 @@ class Database:
                 (run_id, schedule_id, key, now),
             )
         return self.get_schedule_run(run_id) or {}
+
+    def claim_schedule_run(self, run_id: str) -> dict | None:
+        """Atomically claim a pending schedule run for execution.
+
+        The conditional update is performed in the same immediate transaction
+        that reads the claimed row.  A caller that loses the race receives
+        ``None`` and must not execute the schedule.
+        """
+
+        with self.transaction():
+            cursor = self.connection.execute(
+                "UPDATE schedule_runs SET status = 'RUNNING' WHERE id = ? AND status = 'PENDING'",
+                (run_id,),
+            )
+            if cursor.rowcount != 1:
+                return None
+            row = self.connection.execute("SELECT * FROM schedule_runs WHERE id = ?", (run_id,)).fetchone()
+            return dict(row) if row else None
 
     def get_schedule_run(self, run_id: str) -> dict | None:
         row = self.connection.execute("SELECT * FROM schedule_runs WHERE id = ?", (run_id,)).fetchone()

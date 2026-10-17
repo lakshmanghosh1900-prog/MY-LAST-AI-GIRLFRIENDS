@@ -138,6 +138,18 @@ class ConfigurationAndProviderTests(unittest.TestCase):
                     provider.complete([{"role": "user", "content": "hello"}], 128, 7)
                 self.assertEqual(caught.exception.code, code)
 
+    def test_gemini_rejects_oversized_output_and_resets_connection_status(self):
+        provider = GeminiProvider("https://example.test/v1beta/openai/", "secret-key", "gemini-3.8-flash", 0.75, 3.75)
+        payload = {"choices": [{"message": {"content": "x" * 2049}}], "usage": {"prompt_tokens": 1, "completion_tokens": 999}}
+        with patch("urllib.request.urlopen", lambda *_args, **_kwargs: _Response(payload)):
+            with self.assertRaisesRegex(ProviderError, "output bound"):
+                provider.complete([{"role": "user", "content": "hello"}], 256, 7)
+        self.assertFalse(provider.status()["connected"])
+        with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("offline")):
+            with self.assertRaises(ProviderError):
+                provider.complete([{"role": "user", "content": "hello"}], 128, 7)
+        self.assertFalse(provider.status()["connected"])
+
     def test_gemini_classifies_auth_quota_and_network_failures_without_retry(self):
         provider = GeminiProvider("https://example.test/v1beta/openai/", "secret-key", "gemini-3.8-flash", 0.75, 3.75)
         for status, code, unknown in (

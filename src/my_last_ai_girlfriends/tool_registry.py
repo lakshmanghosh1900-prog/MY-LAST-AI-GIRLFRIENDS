@@ -12,6 +12,12 @@ class ToolRegistryError(ValueError):
         self.code = code
 
 
+class ToolExecutionError(RuntimeError):
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+
+
 @dataclass(frozen=True)
 class ToolSpec:
     name: str
@@ -49,3 +55,21 @@ def list_tools() -> list[dict]:
         {"name": spec.name, "capability": spec.capability, "read_only": spec.read_only}
         for spec in REGISTRY.values()
     ]
+
+
+def execute_registered_tool(name: str, arguments: dict, *, file_tool, web_tool) -> dict:
+    """Execute only the fixed read-only handlers declared by the registry."""
+
+    spec = get_tool(name)
+    spec.validate(arguments)
+    try:
+        if name == "file.read_text":
+            result = file_tool.read_text(arguments["path"])
+            return {"name": name, "text": result.text, "source_url": None, "data_class": "SENSITIVE"}
+        if name == "web.fetch":
+            result = web_tool.fetch(arguments["url"])
+            return {"name": name, "text": result.text, "source_url": result.url, "data_class": "PUBLIC"}
+    except Exception as exc:
+        code = getattr(exc, "code", "TOOL_EXECUTION_FAILED")
+        raise ToolExecutionError(code, str(exc)) from exc
+    raise ToolExecutionError("TOOL_NOT_ALLOWLISTED", "The requested tool is not registered.")

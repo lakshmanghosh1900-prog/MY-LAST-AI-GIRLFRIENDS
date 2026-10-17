@@ -2,8 +2,17 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import re
+
+
+MAX_RECALL_QUERY_TOKENS = 64
+MAX_RECALL_MEMORY_TOKENS = 256
+MAX_RECALL_RESULTS = 20
+MAX_RECALL_SCAN_CHARS = 20_000
+_LEXICAL_TOKEN = re.compile(r"[^\W_]+", re.UNICODE)
 
 
 class MemoryError(ValueError):
@@ -40,6 +49,50 @@ class MemoryItem:
             "expires_at": self.expires_at,
             "confirmed": self.confirmed,
         }
+
+
+def lexical_tokens(value: str, max_tokens: int = MAX_RECALL_MEMORY_TOKENS) -> tuple[str, ...]:
+    """Return a bounded, case-insensitive sequence of Unicode word tokens."""
+
+    if not isinstance(value, str) or max_tokens <= 0:
+        return ()
+    tokens: list[str] = []
+    for match in _LEXICAL_TOKEN.finditer(value[:MAX_RECALL_SCAN_CHARS].casefold()):
+        tokens.append(match.group(0))
+        if len(tokens) >= max_tokens:
+            break
+    return tuple(tokens)
+
+
+def rank_memories(
+    query: str,
+    memories: list[dict],
+    limit: int = MAX_RECALL_RESULTS,
+) -> list[dict]:
+    """Rank memory records by deterministic lexical term overlap.
+
+    Storage order is retained as the final tie-breaker, so equal scores remain
+    deterministic while preserving the existing recency/id ordering.
+    """
+
+    if limit <= 0:
+        return []
+    query_tokens = lexical_tokens(query, MAX_RECALL_QUERY_TOKENS)
+    if not query_tokens:
+        return []
+    query_counts = Counter(query_tokens)
+    query_terms = set(query_counts)
+    ranked: list[tuple[int, int, int, dict]] = []
+    for ordinal, item in enumerate(memories):
+        content_tokens = lexical_tokens(item.get("content", ""))
+        content_counts = Counter(content_tokens)
+        matched_terms = query_terms.intersection(content_counts)
+        if not matched_terms:
+            continue
+        term_frequency = sum(min(query_counts[token], content_counts[token]) for token in matched_terms)
+        ranked.append((-len(matched_terms), -term_frequency, ordinal, item))
+    ranked.sort(key=lambda entry: entry[:3])
+    return [entry[3] for entry in ranked[:limit]]
 
 
 def validate_scope(scope: str, conversation_id: str | None) -> tuple[str, str | None]:

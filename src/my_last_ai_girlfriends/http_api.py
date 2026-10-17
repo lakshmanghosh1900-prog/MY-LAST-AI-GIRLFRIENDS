@@ -222,6 +222,21 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                     return
                 self._send(HTTPStatus.OK, self.server.service.set_remote_consent(enabled), request_id)
                 return
+            if path == "/v1/memory/recall":
+                query = payload.get("query")
+                conversation_id = payload.get("conversation_id")
+                if not isinstance(query, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "MEMORY_QUERY_REQUIRED", "query must be a string.", request_id)
+                    return
+                if conversation_id is not None and not isinstance(conversation_id, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "CONVERSATION_ID_INVALID", "conversation_id must be a string.", request_id)
+                    return
+                self._send(
+                    HTTPStatus.OK,
+                    {"memories": self.server.service.recall_memories(query, conversation_id)},
+                    request_id,
+                )
+                return
             if path == "/v1/memory":
                 content = payload.get("content")
                 scope = payload.get("scope", "global")
@@ -246,12 +261,27 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                     return
                 self._send(HTTPStatus.CREATED, self.server.service.index_document(relative_path), request_id)
                 return
+            if path == "/v1/documents/answer":
+                query = payload.get("query")
+                if not isinstance(query, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "DOCUMENT_QUERY_REQUIRED", "query must be a string.", request_id)
+                    return
+                self._send(HTTPStatus.OK, self.server.service.answer_documents(query), request_id)
+                return
             if path == "/v1/research":
                 urls = payload.get("urls")
                 if not isinstance(urls, list) or not all(isinstance(url, str) for url in urls):
                     self._error(HTTPStatus.BAD_REQUEST, "RESEARCH_URLS_INVALID", "urls must be a list of strings.", request_id)
                     return
                 self._send(HTTPStatus.OK, self.server.service.run_research(urls), request_id)
+                return
+            parts = [part for part in path.split("/") if part]
+            if len(parts) == 4 and parts[:2] == ["v1", "research"] and parts[3] == "evidence":
+                claims = payload.get("claims")
+                if not isinstance(claims, list) or not all(isinstance(claim, str) for claim in claims):
+                    self._error(HTTPStatus.BAD_REQUEST, "RESEARCH_CLAIMS_INVALID", "claims must be a list of strings.", request_id)
+                    return
+                self._send(HTTPStatus.OK, self.server.service.analyze_research_evidence(parts[2], claims), request_id)
                 return
             if path == "/v1/schedules":
                 conversation_id = payload.get("conversation_id")
@@ -262,6 +292,13 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                     self._error(HTTPStatus.BAD_REQUEST, "SCHEDULE_FIELDS_INVALID", "conversation_id, title, prompt and run_at are required strings.", request_id)
                     return
                 self._send(HTTPStatus.CREATED, self.server.service.create_schedule(conversation_id, title, prompt, run_at), request_id)
+                return
+            if path == "/v1/schedules/run-due":
+                now = payload.get("now")
+                if now is not None and not isinstance(now, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "SCHEDULE_NOW_INVALID", "now must be an ISO timestamp string.", request_id)
+                    return
+                self._send(HTTPStatus.OK, {"runs": self.server.service.run_due_schedules(now)}, request_id)
                 return
             if path == "/v1/devices":
                 name, identity = payload.get("name"), payload.get("identity")

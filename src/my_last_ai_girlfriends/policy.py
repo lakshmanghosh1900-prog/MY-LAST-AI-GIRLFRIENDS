@@ -93,7 +93,11 @@ class PolicyEngine:
             if not isinstance(url, str):
                 return PolicyDecision(Decision.DENY, "URL_REQUIRED", "An HTTPS URL is required.", DataClass.PUBLIC)
             parts = urlsplit(url)
-            if parts.scheme != "https" or parts.username or parts.password or parts.port not in {None, 443}:
+            try:
+                port = parts.port
+            except ValueError:
+                return PolicyDecision(Decision.DENY, "UNSAFE_URL", "Only credential-free HTTPS URLs on port 443 are allowed.", DataClass.PUBLIC)
+            if parts.scheme != "https" or parts.username or parts.password or port not in {None, 443}:
                 return PolicyDecision(Decision.DENY, "UNSAFE_URL", "Only credential-free HTTPS URLs on port 443 are allowed.", DataClass.PUBLIC)
             return PolicyDecision(Decision.ALLOW, "PUBLIC_FETCH_ALLOWED", "Constrained public fetch is allowlisted.", DataClass.PUBLIC)
         return PolicyDecision(Decision.DENY, "TOOL_NOT_ALLOWLISTED", "The requested tool is not registered.", DataClass.PERSONAL)

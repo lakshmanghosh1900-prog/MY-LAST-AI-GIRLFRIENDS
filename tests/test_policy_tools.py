@@ -66,6 +66,8 @@ class PolicyAndToolTests(unittest.TestCase):
             with self.subTest(url=url):
                 with self.assertRaises(ToolError):
                     fetcher._parse_url(url)
+        with self.assertRaises(ToolError):
+            fetcher._parse_url("https://example.com:bad")
 
     def test_fetcher_rejects_private_resolved_address(self):
         fetcher = SafeWebFetcher(1024, 1)

@@ -13,7 +13,7 @@ from my_last_ai_girlfriends.memory import MemoryError
 from my_last_ai_girlfriends.service import MyLastAIGirlfriendsService
 from my_last_ai_girlfriends.storage import Database
 
-from test_budget_service import make_config
+from test_budget_service import RecordingProvider, make_config
 
 
 class MemoryTests(unittest.TestCase):
@@ -57,6 +57,36 @@ class MemoryTests(unittest.TestCase):
             self.assertEqual(db.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], 8)
             db.close()
 
+    def test_recall_is_lexical_scoped_bounded_and_provider_free(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            provider = RecordingProvider()
+            service = MyLastAIGirlfriendsService(make_config(root, mode="real", allow_remote=True), provider=provider)
+            first = service.create_conversation()
+            second = service.create_conversation()
+            global_item = service.create_memory("Bengali is a favorite language.")
+            local_item = service.create_memory("Bengali practice is on Tuesday.", "conversation", first)
+            other_item = service.create_memory("Bengali practice belongs to another conversation.", "conversation", second)
+            service.db.create_memory("global", None, "Bengali practice expired", "PERSONAL", "2000-01-01T00:00:00Z")
+
+            recalled = service.recall_memories("Bengali practice", first)
+            self.assertEqual([item["id"] for item in recalled], [local_item["id"], global_item["id"]])
+            self.assertEqual([item["id"] for item in recalled], [item["id"] for item in service.recall_memories("BENGALI PRACTICE", first)])
+            self.assertEqual([item["id"] for item in service.recall_memories("Bengali practice", second)], [other_item["id"], global_item["id"]])
+            self.assertEqual(provider.calls, [])
+            service.close()
+
+    def test_recall_rejects_empty_oversized_and_prohibited_queries(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            with self.assertRaisesRegex(MemoryError, "required"):
+                service.recall_memories("   ")
+            with self.assertRaisesRegex(MemoryError, "too large"):
+                service.recall_memories("x" * (service.config.max_memory_chars + 1))
+            with self.assertRaisesRegex(MemoryError, "Prohibited"):
+                service.recall_memories("what is my password")
+            service.close()
+
     def test_authenticated_http_memory_flow_and_isolation(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))
@@ -76,6 +106,24 @@ class MemoryTests(unittest.TestCase):
                 response = connection.getresponse()
                 self.assertEqual(response.status, 201)
                 item = json.loads(response.read())
+                connection.request("POST", "/v1/memory/recall", body=json.dumps({"query": "Bengali books", "conversation_id": conversation}), headers={"Content-Type": "application/json"})
+                self.assertEqual(connection.getresponse().status, 401)
+                connection.request("POST", "/v1/memory/recall", body=json.dumps({"query": "Bengali books", "conversation_id": conversation}), headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(json.loads(response.read())["memories"][0]["id"], item["id"])
+                connection.request("POST", "/v1/memory/recall", body=json.dumps({"query": "   "}), headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 422)
+                self.assertEqual(json.loads(response.read())["error"]["code"], "MEMORY_QUERY_REQUIRED")
+                connection.request("POST", "/v1/memory/recall", body=json.dumps({"query": "what is my password"}), headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 422)
+                self.assertEqual(json.loads(response.read())["error"]["code"], "MEMORY_QUERY_PROHIBITED")
+                connection.request("POST", "/v1/memory/recall", body=json.dumps({"query": "x" * 2001}), headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 422)
+                self.assertEqual(json.loads(response.read())["error"]["code"], "MEMORY_QUERY_TOO_LARGE")
                 connection.request("GET", f"/v1/memory?conversation_id={conversation}", headers=headers)
                 response = connection.getresponse()
                 self.assertEqual(response.status, 200)

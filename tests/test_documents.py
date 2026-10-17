@@ -37,6 +37,23 @@ class DocumentTests(unittest.TestCase):
             self.assertEqual(service.search_documents("research"), [])
             service.close()
 
+    def test_document_answer_is_local_bounded_and_cited(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "workspace").mkdir()
+            (root / "workspace" / "notes.txt").write_text("Bengali books are useful for local research.", encoding="utf-8")
+            service = MyLastAIGirlfriendsService(make_config(root))
+            document = service.index_document("notes.txt")
+            answer = service.answer_documents("Bengali research")
+            self.assertFalse(answer["ai_generated"])
+            self.assertIn("Local evidence", answer["answer"])
+            self.assertEqual(answer["citations"][0]["path"], "notes.txt")
+            self.assertEqual(answer["citations"][0]["content_sha256"], document["content_sha256"])
+            self.assertEqual(service.answer_documents("unknown phrase")["citations"], [])
+            service.delete_document(document["id"])
+            self.assertEqual(service.answer_documents("Bengali research")["citations"], [])
+            service.close()
+
     def test_file_boundary_and_empty_query_are_enforced(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -68,6 +85,10 @@ class DocumentTests(unittest.TestCase):
                 response = connection.getresponse()
                 self.assertEqual(response.status, 200)
                 self.assertEqual(json.loads(response.read())["results"][0]["id"], document["id"])
+                connection.request("POST", "/v1/documents/answer", body=json.dumps({"query": "safe guide"}), headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertFalse(json.loads(response.read())["ai_generated"])
             finally:
                 connection.close()
                 server.shutdown()

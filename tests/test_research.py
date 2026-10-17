@@ -37,6 +37,19 @@ class ResearchTests(unittest.TestCase):
             self.assertEqual(service.research_run(result["id"])["status"], "PARTIAL")
             service.close()
 
+    def test_research_evidence_is_heuristic_and_cites_sources(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            service.web_tool.fetch = Mock(return_value=FetchResult("https://example.com/a", "text/plain", "Bengali support is available.", 32))
+            run = service.run_research(["https://example.com/a"])
+            evidence = service.analyze_research_evidence(run["id"], ["Bengali support is available"])
+            self.assertEqual(evidence["results"][0]["classification"], "SUPPORTED_EVIDENCE")
+            self.assertTrue(evidence["results"][0]["citations"][0]["content_sha256"])
+            self.assertTrue(evidence["heuristic"])
+            insufficient = service.analyze_research_evidence(run["id"], ["Android hardware is available"])
+            self.assertEqual(insufficient["results"][0]["classification"], "INSUFFICIENT_EVIDENCE")
+            service.close()
+
     def test_authenticated_research_api_rejects_invalid_shape_and_returns_sources(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))
@@ -54,6 +67,10 @@ class ResearchTests(unittest.TestCase):
                 self.assertEqual(response.status, 200)
                 payload = json.loads(response.read())
                 self.assertEqual(payload["citations"][0]["label"], "S1")
+                connection.request("POST", f"/v1/research/{payload['id']}/evidence", body=json.dumps({"claims": ["public evidence"]}), headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(json.loads(response.read())["results"][0]["classification"], "SUPPORTED_EVIDENCE")
             finally:
                 connection.close()
                 server.shutdown()

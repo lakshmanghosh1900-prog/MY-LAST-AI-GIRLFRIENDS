@@ -44,7 +44,11 @@ def validate_connector_endpoint(endpoint: str) -> str:
     parsed = urlsplit(endpoint.strip()) if isinstance(endpoint, str) else None
     if not parsed or parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password or parsed.fragment:
         raise GovernanceError("CONNECTOR_ENDPOINT_INVALID", "Connector endpoints must be credential-free HTTPS URLs.")
-    if parsed.port not in {None, 443}:
+    try:
+        port = parsed.port
+    except ValueError as exc:
+        raise GovernanceError("CONNECTOR_PORT_INVALID", "Connector endpoints must use HTTPS port 443.") from exc
+    if port not in {None, 443}:
         raise GovernanceError("CONNECTOR_PORT_INVALID", "Connector endpoints must use HTTPS port 443.")
     return endpoint.strip()
 
