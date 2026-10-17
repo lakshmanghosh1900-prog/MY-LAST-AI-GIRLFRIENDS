@@ -6,6 +6,8 @@
 
 **HEAD at baseline:** `2dc3162b08acea6914a29d89181c45f37f4ee883`
 
+**Implementation tip after local execution:** `460b52f8b10f6d7a68c6dcff85e4522b795dfb89`
+
 **Remote `origin/main` at baseline:** `c98a091330a05ef73823d9744bfd58d5c973059f`
 **Remote refresh:** `git fetch origin --prune` completed; remote `main` still
 points to `c98a091330a05ef73823d9744bfd58d5c973059f`.
@@ -13,6 +15,9 @@ points to `c98a091330a05ef73823d9744bfd58d5c973059f`.
 origin feat/mlag-real-ai-premium-ui` could not read GitHub credentials:
 `fatal: could not read Username for 'https://github.com': No such device or
 address`.
+
+**Current report:** `docs/FINAL-EXECUTION-REPORT.md` records the exact
+furthest verified result and the remaining external gates.
 
 ## Task 00 — Repository recovery and baseline
 
@@ -32,8 +37,9 @@ state prevented the first launch.
 
 ### Reconciled state
 
-- The branded implementation is committed on the current feature branch at
-  `2dc3162`; it is one commit ahead of `origin/main` and is not merged.
+- The branded implementation started at `2dc3162`; the verified local
+  implementation tip is `460b52f`; it is five commits ahead of `origin/main`
+  and is not merged.
 - `main` and `origin/main` still contain the older `jarvis_omega` baseline.
 - The only visible untracked work item is the pre-existing empty file `main`;
   it was preserved and is not part of the implementation.
@@ -69,8 +75,8 @@ for this filesystem condition. No database reset was performed.
 
 | Stage | Status | Evidence / blocker |
 |---|---|---|
-| 01 | CLOSED — VERIFIED | Configuration conflict and HTTPS validation tests pass; mounted SQLite WAL/SHM fallback starts the real CLI; authenticated health and conversation smoke pass; 31-test regression suite is green. |
-| 02 | CLOSED — VERIFIED | Canonical package/CLI metadata, active UI/docs and MLAG configuration are consistent; idempotent legacy migration preserves source and relationships; 31-test regression suite and real CLI smoke pass. |
+| 01 | CLOSED — VERIFIED | Configuration conflict and HTTPS validation tests pass; mounted SQLite WAL/SHM fallback starts the real CLI; authenticated health and conversation smoke pass; 32-test regression suite is green. |
+| 02 | CLOSED — VERIFIED | Canonical package/CLI metadata, active UI/docs and MLAG configuration are consistent; idempotent legacy migration preserves source and relationships; 32-test regression suite and real CLI smoke pass. |
 | 03 | CLOSED — VERIFIED | Gemini adapter contract/error tests and three repeated application-level live requests pass with configured private credentials; no fake fallback observed. |
 | 04 | CLOSED — VERIFIED | Same-conversation context, ordering, current-message de-duplication and cross-conversation isolation pass in deterministic service tests. |
 | 05 | CLOSED — VERIFIED | Branded responsive UI, history/session controls, keyboard behavior, safe text rendering, bounded file tool and readable HTML extraction are implemented and covered by contract/security tests. |
@@ -123,7 +129,7 @@ for this filesystem condition. No database reset was performed.
   conflict tests pass without exposing values.
 - Database recovery: PASS — recovered database integrity is `ok` with row
   counts retained; the fallback runtime launched successfully.
-- Regression suite: PASS — `make check`, 31 tests passed, 0 failed, 0 skipped.
+- Regression suite: PASS — `make check`, 32 tests passed, 0 failed, 0 skipped.
 
 ### Stage 01 commit/push
 
@@ -139,7 +145,7 @@ synchronization is claimed.
 | `uv run --locked python --version` | PASS | CPython 3.12.11 |
 | `uv lock --check` | PASS | Lockfile resolved and checked |
 | `uv sync --locked` | PASS | Editable package installed |
-| `make check` | PASS | Compileall and 31 tests passed |
+| `make check` | PASS | Compileall and 32 tests passed |
 | `uv run --locked my-last-ai-girlfriends doctor` | PASS | Valid token status, real Gemini mode, key presence reported without values |
 | CLI launch using current mounted database | FAIL — repaired data state | Initial launch stopped on SQLite disk I/O from stale mounted WAL/SHM sidecars |
 | Direct live Gemini call | NOT RUN | Must remain separate from deterministic offline tests and requires owner configuration/network |
@@ -179,7 +185,7 @@ the documentation until its staged diff and checks are reviewed.
   returned `200`, state `READY`, and `database=ready`.
 - Rename audit: PASS — no active legacy package, CLI or UI branding remains;
   retained legacy names are documented compatibility/history only.
-- Regression suite: PASS — `make check`, 31 tests passed, 0 failed, 0 skipped.
+- Regression suite: PASS — `make check`, 32 tests passed, 0 failed, 0 skipped.
 
 ### Stage 02 publication
 
@@ -211,7 +217,7 @@ GitHub authentication failure; no push or merge is claimed.
 ### Stage 03 tests
 
 - Provider targeted suite: PASS — 11 tests.
-- Full regression suite after Stage 03: PASS — 31 tests, 0 failures, 0 skips.
+- Full regression suite after Stage 03: PASS — 32 tests, 0 failures, 0 skips.
 
 ## Stage 04 — Conversation context and isolation
 
@@ -255,7 +261,7 @@ failed remote requests are not turned into fake assistant successes.
 - Configuration/startup, authentication/host/origin, policy classification,
   consent, conversation isolation/context, file/web boundaries, provider
   adapter failures, concurrent budget reservation, settlement idempotency,
-  migrations, offline labeling, API and UI contracts: PASS — 31 deterministic
+  migrations, offline labeling, API and UI contracts: PASS — 32 deterministic
   tests and compileall.
 - Real Gemini application smoke: PASS — recorded under Stage 03.
 - Secret review and staged diff review: PASS for local commits; ignored local

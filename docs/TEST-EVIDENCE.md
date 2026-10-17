@@ -71,7 +71,7 @@ uv run --locked python -m compileall -q src tests
 PASS
 
 make check
-PASS — compileall and 31 tests, 31 passed, 0 failed, 0 skipped
+PASS — compileall and 32 tests, 32 passed, 0 failed, 0 skipped
 ```
 
 ### Authenticated application smoke
@@ -122,7 +122,7 @@ uv run --locked python -m compileall -q src tests
 PASS
 
 make check
-PASS — compileall and 31 tests, 31 passed, 0 failed, 0 skipped
+PASS — compileall and 32 tests, 32 passed, 0 failed, 0 skipped
 ```
 
 The current CLI was started against the recovered canonical database and an
@@ -158,7 +158,7 @@ PYTHONPATH="$PWD/src" uv run --locked python -m unittest tests.test_configuratio
 PASS — 12 tests
 
 make check
-PASS — compileall and 31 tests, 31 passed, 0 failed, 0 skipped
+PASS — compileall and 32 tests, 32 passed, 0 failed, 0 skipped
 ```
 
 ## Stage 04 deterministic context evidence
@@ -166,7 +166,7 @@ PASS — compileall and 31 tests, 31 passed, 0 failed, 0 skipped
 The service suite verifies bounded chronological context, exact-once current
 message insertion, same-conversation history, cross-conversation isolation,
 prohibited-input handling, and no offline fallback after real-provider failure.
-Those checks are included in the 31-test `make check` result above.
+Those checks are included in the 32-test `make check` result above.
 
 ## Evidence rules
 
@@ -188,7 +188,7 @@ access, HTTPS public-destination checks and readable HTML extraction.
 
 ```text
 make check
-PASS — compileall and 31 tests, 31 passed, 0 failed, 0 skipped
+PASS — compileall and 32 tests, 32 passed, 0 failed, 0 skipped
 
 docker --version
 BLOCKED_EXTERNAL — /bin/bash: docker: command not found
