@@ -17,7 +17,7 @@ failed push is historical evidence.
 | Workspace | `C:\Users\User\Desktop\MY LAST AI GIRLFRIENDS` |
 | Working branch | `feat/mlag-real-ai-premium-ui` |
 | Last published feature tip at resume | `3acccc3ef86cf7f4c44410da76c9ea8d3985982a` |
-| Current local status | Matches the published feature tip at reconciliation |
+| Current local status | Evidence commit `2200953` is one commit ahead; push blocked by unavailable Git credentials |
 | Local `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | `origin/main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | Remote feature branch | `feat/mlag-real-ai-premium-ui` at `3acccc3ef86cf7f4c44410da76c9ea8d3985982a` |
@@ -57,7 +57,7 @@ introduced or falsely enabled.
 | 03 | `CLOSED — VERIFIED` | Gemini adapter tests plus three repeated live application requests succeeded with `ai_generated=true`; no fallback. |
 | 04 | `CLOSED — VERIFIED` | Bounded same-conversation context, isolation, role ordering, exact-once current prompt and privacy filtering pass. |
 | 05 | `CLOSED — VERIFIED` | Responsive branded UI, session/history controls, safe DOM text rendering, file boundaries and readable HTML extraction pass. |
-| 06 | `BLOCKED_EXTERNAL` | Owner-supplied container smoke assertions pass, but Docker build and cleanup are not proven/verified; no release/main integration is claimed. |
+| 06 | `BLOCKED_EXTERNAL` | Owner-supplied container smoke assertions pass, but Docker build and cleanup are not proven/verified; the evidence commit is local-only and no release/main integration is claimed. |
 | 07 | `NOT STARTED` | Dependency Stage 06 is not closed; long-term memory is not implemented. |
 | 08 | `NOT STARTED` | Dependency Stage 07 is not closed; broad document intelligence is not implemented. |
 | 09 | `NOT STARTED` | Dependency Stage 08 is not closed; research/citation engine is not implemented. |

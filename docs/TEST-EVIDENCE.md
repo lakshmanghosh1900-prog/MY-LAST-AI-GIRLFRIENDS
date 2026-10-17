@@ -257,6 +257,17 @@ Docker build command/output       NOT_PROVEN
 Container cleanup                 NOT_VERIFIED — finally was separate and no result was supplied
 ```
 
+The evidence documentation was committed locally as `2200953`, but the
+publication retry failed:
+
+```text
+git push origin feat/mlag-real-ai-premium-ui
+BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No such device or address
+```
+
+Remote feature SHA remains `3acccc3`; local evidence commit `2200953` is not
+yet remote.
+
 The container assertions are not independently reproduced here because this
 execution container has no Docker CLI or native Windows bridge. Stage 06
 remains blocked on build provenance, cleanup evidence and normal PR/main
