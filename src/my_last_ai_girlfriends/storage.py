@@ -389,6 +389,23 @@ class Database:
                     "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
                     (7, utc_now()),
                 )
+            if 8 not in applied:
+                self.connection.executescript("""
+                CREATE TABLE IF NOT EXISTS device_pairing_challenges (
+                    id TEXT PRIMARY KEY,
+                    device_id TEXT NOT NULL REFERENCES devices(id),
+                    challenge_hash TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    consumed_at TEXT
+                );
+                CREATE INDEX IF NOT EXISTS idx_pairing_challenges_device
+                    ON device_pairing_challenges(device_id, expires_at, consumed_at);
+                """)
+                self.connection.execute(
+                    "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                    (8, utc_now()),
+                )
 
     @contextmanager
     def transaction(self, immediate: bool = True) -> Iterator[sqlite3.Connection]:
@@ -808,6 +825,53 @@ class Database:
             return False
         with self.transaction():
             self.connection.execute("UPDATE devices SET last_seen_at = ?, updated_at = ? WHERE id = ?", (utc_now(), utc_now(), device_id))
+        return True
+
+    def create_pairing_challenge(self, device_id: str, challenge_hash: str, expires_at: str) -> dict:
+        challenge_id = self.new_id()
+        now = utc_now()
+        with self.transaction():
+            self.connection.execute(
+                "INSERT INTO device_pairing_challenges(id, device_id, challenge_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?)",
+                (challenge_id, device_id, challenge_hash, expires_at, now),
+            )
+        row = self.connection.execute(
+            "SELECT id, device_id, expires_at, created_at, consumed_at FROM device_pairing_challenges WHERE id = ?",
+            (challenge_id,),
+        ).fetchone()
+        return dict(row) if row else {}
+
+    def verify_and_consume_pairing_challenge(
+        self, device_id: str, challenge_id: str, challenge_hash: str, identity_hash: str
+    ) -> bool:
+        now = utc_now()
+        with self.transaction():
+            row = self.connection.execute(
+                """
+                SELECT d.status, d.identity_hash, c.challenge_hash, c.expires_at, c.consumed_at
+                FROM devices AS d
+                JOIN device_pairing_challenges AS c ON c.device_id = d.id
+                WHERE d.id = ? AND c.id = ?
+                """,
+                (device_id, challenge_id),
+            ).fetchone()
+            if (
+                not row
+                or row["status"] != "ENROLLED"
+                or row["identity_hash"] != identity_hash
+                or row["challenge_hash"] != challenge_hash
+                or row["consumed_at"] is not None
+                or row["expires_at"] <= now
+            ):
+                return False
+            self.connection.execute(
+                "UPDATE device_pairing_challenges SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL",
+                (now, challenge_id),
+            )
+            self.connection.execute(
+                "UPDATE devices SET last_seen_at = ?, updated_at = ? WHERE id = ?",
+                (now, now, device_id),
+            )
         return True
 
     def add_connector(self, name: str, endpoint: str, scope: str) -> dict:

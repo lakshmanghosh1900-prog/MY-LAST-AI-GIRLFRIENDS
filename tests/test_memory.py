@@ -54,7 +54,7 @@ class MemoryTests(unittest.TestCase):
             db.create_memory("global", None, "expired", "PERSONAL", "2000-01-01T00:00:00Z")
             self.assertEqual(db.list_memories(), [])
             self.assertEqual(db.connection.execute("SELECT COUNT(*) FROM memory_items").fetchone()[0], 1)
-            self.assertEqual(db.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], 7)
+            self.assertEqual(db.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], 8)
             db.close()
 
     def test_authenticated_http_memory_flow_and_isolation(self):

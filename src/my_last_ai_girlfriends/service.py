@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from .budget import BudgetLedger
 from .config import Config
@@ -310,6 +310,27 @@ class MyLastAIGirlfriendsService:
 
     def verify_device(self, device_id: str, identity: str) -> bool:
         return self.db.verify_device_identity(device_id, secret_hash(identity))
+
+    def create_device_pairing_challenge(self, device_id: str, ttl_seconds: int = 300) -> dict:
+        device = self.db.get_device(device_id)
+        if device is None:
+            raise KeyError("device not found")
+        if device["status"] != "ENROLLED":
+            raise GovernanceError("DEVICE_NOT_ACTIVE", "Only enrolled devices can receive a pairing challenge.")
+        if not isinstance(ttl_seconds, int) or ttl_seconds < 30 or ttl_seconds > 900:
+            raise GovernanceError("PAIRING_TTL_INVALID", "Pairing challenge lifetime must be between 30 and 900 seconds.")
+        challenge = new_nonce()
+        expires_at = (datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)).isoformat(timespec="microseconds").replace("+00:00", "Z")
+        item = self.db.create_pairing_challenge(device_id, secret_hash(challenge), expires_at)
+        item["challenge"] = challenge
+        return item
+
+    def verify_device_pairing_challenge(self, device_id: str, challenge_id: str, challenge: str, identity: str) -> bool:
+        if not isinstance(challenge_id, str) or not challenge_id:
+            raise GovernanceError("PAIRING_CHALLENGE_ID_REQUIRED", "A pairing challenge id is required.")
+        return self.db.verify_and_consume_pairing_challenge(
+            device_id, challenge_id, secret_hash(challenge), secret_hash(identity)
+        )
 
     def register_connector(self, name: str, endpoint: str, scope: str) -> dict:
         if not isinstance(name, str) or not name.strip() or len(name) > 100:

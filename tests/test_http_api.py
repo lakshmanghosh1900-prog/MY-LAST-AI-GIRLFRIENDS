@@ -103,7 +103,16 @@ class HttpApiTests(unittest.TestCase):
                 response = connection.getresponse()
                 self.assertEqual(response.status, 201)
                 device_id = json.loads(response.read())["id"]
-                connection.request("POST", f"/v1/devices/{device_id}/verify", body=json.dumps({"identity": "proof"}), headers=headers)
+                connection.request("POST", f"/v1/devices/{device_id}/pairing-challenge", body="{}", headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 201)
+                challenge = json.loads(response.read())
+                connection.request(
+                    "POST",
+                    f"/v1/devices/{device_id}/verify-pairing",
+                    body=json.dumps({"challenge_id": challenge["id"], "challenge": challenge["challenge"], "identity": "proof"}),
+                    headers=headers,
+                )
                 response = connection.getresponse()
                 self.assertEqual(response.status, 200)
                 self.assertTrue(json.loads(response.read())["verified"])

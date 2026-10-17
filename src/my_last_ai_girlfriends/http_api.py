@@ -268,6 +268,22 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.CREATED, self.server.service.enroll_device(name, identity), request_id)
                 return
             parts = [part for part in path.split("/") if part]
+            if len(parts) == 4 and parts[:2] == ["v1", "devices"] and parts[3] == "pairing-challenge":
+                self._send(HTTPStatus.CREATED, self.server.service.create_device_pairing_challenge(parts[2]), request_id)
+                return
+            if len(parts) == 4 and parts[:2] == ["v1", "devices"] and parts[3] == "verify-pairing":
+                challenge_id = payload.get("challenge_id")
+                challenge = payload.get("challenge")
+                identity = payload.get("identity")
+                if not all(isinstance(value, str) for value in (challenge_id, challenge, identity)):
+                    self._error(HTTPStatus.BAD_REQUEST, "PAIRING_FIELDS_INVALID", "challenge_id, challenge and identity are required strings.", request_id)
+                    return
+                self._send(
+                    HTTPStatus.OK,
+                    {"verified": self.server.service.verify_device_pairing_challenge(parts[2], challenge_id, challenge, identity)},
+                    request_id,
+                )
+                return
             if len(parts) == 4 and parts[:2] == ["v1", "devices"] and parts[3] == "verify":
                 identity = payload.get("identity")
                 if not isinstance(identity, str):

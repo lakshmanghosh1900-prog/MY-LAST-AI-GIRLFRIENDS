@@ -19,6 +19,11 @@ class GovernanceTests(unittest.TestCase):
             self.assertEqual(service.list_devices()[0]["status"], "ENROLLED")
             self.assertTrue(service.verify_device(device["id"], "device-proof"))
             self.assertFalse(service.verify_device(device["id"], "wrong-proof"))
+            challenge = service.create_device_pairing_challenge(device["id"])
+            self.assertTrue(service.verify_device_pairing_challenge(device["id"], challenge["id"], challenge["challenge"], "device-proof"))
+            self.assertFalse(service.verify_device_pairing_challenge(device["id"], challenge["id"], challenge["challenge"], "device-proof"))
+            with self.assertRaisesRegex(GovernanceError, "between 30 and 900"):
+                service.create_device_pairing_challenge(device["id"], ttl_seconds=10)
             self.assertTrue(service.revoke_device(device["id"]))
             self.assertFalse(service.verify_device(device["id"], "device-proof"))
             connector = service.register_connector("approved-later", "https://example.com/mcp", "read:calendar")
