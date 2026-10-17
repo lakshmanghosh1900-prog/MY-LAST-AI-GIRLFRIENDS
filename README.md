@@ -179,7 +179,7 @@ conversation data.
 | Long-term memory | LIMITED: explicit local memory management implemented; automatic extraction and remote memory disabled |
 | Android companion | BLOCKED EXTERNAL: toolchain/device verification unavailable |
 | Scheduling | LIMITED: authenticated durable one-shot local reminders; recurring/background execution not implemented |
-| Device pairing | LIMITED: local hashed enrollment/verification/revocation; encrypted transport disabled |
+| Device pairing | LIMITED: local hashed enrollment, one-time challenge verification and revocation; encrypted transport disabled |
 | MCP connectors | LIMITED: credential-free HTTPS registry/lifecycle; connector execution disabled |
 | Skills | LIMITED: provenance and review lifecycle; shell/code execution disabled |
 | Background agents | LIMITED: bounded local fixed-role orchestration; remote delegation disabled |

@@ -170,8 +170,9 @@ claim live-provider quality, voice, device or external-action evaluation.
 
 The owner-verified published feature branch baseline is
 `ebd37c3d5588b02b8af27b3a02a90125e94b55c2`. Its isolated worktree check below
-ran 48 tests. Local HEAD is `a3106fb`, which adds the Stage 15–21 governance
-slice plus one-time device pairing and currently runs 53 tests; it has not been published. Earlier
+ran 48 tests. Local HEAD is `52b5ef1`, which adds the Stage 15–21 governance
+slice, one-time device pairing, durable agent-run readback and approval expiry
+validation and currently runs 53 tests; it has not been published. Earlier
 `3acccc3` and `c6ef387` references in this file are historical checkpoints only.
 
 The published baseline and local continuation checks are:
@@ -409,7 +410,7 @@ NOT RUN for the current unpublished continuation commits
 ```
 
 Remote feature SHA: owner-verified `ebd37c3`; local continuation commits
-`1df67f6`, `a3106fb` and later changes are not remote. The local commits `2200953` and
+`1df67f6`, `a3106fb`, `52b5ef1` and later changes are not remote. The local commits `2200953` and
 `94a990c` remain preserved.
 
 The container assertions and build result are not independently reproduced
@@ -419,7 +420,7 @@ source-commit provenance is also unverified. No cleanup PASS, merge or release
 readiness is claimed.
 
 Current reconciliation candidate checks at published baseline `ebd37c3` plus
-local continuation `a3106fb`:
+local continuation `52b5ef1`:
 
 ```text
 uv run --locked python --version

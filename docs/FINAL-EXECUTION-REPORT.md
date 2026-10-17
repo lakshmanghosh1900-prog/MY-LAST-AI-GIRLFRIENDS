@@ -17,7 +17,7 @@ failed push is historical evidence.
 | Workspace | `C:\Users\User\Desktop\MY LAST AI GIRLFRIENDS` |
 | Working branch | `feat/mlag-real-ai-premium-ui` |
 | Last published feature tip at resume | Owner-verified `ebd37c3d5588b02b8af27b3a02a90125e94b55c2` |
-| Current local status | Local HEAD `a3106fb` is two local continuation commits ahead of the published baseline; current local suite is 53 tests |
+| Current local status | Local HEAD `52b5ef1` is three local continuation commits ahead of the published baseline; current local suite is 53 tests |
 | Local `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | `origin/main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | Remote feature branch | `feat/mlag-real-ai-premium-ui` at owner-verified `ebd37c3d5588b02b8af27b3a02a90125e94b55c2` |
@@ -174,7 +174,7 @@ quality or external-action evaluation.
 | `uv sync --locked` | `PASS` |
 | `uv run --locked python -m compileall -q src tests` | `PASS` |
 | `make -C /tmp/mlag-ebd-baseline check` | `PASS` — published `ebd37c3`, 48 tests, 48 passed, 0 failed, 0 skipped |
-| `make check` | `PASS` — local `a3106fb` continuation, 53 tests, 53 passed, 0 failed, 0 skipped |
+| `make check` | `PASS` — local `52b5ef1` continuation, 53 tests, 53 passed, 0 failed, 0 skipped |
 | Configuration targeted suite | `PASS` — 11 tests |
 | Migration targeted suite | `PASS` — 2 tests |
 | Authenticated local health/conversation smoke | `PASS` — health 200, conversation 201 |
@@ -182,7 +182,7 @@ quality or external-action evaluation.
 | Invalid real-mode HTTP provider URL | `PASS` — exit 2, HTTPS validation safe-stop |
 | Real Gemini application smoke | `PASS` — 3 sequential `SUCCEEDED` calls, `ai_generated=true` |
 | `docker --version` / Docker info | `BLOCKED_EXTERNAL` — Docker executable absent; owner supplied build/smoke assertions separately |
-| GitHub feature publication | `PASS` — owner-verified at `ebd37c3`; local `1df67f6`/`a3106fb` continuation is not yet published |
+| GitHub feature publication | `PASS` — owner-verified at `ebd37c3`; local `1df67f6`/`a3106fb`/`52b5ef1` continuation is not yet published |
 
 The symlink test did not skip in this Linux container; all 53 discovered tests
 passed. The live provider smoke used the existing ignored local configuration,
@@ -336,9 +336,10 @@ No migration or replacement was performed against the canonical live path.
 - Stage 17 has provenance and draft/review/approval/revocation skill lifecycle;
   shell/arbitrary-code capabilities and skill execution are disabled.
 - Stage 18 has bounded fixed-role local orchestration with depth/capability
-  limits and durable evidence; remote delegation is disabled.
-- Stage 19 has hashed approval parameter/nonce/session records and lifecycle;
-  external action consumption remains disabled.
+  limits, durable evidence and authenticated readback; remote delegation is
+  disabled.
+- Stage 19 has hashed approval parameter/nonce/session records, future-expiry
+  validation and lifecycle; external action consumption remains disabled.
 - Stage 20 exposes a truthful device/local-brain inventory but cannot verify
   Android mesh or local-model hardware here.
 - Stage 21 exposes authenticated `/v1/readiness/local` and
@@ -400,7 +401,7 @@ for the observed stale-sidecar condition. Do not reset the database.
 The bounded local-first MVP implementation through Stage 05 is verified, and a
 real application-level Gemini smoke passed in the configured environment. The
 published `ebd37c3` baseline has 48 passing tests; the local continuation through
-`a3106fb` has 53 passing tests with no skips. The owner has supplied PASS
+`52b5ef1` has 53 passing tests with no skips. The owner has supplied PASS
 evidence for the Docker image build and container smoke, but exact
 source-commit/image provenance is unverified and cleanup remains PENDING. Local
 continuation commits are not yet published, PR #1 remains a draft, and main

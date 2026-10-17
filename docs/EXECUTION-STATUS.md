@@ -26,9 +26,9 @@ refresh retry failed with `Recv failure: Connection reset by peer`.
 
 **Current published implementation tip:** `ebd37c3` is the owner-verified
 baseline; its isolated worktree regression result is 48 tests passed. **Current
-local implementation tip:** `a3106fb` adds one-time Stage 15 device pairing on
-top of the Stage 15–21 governance slices and passes 53 tests locally; it is not
-yet published.
+local implementation tip:** `52b5ef1` adds one-time Stage 15 device pairing,
+durable agent-run readback and approval-expiry validation on top of the Stage
+15–21 governance slices and passes 53 tests locally; it is not yet published.
 
 **Current local evidence/documentation series:** documentation below the current
 checkpoint may retain `3acccc3` and earlier commit references as historical
@@ -489,11 +489,13 @@ database replacement or live migration was performed.
   revoked states. shell/arbitrary-code capabilities are rejected and no skill
   code is executed.
 - **Stage 18:** bounded local agent roles are persisted with prompt hashes,
-  depth/role limits and evidence. The pipeline cannot grant new capabilities or
-  delegate remotely.
-- **Stage 19:** approval records hash parameters, approver sessions and nonces;
-  only narrowly scoped calendar/email record types are accepted. Consumption and
-  external side effects are disabled.
+  depth/role limits and evidence, and authenticated `GET /v1/agents/runs` reads
+  that evidence back. The pipeline cannot grant new capabilities or delegate
+  remotely.
+- **Stage 19:** approval records hash parameters, approver sessions and nonces,
+  reject malformed/past expiry timestamps, and accept only narrowly scoped
+  calendar/email record types. Consumption and external side effects are
+  disabled.
 - **Stage 20:** `/v1/capabilities` truthfully exposes device/brain status; no
   Android mesh or local-model hardware is available.
 - **Stage 21:** `/v1/readiness/local` reports database integrity, schema version
