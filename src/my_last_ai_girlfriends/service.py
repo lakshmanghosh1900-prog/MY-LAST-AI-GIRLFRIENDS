@@ -445,8 +445,8 @@ class MyLastAIGirlfriendsService:
         return self.db.transition_skill(skill_id, status)
 
     def create_approval(self, action_type: str, parameters: dict, expires_at: str) -> dict:
-        if action_type not in {"calendar.write", "email.send"}:
-            raise GovernanceError("ACTION_TYPE_DISABLED", "Only narrowly scoped action types are registered; execution remains disabled.")
+        if action_type not in {"calendar.write", "email.send", "local.schedule.create"}:
+            raise GovernanceError("ACTION_TYPE_DISABLED", "Only narrowly scoped action types are registered.")
         try:
             expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
         except (AttributeError, TypeError, ValueError) as exc:
@@ -470,6 +470,35 @@ class MyLastAIGirlfriendsService:
 
     def list_approvals(self) -> list[dict]:
         return self.db.list_approvals()
+
+    def execute_approved_action(self, approval_id: str, parameters: dict, nonce: str) -> dict:
+        approval = self.db.get_approval_with_secrets(approval_id)
+        if approval is None:
+            raise KeyError("approval not found")
+        if approval["action_type"] != "local.schedule.create":
+            raise GovernanceError("EXTERNAL_ACTION_DISABLED", "External calendar and email actions remain disabled.")
+        if approval["status"] != "APPROVED":
+            raise GovernanceError("APPROVAL_NOT_EXECUTABLE", "Only an approved, single-use approval can be executed.")
+        try:
+            expiry = datetime.fromisoformat(approval["expires_at"].replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise GovernanceError("APPROVAL_EXPIRY_INVALID", "Approval expiry is invalid.") from exc
+        if expiry <= datetime.now(timezone.utc):
+            raise GovernanceError("APPROVAL_EXPIRED", "The approval has expired.")
+        if secret_hash(canonical_json(parameters)) != approval["parameters_hash"] or secret_hash(nonce) != approval["nonce_hash"]:
+            raise GovernanceError("APPROVAL_PROOF_INVALID", "Approval parameters or nonce did not match.")
+        values = [parameters.get(key) for key in ("conversation_id", "title", "prompt", "run_at")]
+        if not all(isinstance(value, str) for value in values):
+            raise GovernanceError("LOCAL_SCHEDULE_FIELDS_INVALID", "conversation_id, title, prompt and run_at are required strings.")
+        if not self.db.conversation_exists(values[0]):
+            raise KeyError("conversation not found")
+        spec = validate_schedule(values[1], values[2], values[3], self.config.max_message_chars)
+        try:
+            schedule = self.db.execute_local_schedule_approval(approval_id, values[0], spec.title, spec.prompt, spec.run_at)
+        except ValueError as exc:
+            raise GovernanceError("APPROVAL_NOT_EXECUTABLE", str(exc)) from exc
+        self.db.add_audit("approved_local_action_executed", {"approval_id": approval_id, "action_type": "local.schedule.create", "schedule_id": schedule["id"]})
+        return {"status": "EXECUTED", "action_type": "local.schedule.create", "schedule": schedule}
 
     def list_agent_runs(self) -> list[dict]:
         runs = []

@@ -406,6 +406,21 @@ class Database:
                     "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
                     (8, utc_now()),
                 )
+            if 9 not in applied:
+                self.connection.executescript("""
+                CREATE TABLE IF NOT EXISTS action_executions (
+                    id TEXT PRIMARY KEY,
+                    approval_id TEXT NOT NULL UNIQUE REFERENCES approvals(id),
+                    action_type TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('EXECUTED', 'FAILED')),
+                    result_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                """)
+                self.connection.execute(
+                    "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                    (9, utc_now()),
+                )
 
     @contextmanager
     def transaction(self, immediate: bool = True) -> Iterator[sqlite3.Connection]:
@@ -957,6 +972,34 @@ class Database:
     def get_approval(self, approval_id: str) -> dict | None:
         row = self.connection.execute("SELECT id, action_type, parameters_hash, status, expires_at, created_at, updated_at FROM approvals WHERE id = ?", (approval_id,)).fetchone()
         return dict(row) if row else None
+
+    def get_approval_with_secrets(self, approval_id: str) -> dict | None:
+        row = self.connection.execute("SELECT * FROM approvals WHERE id = ?", (approval_id,)).fetchone()
+        return dict(row) if row else None
+
+    def execute_local_schedule_approval(self, approval_id: str, conversation_id: str, title: str, prompt: str, run_at: str) -> dict:
+        now = utc_now()
+        schedule_id = self.new_id()
+        execution_id = self.new_id()
+        with self.transaction():
+            approval = self.connection.execute("SELECT status, expires_at, action_type FROM approvals WHERE id = ?", (approval_id,)).fetchone()
+            if not approval or approval["status"] != "APPROVED" or approval["action_type"] != "local.schedule.create" or approval["expires_at"] <= now:
+                raise ValueError("approval is not executable")
+            self.connection.execute(
+                "INSERT INTO schedules(id, conversation_id, title, prompt, run_at, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'SCHEDULED', ?, ?)",
+                (schedule_id, conversation_id, title, prompt, run_at, now, now),
+            )
+            updated = self.connection.execute(
+                "UPDATE approvals SET status = 'CONSUMED', updated_at = ? WHERE id = ? AND status = 'APPROVED'",
+                (now, approval_id),
+            )
+            if updated.rowcount != 1:
+                raise ValueError("approval was already consumed")
+            self.connection.execute(
+                "INSERT INTO action_executions(id, approval_id, action_type, status, result_json, created_at) VALUES (?, ?, ?, 'EXECUTED', ?, ?)",
+                (execution_id, approval_id, "local.schedule.create", json.dumps({"schedule_id": schedule_id}, sort_keys=True), now),
+            )
+        return self.get_schedule(schedule_id) or {}
 
     def list_approvals(self) -> list[dict]:
         return [dict(row) for row in self.connection.execute("SELECT id, action_type, parameters_hash, status, expires_at, created_at, updated_at FROM approvals ORDER BY created_at, id").fetchall()]

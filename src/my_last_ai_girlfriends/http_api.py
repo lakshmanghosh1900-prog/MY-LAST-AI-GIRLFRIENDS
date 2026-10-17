@@ -367,6 +367,14 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                     return
                 self._send(HTTPStatus.CREATED, self.server.service.create_approval(action_type, parameters, expires_at), request_id)
                 return
+            if len(parts) == 4 and parts[:2] == ["v1", "approvals"] and parts[3] == "execute":
+                parameters = payload.get("parameters")
+                nonce = payload.get("nonce")
+                if not isinstance(parameters, dict) or not isinstance(nonce, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "APPROVAL_PROOF_INVALID", "parameters and nonce are required.", request_id)
+                    return
+                self._send(HTTPStatus.OK, self.server.service.execute_approved_action(parts[2], parameters, nonce), request_id)
+                return
             if path == "/v1/agents/run":
                 prompt = payload.get("prompt")
                 if not isinstance(prompt, str):

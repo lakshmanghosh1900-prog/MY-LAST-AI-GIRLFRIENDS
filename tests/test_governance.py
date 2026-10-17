@@ -63,6 +63,20 @@ class GovernanceTests(unittest.TestCase):
                 service.create_approval("calendar.write", {"title": "expired"}, "2000-01-01T00:00:00Z")
             service.close()
 
+    def test_approved_local_schedule_action_is_single_use(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            conversation = service.create_conversation()
+            parameters = {"conversation_id": conversation, "title": "approved reminder", "prompt": "scheduled", "run_at": "2030-01-01T00:00:00Z"}
+            approval = service.create_approval("local.schedule.create", parameters, "2030-01-02T00:00:00Z")
+            service.transition_approval(approval["id"], "APPROVED", "owner-session")
+            result = service.execute_approved_action(approval["id"], parameters, approval["nonce"])
+            self.assertEqual(result["status"], "EXECUTED")
+            with self.assertRaisesRegex(GovernanceError, "approved"):
+                service.execute_approved_action(approval["id"], parameters, approval["nonce"])
+            self.assertEqual(service.list_schedules(conversation)[0]["id"], result["schedule"]["id"])
+            service.close()
+
     def test_bounded_agent_pipeline_does_not_expand_capabilities(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))

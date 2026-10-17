@@ -12,7 +12,7 @@ def local_readiness(db) -> dict:
             "database_integrity_result": integrity,
             "schema_version": schema_version,
             "secret_free": True,
-            "ready_for_local_tests": integrity == "ok" and int(schema_version or 0) >= 8,
+            "ready_for_local_tests": integrity == "ok" and int(schema_version or 0) >= 9,
         }
     except Exception as exc:
         return {
