@@ -175,7 +175,7 @@ conversation data.
 | Budget tracking | IMPLEMENTED AND TESTED |
 | Document processing | LIMITED: approved local text indexing/search; PDF/DOCX and grounded answers not implemented |
 | Research and citations | LIMITED: explicit public-URL runs with source hashes/citations; search and claim verification not implemented |
-| Voice | NOT IMPLEMENTED |
+| Voice | BLOCKED: no audio stack/hardware; not implemented |
 | Long-term memory | LIMITED: explicit local memory management implemented; automatic extraction and remote memory disabled |
 | Android companion | NOT IMPLEMENTED; REQUIRES PLATFORM REVIEW |
 | Scheduling | LIMITED: authenticated durable one-shot local reminders; recurring/background execution not implemented |

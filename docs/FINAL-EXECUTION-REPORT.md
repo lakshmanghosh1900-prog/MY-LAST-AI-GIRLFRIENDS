@@ -62,8 +62,8 @@ introduced or falsely enabled.
 | 08 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 08A local text indexing/search is implemented/tested; PDF/DOCX extraction, grounded provider answers, citations and complete document-security acceptance remain open. |
 | 09 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 09A explicit public-URL research and structured source citations are implemented/tested; search, claim verification and conflict handling remain open. |
 | 10 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 10A durable one-shot local scheduling, cancellation and idempotent due runs are implemented/tested; worker recovery, recurring rules and full scheduler acceptance remain open. |
-| 11 | `NOT STARTED` | Dependency Stage 10 is not closed; voice services/hardware evidence is absent. |
-| 12 | `NOT STARTED` | Dependency Stage 11 is not closed; only existing bounded read-only tools remain enabled. |
+| 11 | `BLOCKED_EXTERNAL` | No voice service is implemented; real audio hardware/provider evidence is unavailable. |
+| 12 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Static least-privilege registry and exact tool argument validation are implemented; broader automation, execution verification and approvals remain open. |
 | 13 | `NOT STARTED` | Dependency Stage 12 is not closed; no integrated future-capability evaluation suite exists. |
 | 14 | `NOT STARTED` | Dependency Stage 13 is not closed; Android toolchain/device evidence is absent. |
 | 15 | `NOT STARTED` | Dependency Stage 14 is not closed; PC–phone connectivity is not implemented. |
@@ -150,6 +150,13 @@ Implemented durable one-shot local schedules with UTC timestamp normalization,
 separate run records, cancellation, deterministic idempotency and authenticated
 API routes. The implementation intentionally excludes recurring scheduling,
 background workers, automatic retries and external side effects.
+
+### Stage 12A safe implementation
+
+Added a static registry for the two existing read-only tools, exact argument
+validation, capability metadata and authenticated `/v1/tools` listing. Unknown
+tools and arguments are rejected before execution. Shell/code execution,
+browser automation and external side effects remain disabled.
 
 ## 5. Tests and checks actually executed
 
@@ -275,9 +282,11 @@ conflicting-source handling.
 ## Stage 10A evidence
 
 The targeted scheduler/research/document/memory/API suite passed 17 tests and
-the full deterministic suite passed 46 tests with zero failures and zero skips.
+the full deterministic suite passed 47 tests with zero failures and zero skips.
 Full Stage 10 remains open pending worker restart recovery, recurring/DST policy
-and complete scheduler operational acceptance.
+and complete scheduler operational acceptance. Stage 11 is externally blocked
+on real audio hardware/services. Stage 12 remains partial pending broader
+approved capabilities and execution-verification gates.
 
 ## 8. Windows startup, authentication and recovery
 

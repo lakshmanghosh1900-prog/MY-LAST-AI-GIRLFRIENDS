@@ -14,6 +14,7 @@ from .documents import DocumentError
 from .memory import MemoryError
 from .research import ResearchError
 from .scheduler import SchedulerError
+from .tool_registry import list_tools
 from .redaction import redact
 from .service import MyLastAIGirlfriendsService
 
@@ -119,6 +120,9 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
             return
         if path in {"/v1/health", "/v1/runtime"}:
             self._send(HTTPStatus.OK, self.server.service.runtime_info(), request_id)
+            return
+        if path == "/v1/tools":
+            self._send(HTTPStatus.OK, {"tools": list_tools()}, request_id)
             return
         if path == "/v1/admin/budget":
             self._send(HTTPStatus.OK, self.server.service.budget_status(), request_id)

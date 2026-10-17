@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from urllib.parse import urlsplit
 
+from .tool_registry import ToolRegistryError, get_tool
+
 
 class DataClass(StrEnum):
     PUBLIC = "PUBLIC"
@@ -76,10 +78,11 @@ class PolicyEngine:
         return PolicyDecision(Decision.ALLOW, "MEMORY_EXPLICIT_ALLOWED", "Explicit local memory is allowed.", data_class)
 
     def check_tool(self, name: str, arguments: dict) -> PolicyDecision:
-        if name not in self.allowed_tools:
-            return PolicyDecision(Decision.DENY, "TOOL_NOT_ALLOWLISTED", "The requested tool is not registered.", DataClass.PERSONAL)
-        if not isinstance(arguments, dict):
-            return PolicyDecision(Decision.DENY, "TOOL_ARGUMENTS_INVALID", "Tool arguments must be an object.", DataClass.PERSONAL)
+        try:
+            spec = get_tool(name)
+            spec.validate(arguments)
+        except ToolRegistryError as exc:
+            return PolicyDecision(Decision.DENY, exc.code, str(exc), DataClass.PERSONAL)
         if name == "file.read_text":
             path = arguments.get("path")
             if not isinstance(path, str) or not path.strip():

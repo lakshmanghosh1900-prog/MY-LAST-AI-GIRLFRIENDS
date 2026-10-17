@@ -96,8 +96,8 @@ for this filesystem condition. No database reset was performed.
 | 08 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 08A local text indexing/search is implemented and tested; PDF/DOCX extraction, grounded provider answers, citations and full Stage 08 acceptance remain open. |
 | 09 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 09A explicit public-URL multi-source research and citations are implemented/tested; search-provider integration, claim verification and conflict analysis remain open. |
 | 10 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 10A durable one-shot schedules, cancellation and idempotent due-run execution are implemented/tested; recurring plans, worker lifecycle, retry policy and full scheduler acceptance remain open. |
-| 11 | NOT STARTED | Waiting for Stage 10; audio hardware/services not evidenced. |
-| 12 | NOT STARTED | Waiting for Stage 11; unrestricted automation remains disabled. |
+| 11 | BLOCKED_EXTERNAL | Voice contract is not implemented; real microphone/audio-provider evidence requires hardware/services not available here. |
+| 12 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Static least-privilege registry now exposes only the existing read-only file/web tools with schema validation; broader automation and human approvals remain disabled. |
 | 13 | NOT STARTED | Waiting for Stage 12. |
 | 14 | NOT STARTED | Waiting for Stage 13; Android toolchain/device not evidenced. |
 | 15 | NOT STARTED | Waiting for Stage 14. |
@@ -392,6 +392,28 @@ Implemented as a deterministic local reminder slice:
 - No external side effects, recurring rules, background worker, automatic retry
   or uncertain-outcome retry is enabled.
 
-Evidence: 3 scheduler tests plus the full 46-test suite passed. Full Stage 10
+Evidence: 3 scheduler tests plus the full 47-test suite passed. Full Stage 10
 remains open pending worker restart recovery, recurring/DST policy and complete
 planner/scheduler operational acceptance.
+
+## Stage 11 — Voice AI
+
+**Status:** `BLOCKED_EXTERNAL`
+
+No voice implementation is claimed. The repository has no speech-to-text,
+text-to-speech, microphone permission or audio-retention service. Real audio
+hardware and provider availability are not present in this environment.
+
+## Stage 12A — Controlled tool registry
+
+**Status:** `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN`
+
+Implemented a static least-privilege registry with exact argument schemas and a
+read-only capability declaration for `file.read_text` and `web.fetch`. Policy
+checks use the registry for allowlisting and reject unknown arguments.
+Authenticated `GET /v1/tools` exposes capability metadata without secrets.
+Shell execution, arbitrary code, browser automation and external side effects
+remain unavailable. Full Stage 12 requires broader approved tools, execution
+verification, cancellation and audit coverage.
+
+Evidence: 1 registry test plus the full 47-test suite passed.

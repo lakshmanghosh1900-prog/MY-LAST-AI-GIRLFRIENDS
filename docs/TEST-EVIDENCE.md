@@ -134,8 +134,23 @@ PYTHONPATH="$PWD/src:$PWD/tests" uv run --locked python -m unittest tests.test_s
 PASS — 17 tests
 
 make check
-PASS — compileall and 46 tests, 46 passed, 0 failed, 0 skipped
+PASS — compileall and 47 tests, 47 passed, 0 failed, 0 skipped
 ```
+
+## Stage 11 / Stage 12A evidence
+
+```text
+PYTHONPATH="$PWD/src:$PWD/tests" uv run --locked python -m unittest tests.test_tool_registry tests.test_policy_tools tests.test_http_api -v
+PASS — 11 tests
+
+make check
+PASS — compileall and 47 tests, 47 passed, 0 failed, 0 skipped
+```
+
+Stage 11 is `BLOCKED_EXTERNAL` because no real audio stack or hardware is
+available. Stage 12A verifies a static read-only registry, exact argument
+validation and rejection of unallowlisted tools; it does not claim arbitrary
+automation or external actions.
 
 Verified behavior includes timezone-required schedule normalization, durable
 one-shot creation, due execution, separate run persistence, idempotent second
