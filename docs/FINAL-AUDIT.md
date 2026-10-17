@@ -296,8 +296,8 @@ compileall passed
 uv lock --check passed
 uv sync --locked passed
 PowerShell setup.ps1 -Doctor passed without displaying secrets
-Docker build passed
-Docker authenticated offline conversation smoke passed
+Historical handoff claim (superseded): Docker build passed
+Historical handoff claim (superseded): Docker authenticated offline conversation smoke passed
 ```
 
 The Docker smoke response reported `READY`, product `MY LAST AI GIRLFRIENDS`,
