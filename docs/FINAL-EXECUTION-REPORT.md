@@ -170,6 +170,7 @@ c50c9f3 docs(stage-01): record verification and push blocker
 9217368 fix(stage-02): complete rename and migration recovery
 c7141ee test(stage-03): verify Gemini application boundaries
 460b52f test(stage-06): verify budget settlement and release evidence
+5343ac8 docs: publish factual execution report
 ```
 
 The attempted command was:
