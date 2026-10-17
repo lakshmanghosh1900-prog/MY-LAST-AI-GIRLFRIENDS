@@ -57,7 +57,7 @@ introduced or falsely enabled.
 | 03 | `CLOSED — VERIFIED` | Gemini adapter tests plus three repeated live application requests succeeded with `ai_generated=true`; no fallback. |
 | 04 | `CLOSED — VERIFIED` | Bounded same-conversation context, isolation, role ordering, exact-once current prompt and privacy filtering pass. |
 | 05 | `CLOSED — VERIFIED` | Responsive branded UI, session/history controls, safe DOM text rendering, file boundaries and readable HTML extraction pass. |
-| 06 | `BLOCKED_EXTERNAL` | Owner-supplied container smoke assertions pass, but Docker build and cleanup are not proven/verified; the evidence commit is local-only and no release/main integration is claimed. |
+| 06 | `BLOCKED_EXTERNAL` | Owner-supplied Docker build and container-smoke assertions pass; source-commit provenance is unverified, cleanup is pending, and no release/main integration is claimed. |
 | 07 | `NOT STARTED` | Dependency Stage 06 is not closed; long-term memory is not implemented. |
 | 08 | `NOT STARTED` | Dependency Stage 07 is not closed; broad document intelligence is not implemented. |
 | 09 | `NOT STARTED` | Dependency Stage 08 is not closed; research/citation engine is not implemented. |
@@ -134,7 +134,7 @@ introduced or falsely enabled.
 | Invalid token startup | `PASS` — exit 2, secret-free configuration safe-stop |
 | Invalid real-mode HTTP provider URL | `PASS` — exit 2, HTTPS validation safe-stop |
 | Real Gemini application smoke | `PASS` — 3 sequential `SUCCEEDED` calls, `ai_generated=true` |
-| `docker --version` / Docker info | `BLOCKED_EXTERNAL` — Docker executable absent; owner supplied smoke assertions separately |
+| `docker --version` / Docker info | `BLOCKED_EXTERNAL` — Docker executable absent; owner supplied build/smoke assertions separately |
 | GitHub feature push | `PASS` at `3acccc3`; earlier credential failures remain historical |
 
 The symlink test did not skip in this Linux container; all 32 discovered tests
@@ -198,8 +198,9 @@ The current remaining GitHub gap is that no pull request exists and `main` is
 still at `c98a091`; integration is intentionally deferred until the Stage 06
 Docker gate closes. Docker is not executable in this environment, so Docker
 build and authenticated container smoke remain `BLOCKED_EXTERNAL` rather than
-`PASS`. The owner later supplied container smoke assertions, but no Docker build
-output or cleanup result was supplied; those remain unproven/unverified.
+`PASS`. The owner later supplied a successful Docker image-build result and
+container smoke assertions. Exact source-commit/image provenance remains
+unverified, and cleanup remains pending.
 
 The resume status updates at `6153b75` and `d93b852` preserve earlier
 credential failures. They were later included in the owner-published feature
@@ -213,9 +214,9 @@ authenticated conversation creation, and an offline response with
 `ai_generated=false` plus an explicit not-AI label. This is recorded as
 owner-supplied evidence, not independent reproduction.
 
-The same supplement does not provide Docker build command/output, and states
-that cleanup was run separately without a verified result. Docker build is
-`NOT_PROVEN`; cleanup is `NOT_VERIFIED`. Stage 06 therefore remains blocked.
+The same supplement reports Docker build `OWNER-SUPPLIED PASS`, with exact
+source-commit/image provenance `UNVERIFIED`. Cleanup was run separately without
+a verified result and remains `PENDING`. Stage 06 therefore remains blocked.
 
 ## 8. Windows startup, authentication and recovery
 
@@ -258,10 +259,11 @@ for the observed stale-sidecar condition. Do not reset the database.
 
 The bounded local-first MVP implementation through Stage 05 is verified, and a
 real application-level Gemini smoke passed in the configured environment. The
-deterministic suite is green with 32 passing tests and no skips. The final MVP
-release gate cannot be closed because Docker build/container evidence and
-GitHub authenticated publication/integration were unavailable. Stages 07–21
-were correctly not started because the roadmap requires Stage 06 to close
-first. The project must not be described as fully complete or production-ready
-until those external gates are rerun and the verified work is published and
-integrated normally.
+deterministic suite is green with 32 passing tests and no skips. The owner has
+supplied PASS evidence for the Docker image build and container smoke, but exact
+source-commit/image provenance is unverified and cleanup remains PENDING. The
+local evidence commits `2200953` and `94a990c` are not published from this
+environment, and PR/main integration is still open. Stages 07–21 were
+correctly not started because Stage 06 has not closed. The project must not be
+described as fully complete or production-ready until cleanup, publication,
+review/integration and all remaining release gates are verified.

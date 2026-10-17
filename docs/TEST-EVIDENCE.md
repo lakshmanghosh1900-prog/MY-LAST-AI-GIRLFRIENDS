@@ -235,8 +235,9 @@ Native Windows Docker paths under /mnt/c and /c/Program Files/Docker
 NOT_FOUND in the mounted filesystem
 
 Host Docker build/smoke evidence supplied by the owner
-Container smoke assertions are present in the current owner supplement; build
-output and cleanup result are not present. No build or cleanup PASS inferred.
+Container smoke assertions and a successful image-build result are present in
+the current owner supplement. Exact source-commit provenance and cleanup result
+are not verified.
 ```
 
 The deterministic MVP checks are green. The current owner supplement reports
@@ -253,8 +254,9 @@ owner: offline message succeeded with ai_generated=false and explicit not-AI lab
 Owner evidence status:
 
 ```text
-Docker build command/output       NOT_PROVEN
-Container cleanup                 NOT_VERIFIED — finally was separate and no result was supplied
+Docker image build result         OWNER-SUPPLIED PASS
+Image source-commit provenance   UNVERIFIED
+Container cleanup                 PENDING — finally was separate; result not supplied
 ```
 
 The evidence documentation was committed locally as `2200953`, but the
@@ -268,11 +270,11 @@ BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No
 Remote feature SHA remains `3acccc3`; local evidence commit `2200953` is not
 yet remote.
 
-The container assertions are not independently reproduced here because this
-execution container has no Docker CLI or native Windows bridge. Stage 06
-remains blocked on build provenance, cleanup evidence and normal PR/main
-integration. No Docker build PASS, cleanup PASS, merge or release readiness is
-claimed.
+The container assertions and build result are not independently reproduced
+here because this execution container has no Docker CLI or native Windows
+bridge. Stage 06 remains blocked on cleanup and normal PR/main integration;
+source-commit provenance is also unverified. No cleanup PASS, merge or release
+readiness is claimed.
 
 Current reconciliation candidate checks at local/remote HEAD `3acccc3`:
 

@@ -91,7 +91,7 @@ for this filesystem condition. No database reset was performed.
 | 03 | CLOSED — VERIFIED | Gemini adapter contract/error tests and three repeated application-level live requests pass with configured private credentials; no fake fallback observed. |
 | 04 | CLOSED — VERIFIED | Same-conversation context, ordering, current-message de-duplication and cross-conversation isolation pass in deterministic service tests. |
 | 05 | CLOSED — VERIFIED | Branded responsive UI, history/session controls, keyboard behavior, safe text rendering, bounded file tool and readable HTML extraction are implemented and covered by contract/security tests. |
-| 06 | BLOCKED_EXTERNAL | Owner-supplied container smoke checks pass, but Docker build output and cleanup evidence are not supplied/verified; current evidence commit is local-only and PR/main integration remains open. |
+| 06 | BLOCKED_EXTERNAL | Owner-supplied Docker build and container-smoke checks pass; source-commit provenance is unverified, cleanup is PENDING, and PR/main integration remains open. |
 | 07 | NOT STARTED | Waiting for Stage 06. |
 | 08 | NOT STARTED | Waiting for Stage 07. |
 | 09 | NOT STARTED | Waiting for Stage 08. |
@@ -160,7 +160,7 @@ synchronization is claimed.
 | `uv run --locked my-last-ai-girlfriends doctor` | PASS | Valid token status, real Gemini mode, key presence reported without values |
 | CLI launch using current mounted database | FAIL — repaired data state | Initial launch stopped on SQLite disk I/O from stale mounted WAL/SHM sidecars |
 | Direct live Gemini call | NOT RUN | Must remain separate from deterministic offline tests and requires owner configuration/network |
-| Docker build | NOT RUN in this execution | Docker availability and the Stage 06 release gate remain open |
+| Docker build | OWNER-SUPPLIED PASS | Windows transcript reports a successful image build; exact source-commit provenance is UNVERIFIED |
 
 ## Git safety
 
@@ -294,16 +294,17 @@ checks for feature SHA `3acccc3`:
   not-AI label: `PASS` (owner-supplied).
 
 These results prove the listed smoke assertions only. They do not prove the
-Docker image build command, image provenance, resource cleanup, PR review or
-main integration.
+Exact source-commit provenance, resource cleanup, PR review or main
+integration.
 
 ### Blocking evidence
 
-- Docker build: `NOT_PROVEN` — the owner supplement contains no Docker build
-  command/output, and the execution container has no `docker` executable
-  (`docker: command not found`).
-- Container cleanup: `NOT_VERIFIED` — the owner states the `finally` cleanup was
-  executed separately, but no cleanup result/evidence was supplied.
+- Docker build: `OWNER-SUPPLIED PASS` — the Windows transcript reports a
+  successful Docker image build. Exact source-commit/image provenance is
+  `UNVERIFIED`; this Linux execution container cannot independently reproduce
+  Docker (`docker: command not found`).
+- Container cleanup: `PENDING` — the owner states the `finally` cleanup was
+  executed separately, but actual cleanup verification has not been supplied.
 - Feature-branch publication: PASS — remote ref
   `origin/feat/mlag-real-ai-premium-ui` equals `3acccc3`.
 - Earlier credential failures are historical evidence only; the current
@@ -312,7 +313,7 @@ main integration.
   Stage 06 gate closes. GitHub reports no pull request for the branch, and the
   `gh` executable is unavailable in this container. No merge or main update is
   claimed.
-- Host container smoke evidence is present only as owner-supplied assertions;
-  build and cleanup evidence are not present. Because mandatory Docker build
-  and cleanup evidence cannot be verified, Stage 06 is not
+- Host container smoke and build evidence are owner-supplied assertions;
+  cleanup remains pending and source provenance is unverified. Because cleanup
+  and integration gates remain open, Stage 06 is not
   `CLOSED — VERIFIED`, and Stages 07–21 must not be falsely marked complete.
