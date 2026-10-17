@@ -70,7 +70,7 @@ for this filesystem condition. No database reset was performed.
 | Stage | Status | Evidence / blocker |
 |---|---|---|
 | 01 | CLOSED — VERIFIED | Configuration conflict and HTTPS validation tests pass; mounted SQLite WAL/SHM fallback starts the real CLI; authenticated health and conversation smoke pass; 29-test regression suite is green. |
-| 02 | NOT STARTED | Waiting for Stage 01 gate. |
+| 02 | CLOSED — VERIFIED | Canonical package/CLI metadata, active UI/docs and MLAG configuration are consistent; idempotent legacy migration preserves source and relationships; 29-test regression suite and real CLI smoke pass. |
 | 03 | NOT STARTED | Waiting for Stage 02 gate; live Gemini evidence remains external. |
 | 04 | NOT STARTED | Waiting for Stage 03 gate. |
 | 05 | NOT STARTED | Waiting for Stage 04 gate. |
@@ -150,3 +150,39 @@ synchronization is claimed.
 The feature branch existed before this execution. No local user work was
 discarded, no force operation was used, and no commit or push is claimed for
 the documentation until its staged diff and checks are reviewed.
+
+## Stage 02 — Full project rename and migration
+
+**Status:** `CLOSED — VERIFIED`
+
+### Changes and audit
+
+- The active distribution, CLI, Python package, database filename, browser
+  storage namespace, UI identity and configuration prefix are the canonical
+  MY LAST AI GIRLFRIENDS values.
+- Remaining `JARVIS_*` and `jarvis.sqlite3` identifiers are limited to
+  explicit compatibility mappings, legacy migration code, tests, and
+  historical audit evidence.
+- Removed the setup-script token reveal path so the setup workflow never prints
+  the local authentication token.
+- Legacy SQLite migration now installs the verified canonical copy atomically,
+  moves the legacy source and sidecars into `data/migration-backups/`, and is
+  idempotent on subsequent application starts.
+
+### Acceptance evidence
+
+- Canonical package import and `my-last-ai-girlfriends doctor`: PASS.
+- Legacy compatibility mapping and conflict behavior: PASS.
+- Legacy database backup, integrity, record relationship preservation, source
+  preservation and second-run idempotency: PASS — migration tests.
+- Current database application restart/launch: PASS — authenticated health
+  returned `200`, state `READY`, and `database=ready`.
+- Rename audit: PASS — no active legacy package, CLI or UI branding remains;
+  retained legacy names are documented compatibility/history only.
+- Regression suite: PASS — `make check`, 29 tests passed, 0 failed, 0 skipped.
+
+### Stage 02 publication
+
+The implementation is ready for a focused local commit after staged-diff
+review. Remote publication remains `BLOCKED_EXTERNAL` by the recorded GitHub
+authentication failure; no push or merge is claimed.

@@ -55,14 +55,9 @@ uv sync --locked
 ```
 
 The setup command creates or rotates the ignored `.env` and never prints the
-generated token. To intentionally reveal it for pasting into the browser, use:
-
-```powershell
-.\scripts\setup.ps1 -RevealToken
-```
-
-Treat that terminal output as secret. The diagnostic reports provider, mode,
-model, source, conflicts and token validity without displaying secret values.
+generated token. Use a protected local workflow to enter the ignored token in
+the browser when needed. The diagnostic reports provider, mode, model, source,
+conflicts and token validity without displaying secret values.
 
 Start the application:
 

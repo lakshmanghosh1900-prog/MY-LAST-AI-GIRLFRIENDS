@@ -24,16 +24,20 @@ class MigrationTests(unittest.TestCase):
                 CREATE TABLE audit_events(id TEXT PRIMARY KEY, task_id TEXT, event TEXT NOT NULL, metadata_json TEXT NOT NULL, created_at TEXT NOT NULL);
                 INSERT INTO conversations VALUES ('c1','now');
                 INSERT INTO messages VALUES ('m1','c1','user','hello','now');
+                INSERT INTO tasks VALUES ('t1','c1','SUCCEEDED',NULL,'now','now',0);
             """)
             connection.close()
             canonical = migrate_legacy_database(data)
             self.assertIsNotNone(canonical)
-            self.assertTrue((data / "jarvis.sqlite3").exists())
+            self.assertFalse((data / "jarvis.sqlite3").exists())
             self.assertTrue((data / "my_last_ai_girlfriends.sqlite3").exists())
+            self.assertTrue(list((data / "migration-backups").glob("legacy-preserved.*.sqlite3")))
+            self.assertIsNone(migrate_legacy_database(data))
             migrated = Database(data / "my_last_ai_girlfriends.sqlite3")
             migrated.initialize()
             self.assertEqual(migrated.connection.execute("SELECT COUNT(*) FROM conversations").fetchone()[0], 1)
             self.assertEqual(migrated.connection.execute("SELECT COUNT(*) FROM messages").fetchone()[0], 1)
+            self.assertEqual(migrated.connection.execute("SELECT conversation_id FROM tasks WHERE id = 't1'").fetchone()[0], "c1")
             self.assertEqual(migrated.connection.execute("PRAGMA integrity_check").fetchone()[0], "ok")
             migrated.close()
 

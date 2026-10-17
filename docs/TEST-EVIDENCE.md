@@ -109,6 +109,26 @@ Result: `BLOCKED_EXTERNAL` — GitHub HTTPS authentication was unavailable:
 `fatal: could not read Username for 'https://github.com': No such device or
 address`. No push or merge is claimed.
 
+## Stage 02 verification — 17 October 2026
+
+```text
+PYTHONPATH="$PWD/src" uv run --locked python -m unittest tests.test_migration -v
+PASS — 2 tests, including source preservation and second-run idempotency
+
+PYTHONPATH="$PWD/src" uv run --locked python -m unittest tests.test_configuration_provider -v
+PASS — 9 tests, including legacy/new compatibility conflict behavior
+
+uv run --locked python -m compileall -q src tests
+PASS
+
+make check
+PASS — compileall and 29 tests, 29 passed, 0 failed, 0 skipped
+```
+
+The current CLI was started against the recovered canonical database and an
+authenticated `GET /v1/health` returned `200`, `state=READY` and
+`database=ready`. No token value or conversation content was printed.
+
 ## Evidence rules
 
 - A mocked provider response proves only the adapter contract, not live Gemini.

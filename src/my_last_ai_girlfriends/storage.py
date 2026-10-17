@@ -34,11 +34,14 @@ def _unique_path(directory: Path, prefix: str, suffix: str = ".sqlite3") -> Path
 
 
 def migrate_legacy_database(data_dir: Path) -> Path | None:
-    """Copy a legacy database into the canonical filename without deleting it.
+    """Migrate a legacy database once and preserve its source in a backup.
 
-    The old filename is recognized only as an explicit recoverability path. If
-    both canonical and legacy files exist, the function stops rather than
-    guessing whether they should be merged.
+    The old filename is recognized only as an explicit recoverability path. The
+    source is copied and integrity-checked, then moved into the backup folder
+    after the canonical copy is atomically installed. This makes normal
+    application restarts idempotent without deleting the recoverable source.
+    If both canonical and legacy files exist before a migration, the function
+    stops rather than guessing whether they should be merged.
     """
 
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -64,15 +67,26 @@ def migrate_legacy_database(data_dir: Path) -> Path | None:
             backup_connection.close()
     finally:
         source.close()
-    shutil.copy2(backup, canonical)
-    check = sqlite3.connect(canonical)
+    temporary_canonical = _unique_path(data_dir, "my_last_ai_girlfriends-migration", ".tmp")
+    shutil.copy2(backup, temporary_canonical)
+    check = sqlite3.connect(temporary_canonical)
     try:
         integrity = check.execute("PRAGMA integrity_check").fetchone()[0]
     finally:
         check.close()
     if integrity != "ok":
-        canonical.unlink(missing_ok=True)
+        temporary_canonical.unlink(missing_ok=True)
         raise StorageError(f"migrated database integrity check failed: {integrity}")
+    os.replace(temporary_canonical, canonical)
+    preserved_source = _unique_path(backup_dir, "legacy-preserved")
+    try:
+        shutil.move(str(legacy), preserved_source)
+        for suffix in ("-wal", "-shm"):
+            sidecar = Path(f"{legacy}{suffix}")
+            if sidecar.exists():
+                shutil.move(str(sidecar), Path(f"{preserved_source}{suffix}"))
+    except OSError as exc:
+        raise StorageError("canonical database installed but legacy source could not be moved into the backup folder") from exc
     return canonical
 
 
