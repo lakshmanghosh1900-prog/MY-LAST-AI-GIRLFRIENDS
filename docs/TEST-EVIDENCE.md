@@ -170,9 +170,10 @@ claim live-provider quality, voice, device or external-action evaluation.
 
 The owner-verified published feature branch baseline is
 `fdf5fc473813609b23232960c397895fe8cc64fd`. Its isolated worktree check below
-ran the earlier 48-test baseline. Local implementation tip `13494fc` adds
-integrated Stage 07–21 local workflows, browser voice, read-only MCP, approved local
-actions, Ollama support and explicit memory context; it currently runs 72 tests
+ran the earlier 48-test baseline. Local implementation tip `b8f1a6a` adds
+integrated Stage 07–21 local workflows, browser voice, read-only MCP, approved
+local actions, Ollama support, explicit memory context and declarative skills;
+it currently runs 76 tests
 and has not been published. Earlier
 `3acccc3` and `c6ef387` references in this file are historical checkpoints only.
 
@@ -183,7 +184,7 @@ make -C /tmp/mlag-ebd-baseline check
 PASS — published ebd37c3 baseline, compileall and 48 tests, 48 passed, 0 failed, 0 skipped
 
 make check
-PASS — compileall and 72 tests, 72 passed, 0 failed, 0 skipped
+PASS — compileall and 76 tests, 76 passed, 0 failed, 0 skipped
 
 PYTHONPATH="$PWD/src:$PWD/tests" uv run --locked python -m unittest tests.test_governance tests.test_http_api -v
 PASS — covered by the 72-test full suite; governance/API routes are authenticated
@@ -208,7 +209,7 @@ recovery counts: conversations=1 messages=24 tasks=17 provider_calls=8 budget_ev
 original preservation: data/migration-backups/canonical-invalid-preserved-20261018T000000Z.sqlite3
 original/preservation hashes: identical
 
-isolated recovery migration: PASS — schema version 9, integrity ok, all six
+isolated recovery migration: PASS — schema version 10, integrity ok, all six
 existing record counts preserved, governance tables created
 live replacement: NOT PERFORMED
 ```
@@ -411,7 +412,7 @@ BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No
 ```
 
 Remote feature SHA: owner-verified `fdf5fc4`; local continuation commits
-`ec2a046`, `d6f8b1b`, `fb6a82a`, `b8aa7cd`, `2719ddd`, `3684e32`, `13494fc`
+`ec2a046`, `d6f8b1b`, `fb6a82a`, `b8aa7cd`, `2719ddd`, `3684e32`, `13494fc`, `b8f1a6a`
 and later changes are not remote. The local commits `2200953` and
 `94a990c` remain preserved.
 
@@ -422,7 +423,7 @@ source-commit provenance is also unverified. No cleanup PASS, merge or release
 readiness is claimed.
 
 Current reconciliation candidate checks at published baseline `fdf5fc4` plus
-local continuation `13494fc`:
+local continuation `b8f1a6a`:
 
 ```text
 uv run --locked python --version
@@ -434,7 +435,7 @@ PASS
 uv run --locked python -m compileall -q src tests
 PASS
 make check
-PASS — 72 tests, 0 failures, 0 skips
+PASS — 76 tests, 0 failures, 0 skips
 git diff --check
 PASS
 secret scan of release diff

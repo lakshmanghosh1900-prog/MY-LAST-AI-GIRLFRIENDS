@@ -26,9 +26,9 @@ refresh retry failed with `Recv failure: Connection reset by peer`.
 
 **Current published implementation tip:** `fdf5fc4` is the owner-verified
 baseline; its isolated worktree regression result is 48 tests passed. **Current
-local implementation tip:** `13494fc` adds explicit memory context selection,
-durable agent-run readback and approval-expiry validation on top of the Stage
-15–21 governance slices and passes 72 tests locally; it is not yet published.
+local implementation tip:** `b8f1a6a` adds an approved declarative local skill
+execution slice on top of explicit memory context selection and the Stage 15–21
+governance slices; it passes 76 tests locally and is not yet published.
 
 **Current local evidence/documentation series:** documentation below the current
 checkpoint may retain `3acccc3` and earlier commit references as historical
@@ -107,8 +107,8 @@ for this filesystem condition. No database reset was performed.
 
 | Stage | Status | Evidence / blocker |
 |---|---|---|
-| 01 | CLOSED — VERIFIED | Configuration conflict and HTTPS validation tests pass; mounted SQLite WAL/SHM fallback starts the real CLI; authenticated health and conversation smoke pass. Published baseline: 48 tests; current local continuation: 72 tests. |
-| 02 | CLOSED — VERIFIED | Canonical package/CLI metadata, active UI/docs and MLAG configuration are consistent; idempotent legacy migration preserves source and relationships. Published baseline: 48 tests; current local continuation: 72 tests. |
+| 01 | CLOSED — VERIFIED | Configuration conflict and HTTPS validation tests pass; mounted SQLite WAL/SHM fallback starts the real CLI; authenticated health and conversation smoke pass. Published baseline: 48 tests; current local continuation: 76 tests. |
+| 02 | CLOSED — VERIFIED | Canonical package/CLI metadata, active UI/docs and MLAG configuration are consistent; idempotent legacy migration preserves source and relationships. Published baseline: 48 tests; current local continuation: 76 tests. |
 | 03 | CLOSED — VERIFIED | Gemini adapter contract/error tests and three repeated application-level live requests pass with configured private credentials; no fake fallback observed. |
 | 04 | CLOSED — VERIFIED | Same-conversation context, ordering, current-message de-duplication and cross-conversation isolation pass in deterministic service tests. |
 | 05 | CLOSED — VERIFIED | Branded responsive UI, history/session controls, keyboard behavior, safe text rendering, bounded file tool and readable HTML extraction are implemented and covered by contract/security tests. |
@@ -117,13 +117,13 @@ for this filesystem condition. No database reset was performed.
 | 08 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 08A local text indexing/search is implemented and tested; PDF/DOCX extraction, grounded provider answers, citations and full Stage 08 acceptance remain open. |
 | 09 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 09A explicit public-URL multi-source research and citations are implemented/tested; search-provider integration, claim verification and conflict analysis remain open. |
 | 10 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 10A durable one-shot schedules, cancellation and idempotent due-run execution are implemented/tested; recurring plans, worker lifecycle, retry policy and full scheduler acceptance remain open. |
-| 11 | BLOCKED_EXTERNAL | Voice contract is not implemented; real microphone/audio-provider evidence requires hardware/services not available here. |
+| 11 | PARTIAL — BROWSER NATIVE | Browser speech-recognition/synthesis controls and truthful unsupported states are implemented; real microphone/audio-provider evidence requires hardware/services not available here. |
 | 12 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Static least-privilege registry now exposes only the existing read-only file/web tools with schema validation; broader automation and human approvals remain disabled. |
 | 13 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Versioned deterministic local evaluation now covers truthful offline behavior, prohibited-input safe-stop and explicit memory; integrated quality benchmarks, live voice/tool/device flows and full Stage 13 acceptance remain open. |
 | 14 | BLOCKED_EXTERNAL / CONTRACT PARTIAL | Android companion implementation and device verification are unavailable; the release now exposes a truthful capability entry rather than claiming native support. |
 | 15 | PARTIAL — LOCAL GOVERNANCE | Device enrollment, one-time replay-resistant pairing, diagnostics, hashed identity verification, revocation, last-seen tracking and authenticated API routes are implemented; encrypted PC–phone transport is not enabled. |
 | 16 | PARTIAL — READ-ONLY MCP | Credential-free HTTPS JSON-RPC `tools/list`/`tools/call` transport is implemented for explicitly approved read scopes; write/external scopes are disabled. |
-| 17 | PARTIAL — REVIEW LIFECYCLE | Versioned skill provenance, capability allowlisting and draft/review/approval/revocation lifecycle are implemented; skill code execution and self-learning are disabled. |
+| 17 | PARTIAL — DECLARATIVE EXECUTION | Versioned skill provenance, capability allowlisting, review lifecycle and approved one-step local text-file execution are implemented; shell/code/network/provider/side-effect execution and self-learning are disabled. |
 | 18 | PARTIAL — BOUNDED LOCAL | Fixed planner/researcher/executor/verifier/composer roles, depth limits, capability bounds, durable evidence and authenticated readback are implemented; provider-backed multi-step delegation remains open. |
 | 19 | PARTIAL — LOCAL ACTIONS | Single-use approved local schedule creation is implemented with hash/nonce/expiry checks; calendar/email side effects remain disabled. |
 | 20 | PARTIAL — LOCAL PROVIDER | Optional loopback Ollama adapter and capability discovery are implemented; no Ollama service/device mesh was verified here. |
@@ -178,7 +178,7 @@ synchronization is claimed.
 | `uv run --locked python --version` | PASS | CPython 3.12.11 |
 | `uv lock --check` | PASS | Lockfile resolved and checked |
 | `uv sync --locked` | PASS | Editable package installed |
-| `make check` | PASS | Published baseline: 48 tests; current local continuation: 72 tests |
+| `make check` | PASS | Published baseline: 48 tests; current local continuation: 76 tests |
 | `uv run --locked my-last-ai-girlfriends doctor` | PASS | Valid token status, real Gemini mode, key presence reported without values |
 | CLI launch using current mounted database | FAIL — repaired data state | Initial launch stopped on SQLite disk I/O from stale mounted WAL/SHM sidecars |
 | Direct live Gemini call | NOT RUN | Must remain separate from deterministic offline tests and requires owner configuration/network |
@@ -439,7 +439,7 @@ remain unavailable. Full Stage 12 requires broader approved tools, execution
 verification, cancellation and audit coverage.
 
 Evidence: 1 registry test plus the published 48-test suite passed; current local
-continuation passes 72 tests.
+continuation passes 76 tests.
 
 ## Stage 13A — Deterministic local evaluation
 
@@ -453,7 +453,7 @@ cost benchmarks, Bengali/Banglish evaluation breadth, voice/device/tool failure
 flows and rollback procedures.
 
 Evidence: 1 evaluation test plus the published 48-test suite passed; current local
-continuation passes 72 tests.
+continuation passes 76 tests.
 
 ## Current database reconciliation — 18 October 2026
 
@@ -472,8 +472,8 @@ It has a valid SQLite header, SHA-256
 invalid file was preserved byte-for-byte as
 `data/migration-backups/canonical-invalid-preserved-20261018T000000Z.sqlite3`.
 
-An isolated copy of the recovery candidate was initialized through migration 9:
-integrity remained `ok`, schema version became `9`, all six existing record
+An isolated copy of the recovery candidate was initialized through migration 10:
+integrity remained `ok`, schema version became `10`, all six existing record
 counts were preserved, and the new governance tables were created. No live
 database replacement or live migration was performed.
 
@@ -489,8 +489,9 @@ database replacement or live migration was performed.
   `tools/call` requests only under explicit read scopes. Write/external scopes
   remain disabled.
 - **Stage 17:** skills have provenance, capabilities and draft/review/approved/
-  revoked states. shell/arbitrary-code capabilities are rejected and no skill
-  code is executed.
+  revoked states. Approved definitions can execute one bounded local text-file
+  read; shell/arbitrary-code/network/provider/side-effect capabilities remain
+  rejected and no self-learning occurs.
 - **Stage 18:** bounded local agent roles are persisted with prompt hashes,
   depth/role limits and evidence, and authenticated `GET /v1/agents/runs` reads
   that evidence back. Provider-backed multi-step orchestration remains open.
@@ -504,5 +505,5 @@ database replacement or live migration was performed.
   and secret-free local-test readiness. Docker cleanup, provenance, PR and
   `main` integration remain release gates.
 
-Current verification after these additions: `make check` passed 72 tests with
+Current verification after these additions: `make check` passed 76 tests with
 zero failures and zero skips. Governance/API targeted tests passed 12 tests.

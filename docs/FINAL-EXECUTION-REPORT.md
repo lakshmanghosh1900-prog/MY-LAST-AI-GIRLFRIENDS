@@ -17,7 +17,7 @@ failed push is historical evidence.
 | Workspace | `C:\Users\User\Desktop\MY LAST AI GIRLFRIENDS` |
 | Working branch | `feat/mlag-real-ai-premium-ui` |
 | Last published feature tip at resume | Owner-verified `fdf5fc473813609b23232960c397895fe8cc64fd` |
-| Current local status | Local implementation tip `13494fc` plus refreshed evidence commits; current local suite is 72 tests |
+| Current local status | Local implementation tip `b8f1a6a` plus refreshed evidence commits; current local suite is 76 tests |
 | Local `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | `origin/main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | Remote feature branch | `feat/mlag-real-ai-premium-ui` at owner-verified `fdf5fc473813609b23232960c397895fe8cc64fd` |
@@ -69,7 +69,7 @@ slices; external calendar/email side effects remain disabled.
 | 14 | `BLOCKED_EXTERNAL / CONTRACT PARTIAL` | Android companion remains unavailable; truthful capability inventory reports the missing toolchain/device. |
 | 15 | `PARTIAL — LOCAL GOVERNANCE` | Hashed device enrollment, one-time replay-resistant pairing, diagnostics, identity verification, last-seen updates, revocation and authenticated routes exist; encrypted transport is not enabled. |
 | 16 | `PARTIAL — READ-ONLY MCP` | Approved credential-free HTTPS JSON-RPC `tools/list`/`tools/call` transport exists under explicit read scopes; write/external scopes are disabled. |
-| 17 | `PARTIAL — REVIEW LIFECYCLE` | Versioned skills with provenance and capability allowlisting exist; self-learning and skill execution are disabled. |
+| 17 | `PARTIAL — DECLARATIVE EXECUTION` | Versioned skills with provenance, capability allowlisting and approved one-step local text-file execution exist; shell/code/network/provider/side-effect execution and self-learning are disabled. |
 | 18 | `PARTIAL — BOUNDED LOCAL` | Fixed-role local orchestration, durable evidence and authenticated readback exist; provider-backed multi-step delegation remains open. |
 | 19 | `PARTIAL — LOCAL ACTIONS` | Hashed approvals and single-use local schedule execution exist; calendar/email side effects remain disabled. |
 | 20 | `PARTIAL — LOCAL PROVIDER` | Optional loopback Ollama adapter and capability inventory exist; no local service/device mesh was verified. |
@@ -176,7 +176,7 @@ quality or external-action evaluation.
 | `uv sync --locked` | `PASS` |
 | `uv run --locked python -m compileall -q src tests` | `PASS` |
 | `make -C /tmp/mlag-ebd-baseline check` | `PASS` — published `ebd37c3`, 48 tests, 48 passed, 0 failed, 0 skipped |
-| `make check` | `PASS` — local `13494fc` continuation, 72 tests, 72 passed, 0 failed, 0 skipped |
+| `make check` | `PASS` — local `b8f1a6a` continuation, 76 tests, 76 passed, 0 failed, 0 skipped |
 | Configuration targeted suite | `PASS` — 11 tests |
 | Migration targeted suite | `PASS` — 2 tests |
 | Authenticated local health/conversation smoke | `PASS` — health 200, conversation 201 |
@@ -322,8 +322,8 @@ budget events and 114 audit events. The invalid original is separately preserved
 byte-for-byte at
 `data/migration-backups/canonical-invalid-preserved-20261018T000000Z.sqlite3`.
 
-An isolated copy of the candidate initialized through migration 9 with integrity
-`ok`, schema version `9`, unchanged existing counts and governance/action tables.
+An isolated copy of the candidate initialized through migration 10 with integrity
+`ok`, schema version `10`, unchanged existing counts and governance/action tables.
 No migration or replacement was performed against the canonical live path.
 
 ## Stages 14–21 current local slices
@@ -336,7 +336,8 @@ No migration or replacement was performed against the canonical live path.
 - Stage 16 has approved credential-free HTTPS JSON-RPC `tools/list`/`tools/call`
   transport under explicit read scopes; write/external scopes are disabled.
 - Stage 17 has provenance and draft/review/approval/revocation skill lifecycle;
-  shell/arbitrary-code capabilities and skill execution are disabled.
+  approved definitions execute only one bounded local text-file read, while
+  shell/arbitrary-code/network/provider/side-effect execution is disabled.
 - Stage 18 has bounded fixed-role local orchestration with depth/capability
   limits, durable evidence and authenticated readback; provider-backed multi-step
   delegation remains open.
@@ -349,7 +350,7 @@ No migration or replacement was performed against the canonical live path.
   `/v1/capabilities`; Docker cleanup, provenance, PR and `main` integration
   remain open.
 
-After these additions, `make check` passed 72 tests with zero failures or skips.
+After these additions, `make check` passed 76 tests with zero failures or skips.
 These are partial slices, not completed stages.
 
 ## Draft PR #1 status
@@ -404,7 +405,7 @@ for the observed stale-sidecar condition. Do not reset the database.
 The bounded local-first MVP implementation through Stage 05 is verified, and a
 real application-level Gemini smoke passed in the configured environment. The
 published `fdf5fc4` baseline has the earlier 48-test evidence; the local
-continuation through `13494fc` has 72 passing tests with no skips. The owner has supplied PASS
+continuation through `b8f1a6a` has 76 passing tests with no skips. The owner has supplied PASS
 evidence for the Docker image build and container smoke, but exact
 source-commit/image provenance is unverified and cleanup remains PENDING. Local
 continuation commits are not yet published, PR #1 remains a draft, and main

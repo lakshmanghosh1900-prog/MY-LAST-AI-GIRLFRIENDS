@@ -181,7 +181,7 @@ conversation data.
 | Scheduling | LIMITED: authenticated durable one-shot local reminders; recurring/background execution not implemented |
 | Device pairing | LIMITED: local hashed enrollment, one-time challenge verification and revocation; encrypted transport disabled |
 | MCP connectors | LIMITED: approved credential-free HTTPS read-only JSON-RPC transport; write/external scopes disabled |
-| Skills | LIMITED: provenance and review lifecycle; shell/code execution disabled |
+| Skills | LIMITED: approved one-step local text-file declarative skills; shell/code/network/provider/side-effect execution disabled |
 | Background agents | LIMITED: bounded local fixed-role orchestration; remote delegation disabled |
 | External actions/approval | LIMITED: single-use approved local schedule action; calendar/email side effects disabled |
 | Optional local brain | LIMITED: Ollama adapter is supported when a local Ollama endpoint/model is available |

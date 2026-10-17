@@ -75,22 +75,22 @@ full stages or authorize remote memory/document transfer.
 
 The owner-verified published feature baseline is
 `fdf5fc473813609b23232960c397895fe8cc64fd`. Local continuation through
-`13494fc` is not published or stage-complete. Current status is:
+`b8f1a6a` is not published or stage-complete. Current status is:
 
 | Stage | Current status | Implemented slice / remaining gate |
 |---|---|---|
 | 14 | `BLOCKED_EXTERNAL / CONTRACT PARTIAL` | Capability inventory truthfully reports missing Android toolchain/device evidence. |
 | 15 | `PARTIAL — LOCAL GOVERNANCE` | Hashed device enrollment, one-time replay-resistant pairing, diagnostics, identity verification, last-seen tracking, revocation and authenticated routes; no encrypted PC–phone transport. |
 | 16 | `PARTIAL — READ-ONLY MCP` | Approved credential-free HTTPS JSON-RPC `tools/list`/`tools/call` transport under explicit read scopes; write/external scopes disabled. |
-| 17 | `PARTIAL — REVIEW LIFECYCLE` | Provenance, capability allowlisting and draft/review/approved/revoked skills; no code execution or self-learning. |
+| 17 | `PARTIAL — DECLARATIVE EXECUTION` | Provenance, capability allowlisting, draft/review/approved/revoked lifecycle and one bounded local text-file skill; no shell/code/network/provider/side-effect execution or self-learning. |
 | 18 | `PARTIAL — BOUNDED LOCAL` | Fixed-role bounded orchestration, durable evidence and authenticated readback; provider-backed multi-step delegation remains open. |
 | 19 | `PARTIAL — LOCAL ACTIONS` | Hashed approval parameters/nonces/sessions, future-expiry validation and single-use local schedule execution; calendar/email side effects disabled. |
 | 20 | `PARTIAL — LOCAL PROVIDER` | Device/local-brain inventory and optional loopback Ollama adapter; no local service/device mesh verified. |
 | 21 | `PARTIAL — LOCAL GATE` | Integrity/schema/secret-free readiness endpoints; Docker cleanup, provenance, PR and `main` integration remain open. |
 
-The current deterministic suite is 72 passing tests. The canonical SQLite path
+The current deterministic suite is 76 passing tests. The canonical SQLite path
 is `data/my_last_ai_girlfriends.sqlite3`; it is preserved and not migrated
 because its header is invalid. The verified recovery candidate remains in
-`data/migration-backups/`, and migrations through version 9 have only been
+`data/migration-backups/`, and migrations through version 10 have only been
 executed on an isolated copy with all existing row counts preserved. No live
 replacement has been performed.
