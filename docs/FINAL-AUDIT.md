@@ -1,5 +1,11 @@
 # MY LAST AI GIRLFRIENDS — Final Repository-Aware Implementation Audit
 
+> **Historical audit snapshot:** This document records the earlier migration
+> handoff state. Current branch publication, test evidence and release blockers
+> are maintained in `docs/EXECUTION-STATUS.md`, `docs/TEST-EVIDENCE.md` and
+> `docs/FINAL-EXECUTION-REPORT.md`. Do not interpret its earlier “not live
+> tested”, 27-test or Docker statements as the latest execution result.
+
 **Review date:** 17 October 2026
 **Baseline:** `c98a091330a05ef73823d9744bfd58d5c973059f`
 **Feature branch:** `feat/mlag-real-ai-premium-ui`

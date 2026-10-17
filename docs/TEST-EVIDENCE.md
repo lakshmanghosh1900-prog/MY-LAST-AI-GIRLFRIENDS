@@ -96,7 +96,7 @@ connectivity. No paid provider call was made in this smoke.
   remain ignored and are not release artifacts.
 - Direct live Gemini application evidence remains a later Stage 03 check.
 
-## Git publication evidence
+## Historical Git publication evidence
 
 The verified Stage 01 commit is local at `31bc78a`. The attempted publication
 command was:
@@ -105,9 +105,30 @@ command was:
 git push --set-upstream origin feat/mlag-real-ai-premium-ui
 ```
 
-Result: `BLOCKED_EXTERNAL` — GitHub HTTPS authentication was unavailable:
+The first publication attempt was `BLOCKED_EXTERNAL` — GitHub HTTPS
+authentication was unavailable:
 `fatal: could not read Username for 'https://github.com': No such device or
-address`. No push or merge is claimed.
+address`.
+
+## Current Git publication evidence — rechecked 17 October 2026
+
+```text
+git fetch origin --prune
+PASS
+
+git ls-remote --heads origin feat/mlag-real-ai-premium-ui
+PASS — d7a24301a05ba48d06c509d53c7eb8070882cd09
+
+git ls-remote --heads origin main
+PASS — c98a091330a05ef73823d9744bfd58d5c973059f
+
+GitHub API pull-request query for head feat/mlag-real-ai-premium-ui, base main
+PASS — empty result; no pull request currently exists
+```
+
+The feature branch is published and matches the local tip. `main` remains at
+the earlier commit. No merge is claimed. The `gh` CLI is unavailable in this
+container, so PR creation/check operations remain an external follow-up.
 
 ## Stage 02 verification — 17 October 2026
 
@@ -195,9 +216,16 @@ BLOCKED_EXTERNAL — /bin/bash: docker: command not found
 
 docker info --format '{{.ServerVersion}}'
 BLOCKED_EXTERNAL — /bin/bash: docker: command not found
+
+command -v powershell.exe; command -v pwsh; command -v where.exe
+NOT_RUN — no native Windows command bridge is available in this WSL execution container
+
+Native Windows Docker paths under /mnt/c and /c/Program Files/Docker
+NOT_FOUND in the mounted filesystem
 ```
 
 The deterministic MVP checks are green. Stage 06 remains blocked because the
-required Docker build/container smoke cannot be executed in this environment,
-and GitHub publication remains blocked by unavailable HTTPS credentials. No
-Docker pass, push, merge or release readiness is claimed.
+required Docker build/container smoke cannot be executed in this environment.
+Feature publication is now verified. PR creation and main integration are
+deferred until the Docker-backed Stage 06 gate closes. No Docker pass, merge or
+release readiness is claimed.
