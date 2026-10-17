@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from .budget import BudgetLedger
+from .android_contract import ConnectionDiagnostics
 from .config import Config
 from .capabilities import inventory
 from .documents import DocumentError, answer_from_document_chunks, read_and_prepare
@@ -345,6 +346,20 @@ class MyLastAIGirlfriendsService:
 
     def list_devices(self) -> list[dict]:
         return self.db.list_devices()
+
+    def device_diagnostics(self, device_id: str) -> dict:
+        device = self.db.get_device(device_id)
+        if device is None:
+            raise KeyError("device not found")
+        return ConnectionDiagnostics(
+            device_id=device["id"],
+            device_status=device["status"],
+            transport="authenticated-loopback-http",
+            encrypted=False,
+            replay_protected=True,
+            pairing_available=device["status"] == "ENROLLED",
+            last_seen_at=device.get("last_seen_at"),
+        ).as_dict()
 
     def revoke_device(self, device_id: str) -> bool:
         if self.db.get_device(device_id) is None:

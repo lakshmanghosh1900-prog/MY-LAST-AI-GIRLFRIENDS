@@ -152,6 +152,13 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
         if path == "/v1/agents/runs":
             self._send(HTTPStatus.OK, {"runs": self.server.service.list_agent_runs()}, request_id)
             return
+        parts = [part for part in path.split("/") if part]
+        if len(parts) == 4 and parts[:2] == ["v1", "devices"] and parts[3] == "diagnostics":
+            try:
+                self._send(HTTPStatus.OK, self.server.service.device_diagnostics(parts[2]), request_id)
+            except KeyError:
+                self._error(HTTPStatus.NOT_FOUND, "DEVICE_NOT_FOUND", "Device does not exist.", request_id)
+            return
         if path == "/v1/admin/budget":
             self._send(HTTPStatus.OK, self.server.service.budget_status(), request_id)
             return

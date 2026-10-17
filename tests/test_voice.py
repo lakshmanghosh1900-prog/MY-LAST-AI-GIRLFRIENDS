@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from my_last_ai_girlfriends.voice import VoiceError, normalize_transcript, unsupported_voice_capability
+from my_last_ai_girlfriends.android_contract import ANDROID_API_CONTRACT_VERSION, ConnectionDiagnostics
 
 
 class VoiceTests(unittest.TestCase):
@@ -17,6 +18,11 @@ class VoiceTests(unittest.TestCase):
         self.assertFalse(capability.input_supported)
         self.assertFalse(capability.output_supported)
         self.assertEqual(capability.provider, "none")
+
+    def test_android_contract_reports_unsupported_transport_truthfully(self):
+        diagnostics = ConnectionDiagnostics("device-1", "ENROLLED", "authenticated-loopback-http", False, True, True, None).as_dict()
+        self.assertEqual(diagnostics["contract_version"], ANDROID_API_CONTRACT_VERSION)
+        self.assertFalse(diagnostics["encrypted"])
 
 
 if __name__ == "__main__":
