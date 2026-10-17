@@ -41,10 +41,10 @@ head/base PR; the `gh` executable is not installed in this execution container,
 so no PR mutation was attempted.
 
 **Draft PR #1 recheck:** GitHub's pull-request API reports the existing draft PR
-as `open`, `mergeable=true`, `mergeable_state=clean`, with no status contexts and
-zero check runs for the earlier published SHA `ebd37c3`; the newer `fdf5fc4`
-remote tip has not had a fresh API/check-run recheck in this session. Therefore the reported
-`mergeability=false` is stale or UI-specific; no merge was attempted. The PR body
+at current published SHA `fdf5fc4` as `open`, `draft=true`, `mergeable=true`,
+`mergeable_state=clean`, with zero status contexts and zero check runs. Therefore
+the reported `mergeability=false` is stale or UI-specific; no merge was attempted.
+The PR body
 still contains the older 48-test/Stages 14–21-not-started wording and is not
 treated as current implementation evidence.
 

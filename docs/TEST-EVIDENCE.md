@@ -444,7 +444,7 @@ PASS — no credential/key markers; ordinary `Bearer` protocol references are no
 ### Draft PR #1 status
 
 ```text
-GitHub pull-request API: open, draft=true, head=ebd37c3, base=c98a091
+GitHub pull-request API: open, draft=true, head=fdf5fc4, base=c98a091
 mergeable: true
 mergeable_state: clean
 status contexts: 0

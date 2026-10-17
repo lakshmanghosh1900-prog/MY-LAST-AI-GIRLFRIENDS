@@ -184,7 +184,7 @@ quality or external-action evaluation.
 | Invalid real-mode HTTP provider URL | `PASS` — exit 2, HTTPS validation safe-stop |
 | Real Gemini application smoke | `PASS` — 3 sequential `SUCCEEDED` calls, `ai_generated=true` |
 | `docker --version` / Docker info | `BLOCKED_EXTERNAL` — Docker executable absent; owner supplied build/smoke assertions separately |
-| GitHub feature publication | `PASS` — owner-verified at `ebd37c3`; local continuation is not yet published because the latest normal push failed due to unavailable Git credentials |
+| GitHub feature publication | `PASS` — owner-verified at `fdf5fc4`; local continuation is not yet published because the latest normal push failed due to unavailable Git credentials |
 
 The symlink test did not skip in this Linux container; all 53 discovered tests
 passed. The live provider smoke used the existing ignored local configuration,
@@ -354,11 +354,11 @@ These are partial slices, not completed stages.
 
 ## Draft PR #1 status
 
-The existing draft PR #1 was checked through GitHub's pull-request API. The last
-complete API check was at the earlier published head `ebd37c3`; it reported `open`, `draft=true`,
-`mergeable=true`, `mergeable_state=clean`, zero status contexts and zero check
-runs. The requested `mergeability=false` state was not reproducible and appears
-to be stale/UI-specific. No merge was attempted. The PR description remains
+The existing draft PR #1 was checked through GitHub's pull-request API at current
+published head `fdf5fc4`; it reports `open`, `draft=true`, `mergeable=true`,
+`mergeable_state=clean`, zero status contexts and zero check runs. The requested
+`mergeability=false` state was not reproducible and appears to be stale/UI-specific.
+No merge was attempted. The PR description remains
 stale because it still describes the 48-test baseline and says Stages 14–21 are
 not started; it is not treated as current evidence.
 
