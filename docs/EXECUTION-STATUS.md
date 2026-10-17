@@ -9,7 +9,10 @@
 **Remote `origin/main` at baseline:** `c98a091330a05ef73823d9744bfd58d5c973059f`
 **Remote refresh:** `git fetch origin --prune` completed; remote `main` still
 points to `c98a091330a05ef73823d9744bfd58d5c973059f`.
-**Remote push status:** `NOT_RUN` for this execution record.
+**Remote push status:** `BLOCKED_EXTERNAL` — `git push --set-upstream
+origin feat/mlag-real-ai-premium-ui` could not read GitHub credentials:
+`fatal: could not read Username for 'https://github.com': No such device or
+address`.
 
 ## Task 00 — Repository recovery and baseline
 
@@ -124,8 +127,10 @@ for this filesystem condition. No database reset was performed.
 
 ### Stage 01 commit/push
 
-Commit and feature-branch push are pending the staged-diff review for this
-execution. No remote synchronization is claimed yet.
+Commit: `31bc78a` (`fix(stage-01): harden configuration and startup recovery`).
+The commit is local and verified. Feature-branch push is
+`BLOCKED_EXTERNAL` by the GitHub authentication error above; no remote
+synchronization is claimed.
 
 ## Baseline checks
 

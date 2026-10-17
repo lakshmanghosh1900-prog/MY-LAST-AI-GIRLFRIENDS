@@ -96,6 +96,19 @@ connectivity. No paid provider call was made in this smoke.
   remain ignored and are not release artifacts.
 - Direct live Gemini application evidence remains a later Stage 03 check.
 
+## Git publication evidence
+
+The verified Stage 01 commit is local at `31bc78a`. The attempted publication
+command was:
+
+```text
+git push --set-upstream origin feat/mlag-real-ai-premium-ui
+```
+
+Result: `BLOCKED_EXTERNAL` — GitHub HTTPS authentication was unavailable:
+`fatal: could not read Username for 'https://github.com': No such device or
+address`. No push or merge is claimed.
+
 ## Evidence rules
 
 - A mocked provider response proves only the adapter contract, not live Gemini.
