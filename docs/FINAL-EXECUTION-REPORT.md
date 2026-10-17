@@ -182,7 +182,7 @@ quality or external-action evaluation.
 | Invalid real-mode HTTP provider URL | `PASS` — exit 2, HTTPS validation safe-stop |
 | Real Gemini application smoke | `PASS` — 3 sequential `SUCCEEDED` calls, `ai_generated=true` |
 | `docker --version` / Docker info | `BLOCKED_EXTERNAL` — Docker executable absent; owner supplied build/smoke assertions separately |
-| GitHub feature publication | `PASS` — owner-verified at `ebd37c3`; local `1df67f6`/`a3106fb`/`52b5ef1` continuation is not yet published |
+| GitHub feature publication | `PASS` — owner-verified at `ebd37c3`; local continuation is not yet published because the latest normal push failed due to unavailable Git credentials |
 
 The symlink test did not skip in this Linux container; all 53 discovered tests
 passed. The live provider smoke used the existing ignored local configuration,

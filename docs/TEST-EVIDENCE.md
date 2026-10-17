@@ -406,7 +406,7 @@ current owner-published baseline is `ebd37c3`:
 
 ```text
 git push origin feat/mlag-real-ai-premium-ui
-NOT RUN for the current unpublished continuation commits
+BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No such device or address
 ```
 
 Remote feature SHA: owner-verified `ebd37c3`; local continuation commits

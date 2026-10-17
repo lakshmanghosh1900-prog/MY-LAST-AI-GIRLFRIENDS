@@ -32,7 +32,9 @@ durable agent-run readback and approval-expiry validation on top of the Stage
 
 **Current local evidence/documentation series:** documentation below the current
 checkpoint may retain `3acccc3` and earlier commit references as historical
-evidence only. No commit after `ebd37c3` is claimed as remote yet.
+evidence only. No commit after `ebd37c3` is claimed as remote yet. The latest
+normal push retry after local verification failed with
+`fatal: could not read Username for 'https://github.com': No such device or address`.
 
 **Pull request status:** `OPEN DRAFT #1` — the GitHub API reports the existing
 head/base PR; the `gh` executable is not installed in this execution container,
