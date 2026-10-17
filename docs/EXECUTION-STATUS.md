@@ -18,10 +18,10 @@ points to `c98a091330a05ef73823d9744bfd58d5c973059f`.
 **Feature branch publication:** `PASS` — `origin/feat/mlag-real-ai-premium-ui`
 matches `3acccc3ef86cf7f4c44410da76c9ea8d3985982a` after a fresh fetch.
 
-**Current local evidence commit:** `2200953` is one commit ahead of the
-published feature branch. Push was attempted and failed with
+**Current local evidence/documentation series:** commits after published
+`3acccc3` remain local-only. The latest push was attempted and failed with
 `fatal: could not read Username for 'https://github.com': No such device or
-address`; no current local-only commit is claimed as remote.
+address`; no post-`3acccc3` commit is claimed as remote.
 
 **Pull request status:** `NOT FOUND` — GitHub API query for this head/base
 returned an empty list. The `gh` executable is not installed in this execution
@@ -91,7 +91,7 @@ for this filesystem condition. No database reset was performed.
 | 03 | CLOSED — VERIFIED | Gemini adapter contract/error tests and three repeated application-level live requests pass with configured private credentials; no fake fallback observed. |
 | 04 | CLOSED — VERIFIED | Same-conversation context, ordering, current-message de-duplication and cross-conversation isolation pass in deterministic service tests. |
 | 05 | CLOSED — VERIFIED | Branded responsive UI, history/session controls, keyboard behavior, safe text rendering, bounded file tool and readable HTML extraction are implemented and covered by contract/security tests. |
-| 06 | BLOCKED_EXTERNAL | Owner-supplied Docker build and container-smoke checks pass; source-commit provenance is unverified, cleanup is PENDING, and PR/main integration remains open. |
+| 06 | BLOCKED_EXTERNAL | Owner-supplied Docker build and container-smoke checks pass; source-commit provenance is unverified, cleanup is PENDING, post-`3acccc3` documentation is local-only, and PR/main integration remains open. |
 | 07 | NOT STARTED | Waiting for Stage 06. |
 | 08 | NOT STARTED | Waiting for Stage 07. |
 | 09 | NOT STARTED | Waiting for Stage 08. |

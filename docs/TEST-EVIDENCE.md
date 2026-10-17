@@ -259,16 +259,16 @@ Image source-commit provenance   UNVERIFIED
 Container cleanup                 PENDING — finally was separate; result not supplied
 ```
 
-The evidence documentation was committed locally as `2200953`, but the
-publication retry failed:
+The owner-evidence documentation series after published SHA `3acccc3` is local
+only, and the latest publication retry failed:
 
 ```text
 git push origin feat/mlag-real-ai-premium-ui
 BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No such device or address
 ```
 
-Remote feature SHA remains `3acccc3`; local evidence commit `2200953` is not
-yet remote.
+Remote feature SHA remains `3acccc3`; post-`3acccc3` evidence commits are not
+yet remote. The local commits `2200953` and `94a990c` remain preserved.
 
 The container assertions and build result are not independently reproduced
 here because this execution container has no Docker CLI or native Windows
