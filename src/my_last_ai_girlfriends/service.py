@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from .budget import BudgetLedger
 from .android_contract import ConnectionDiagnostics
 from .config import Config
+from .connectors import ConnectorError, call_mcp
 from .capabilities import inventory
 from .documents import DocumentError, answer_from_document_chunks, read_and_prepare
 from .lifecycle import Lifecycle
@@ -406,6 +407,19 @@ class MyLastAIGirlfriendsService:
         if self.db.get_connector(connector_id) is None:
             raise KeyError("connector not found")
         return self.db.transition_connector(connector_id, status)
+
+    def invoke_connector(self, connector_id: str, method: str, params: dict) -> dict:
+        connector = self.db.get_connector(connector_id)
+        if connector is None:
+            raise KeyError("connector not found")
+        if connector["status"] != "APPROVED":
+            raise GovernanceError("CONNECTOR_NOT_APPROVED", "Only approved connectors can be invoked.")
+        scope = connector["scope"].strip().lower()
+        if not (scope == "read:*" or scope == f"read:{method.lower()}"):
+            raise GovernanceError("CONNECTOR_SCOPE_DENIED", "The connector scope does not permit this read operation.")
+        result = call_mcp(connector["endpoint"], method, params, self.config.fetch_timeout_seconds)
+        self.db.add_audit("connector_invoked", {"connector_id": connector_id, "method": method, "parameters_hash": secret_hash(canonical_json(params))})
+        return {"connector_id": connector_id, "scope": scope, "result": result}
 
     def create_skill(self, name: str, version: str, provenance: str, capabilities: list[str]) -> dict:
         if not all(isinstance(value, str) and value.strip() for value in (name, version, provenance)):

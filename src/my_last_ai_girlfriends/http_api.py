@@ -345,6 +345,14 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                     return
                 self._send(HTTPStatus.CREATED, self.server.service.register_connector(name, endpoint, scope), request_id)
                 return
+            if len(parts) == 4 and parts[:2] == ["v1", "connectors"] and parts[3] == "call":
+                method = payload.get("method")
+                params = payload.get("params", {})
+                if not isinstance(method, str) or not isinstance(params, dict):
+                    self._error(HTTPStatus.BAD_REQUEST, "CONNECTOR_CALL_INVALID", "method and object params are required.", request_id)
+                    return
+                self._send(HTTPStatus.OK, self.server.service.invoke_connector(parts[2], method, params), request_id)
+                return
             if path == "/v1/skills":
                 values = [payload.get(key) for key in ("name", "version", "provenance")]
                 if not all(isinstance(value, str) for value in values) or not isinstance(payload.get("capabilities"), list):
@@ -425,6 +433,9 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
             return
         except OrchestrationError as exc:
             self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
+            return
+        except ConnectorError as exc:
+            self._error(HTTPStatus.BAD_GATEWAY, exc.code, str(exc), request_id)
             return
         except RuntimeError as exc:
             self._error(HTTPStatus.SERVICE_UNAVAILABLE, "SERVICE_NOT_READY", str(exc), request_id)
