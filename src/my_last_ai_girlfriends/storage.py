@@ -332,6 +332,63 @@ class Database:
                     "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
                     (6, utc_now()),
                 )
+                applied.add(6)
+            if 7 not in applied:
+                self.connection.executescript("""
+                CREATE TABLE IF NOT EXISTS devices (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    identity_hash TEXT NOT NULL UNIQUE,
+                    status TEXT NOT NULL CHECK(status IN ('ENROLLED', 'REVOKED')),
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    last_seen_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS connectors (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    endpoint TEXT NOT NULL,
+                    scope TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('DRAFT', 'APPROVED', 'REVOKED')),
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS skills (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    version TEXT NOT NULL,
+                    provenance TEXT NOT NULL,
+                    capabilities_json TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('DRAFT', 'REVIEW', 'APPROVED', 'REVOKED')),
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS approvals (
+                    id TEXT PRIMARY KEY,
+                    action_type TEXT NOT NULL,
+                    parameters_hash TEXT NOT NULL,
+                    approver_session_hash TEXT,
+                    nonce_hash TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('PENDING', 'APPROVED', 'CONSUMED', 'EXPIRED', 'REVOKED')),
+                    expires_at TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS agent_runs (
+                    id TEXT PRIMARY KEY,
+                    prompt_hash TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    depth INTEGER NOT NULL,
+                    roles_json TEXT NOT NULL,
+                    evidence_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
+                """)
+                self.connection.execute(
+                    "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                    (7, utc_now()),
+                )
 
     @contextmanager
     def transaction(self, immediate: bool = True) -> Iterator[sqlite3.Connection]:
@@ -720,6 +777,100 @@ class Database:
     def complete_schedule(self, schedule_id: str) -> None:
         with self.transaction():
             self.connection.execute("UPDATE schedules SET status = 'COMPLETED', updated_at = ? WHERE id = ?", (utc_now(), schedule_id))
+
+    def enroll_device(self, name: str, identity_hash: str) -> dict:
+        device_id = self.new_id()
+        now = utc_now()
+        with self.transaction():
+            self.connection.execute(
+                "INSERT INTO devices(id, name, identity_hash, status, created_at, updated_at) VALUES (?, ?, ?, 'ENROLLED', ?, ?)",
+                (device_id, name, identity_hash, now, now),
+            )
+        return self.get_device(device_id) or {}
+
+    def get_device(self, device_id: str) -> dict | None:
+        row = self.connection.execute("SELECT id, name, status, created_at, updated_at, last_seen_at FROM devices WHERE id = ?", (device_id,)).fetchone()
+        return dict(row) if row else None
+
+    def list_devices(self) -> list[dict]:
+        return [dict(row) for row in self.connection.execute("SELECT id, name, status, created_at, updated_at, last_seen_at FROM devices ORDER BY created_at, id").fetchall()]
+
+    def revoke_device(self, device_id: str) -> bool:
+        with self.transaction():
+            cursor = self.connection.execute("UPDATE devices SET status = 'REVOKED', updated_at = ? WHERE id = ? AND status = 'ENROLLED'", (utc_now(), device_id))
+        return cursor.rowcount == 1
+
+    def verify_device_identity(self, device_id: str, identity_hash: str) -> bool:
+        row = self.connection.execute("SELECT status, identity_hash FROM devices WHERE id = ?", (device_id,)).fetchone()
+        if not row or row["status"] != "ENROLLED":
+            return False
+        if row["identity_hash"] != identity_hash:
+            return False
+        with self.transaction():
+            self.connection.execute("UPDATE devices SET last_seen_at = ?, updated_at = ? WHERE id = ?", (utc_now(), utc_now(), device_id))
+        return True
+
+    def add_connector(self, name: str, endpoint: str, scope: str) -> dict:
+        connector_id = self.new_id()
+        now = utc_now()
+        with self.transaction():
+            self.connection.execute("INSERT INTO connectors(id, name, endpoint, scope, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'DRAFT', ?, ?)", (connector_id, name, endpoint, scope, now, now))
+        return self.get_connector(connector_id) or {}
+
+    def get_connector(self, connector_id: str) -> dict | None:
+        row = self.connection.execute("SELECT * FROM connectors WHERE id = ?", (connector_id,)).fetchone()
+        return dict(row) if row else None
+
+    def list_connectors(self) -> list[dict]:
+        return [dict(row) for row in self.connection.execute("SELECT * FROM connectors ORDER BY created_at, id").fetchall()]
+
+    def transition_connector(self, connector_id: str, status: str) -> bool:
+        with self.transaction():
+            cursor = self.connection.execute("UPDATE connectors SET status = ?, updated_at = ? WHERE id = ?", (status, utc_now(), connector_id))
+        return cursor.rowcount == 1
+
+    def add_skill(self, name: str, version: str, provenance: str, capabilities_json: str) -> dict:
+        skill_id = self.new_id(); now = utc_now()
+        with self.transaction():
+            self.connection.execute("INSERT INTO skills(id, name, version, provenance, capabilities_json, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'DRAFT', ?, ?)", (skill_id, name, version, provenance, capabilities_json, now, now))
+        return self.get_skill(skill_id) or {}
+
+    def get_skill(self, skill_id: str) -> dict | None:
+        row = self.connection.execute("SELECT * FROM skills WHERE id = ?", (skill_id,)).fetchone()
+        return dict(row) if row else None
+
+    def list_skills(self) -> list[dict]:
+        return [dict(row) for row in self.connection.execute("SELECT * FROM skills ORDER BY created_at, id").fetchall()]
+
+    def transition_skill(self, skill_id: str, status: str) -> bool:
+        with self.transaction():
+            cursor = self.connection.execute("UPDATE skills SET status = ?, updated_at = ? WHERE id = ?", (status, utc_now(), skill_id))
+        return cursor.rowcount == 1
+
+    def create_approval(self, action_type: str, parameters_hash: str, nonce_hash: str, expires_at: str) -> dict:
+        approval_id = self.new_id(); now = utc_now()
+        with self.transaction():
+            self.connection.execute("INSERT INTO approvals(id, action_type, parameters_hash, nonce_hash, status, expires_at, created_at, updated_at) VALUES (?, ?, ?, ?, 'PENDING', ?, ?, ?)", (approval_id, action_type, parameters_hash, nonce_hash, expires_at, now, now))
+        return self.get_approval(approval_id) or {}
+
+    def get_approval(self, approval_id: str) -> dict | None:
+        row = self.connection.execute("SELECT id, action_type, parameters_hash, status, expires_at, created_at, updated_at FROM approvals WHERE id = ?", (approval_id,)).fetchone()
+        return dict(row) if row else None
+
+    def list_approvals(self) -> list[dict]:
+        return [dict(row) for row in self.connection.execute("SELECT id, action_type, parameters_hash, status, expires_at, created_at, updated_at FROM approvals ORDER BY created_at, id").fetchall()]
+
+    def transition_approval(self, approval_id: str, status: str, approver_session_hash: str | None = None) -> bool:
+        with self.transaction():
+            cursor = self.connection.execute("UPDATE approvals SET status = ?, approver_session_hash = COALESCE(?, approver_session_hash), updated_at = ? WHERE id = ?", (status, approver_session_hash, utc_now(), approval_id))
+        return cursor.rowcount == 1
+
+    def create_agent_run(self, run_id: str, prompt_hash: str, status: str, depth: int, roles_json: str, evidence_json: str) -> dict:
+        now = utc_now()
+        with self.transaction():
+            self.connection.execute("INSERT INTO agent_runs(id, prompt_hash, status, depth, roles_json, evidence_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (run_id, prompt_hash, status, depth, roles_json, evidence_json, now, now))
+        row = self.connection.execute("SELECT * FROM agent_runs WHERE id = ?", (run_id,)).fetchone()
+        return dict(row) if row else {}
 
     def month_usage(self, bucket_month: str) -> int:
         row = self.connection.execute(

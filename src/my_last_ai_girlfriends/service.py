@@ -7,9 +7,12 @@ from datetime import datetime, timezone
 
 from .budget import BudgetLedger
 from .config import Config
+from .capabilities import inventory
 from .documents import DocumentError, read_and_prepare
 from .lifecycle import Lifecycle
 from .memory import MemoryError, validate_expiry, validate_scope
+from .governance import GovernanceError, canonical_json, new_nonce, secret_hash, validate_connector_endpoint
+from .orchestration import OrchestrationError, run_bounded_local_pipeline
 from .policy import DataClass, Decision, PolicyEngine
 from .providers import GeminiProvider, OfflineDemoProvider, Provider, ProviderError, estimate_tokens
 from .redaction import redact
@@ -290,6 +293,92 @@ class MyLastAIGirlfriendsService:
             results.append(run)
         return results
 
+    def enroll_device(self, name: str, identity: str) -> dict:
+        if not isinstance(name, str) or not name.strip() or len(name) > 100:
+            raise GovernanceError("DEVICE_NAME_INVALID", "Device name is required and must be short.")
+        item = self.db.enroll_device(name.strip(), secret_hash(identity))
+        self.db.add_audit("device_enrolled", {"device_id": item["id"]})
+        return item
+
+    def list_devices(self) -> list[dict]:
+        return self.db.list_devices()
+
+    def revoke_device(self, device_id: str) -> bool:
+        if self.db.get_device(device_id) is None:
+            raise KeyError("device not found")
+        return self.db.revoke_device(device_id)
+
+    def verify_device(self, device_id: str, identity: str) -> bool:
+        return self.db.verify_device_identity(device_id, secret_hash(identity))
+
+    def register_connector(self, name: str, endpoint: str, scope: str) -> dict:
+        if not isinstance(name, str) or not name.strip() or len(name) > 100:
+            raise GovernanceError("CONNECTOR_NAME_INVALID", "Connector name is required and must be short.")
+        if not isinstance(scope, str) or not scope.strip() or len(scope) > 200:
+            raise GovernanceError("CONNECTOR_SCOPE_INVALID", "Connector scope is required and must be short.")
+        return self.db.add_connector(name.strip(), validate_connector_endpoint(endpoint), scope.strip())
+
+    def list_connectors(self) -> list[dict]:
+        return self.db.list_connectors()
+
+    def transition_connector(self, connector_id: str, status: str) -> bool:
+        if status not in {"DRAFT", "APPROVED", "REVOKED"}:
+            raise GovernanceError("CONNECTOR_STATUS_INVALID", "Connector status is invalid.")
+        if self.db.get_connector(connector_id) is None:
+            raise KeyError("connector not found")
+        return self.db.transition_connector(connector_id, status)
+
+    def create_skill(self, name: str, version: str, provenance: str, capabilities: list[str]) -> dict:
+        if not all(isinstance(value, str) and value.strip() for value in (name, version, provenance)):
+            raise GovernanceError("SKILL_FIELDS_INVALID", "Skill name, version and provenance are required.")
+        if not isinstance(capabilities, list) or not all(isinstance(item, str) and item.strip() for item in capabilities):
+            raise GovernanceError("SKILL_CAPABILITIES_INVALID", "Skill capabilities must be strings.")
+        if any(item.startswith("shell") or item.startswith("code") for item in capabilities):
+            raise GovernanceError("SKILL_CAPABILITY_REJECTED", "Shell and arbitrary code capabilities are disabled.")
+        return self.db.add_skill(name.strip(), version.strip(), provenance.strip(), canonical_json({"capabilities": capabilities}))
+
+    def list_skills(self) -> list[dict]:
+        return self.db.list_skills()
+
+    def transition_skill(self, skill_id: str, status: str) -> bool:
+        if status not in {"DRAFT", "REVIEW", "APPROVED", "REVOKED"}:
+            raise GovernanceError("SKILL_STATUS_INVALID", "Skill status is invalid.")
+        if status == "APPROVED":
+            skill = self.db.get_skill(skill_id)
+            if not skill or skill["status"] != "REVIEW":
+                raise GovernanceError("SKILL_REVIEW_REQUIRED", "A skill must be reviewed before approval.")
+        if self.db.get_skill(skill_id) is None:
+            raise KeyError("skill not found")
+        return self.db.transition_skill(skill_id, status)
+
+    def create_approval(self, action_type: str, parameters: dict, expires_at: str) -> dict:
+        if action_type not in {"calendar.write", "email.send"}:
+            raise GovernanceError("ACTION_TYPE_DISABLED", "Only narrowly scoped action types are registered; execution remains disabled.")
+        normalized = canonical_json(parameters)
+        nonce = new_nonce()
+        item = self.db.create_approval(action_type, secret_hash(normalized), secret_hash(nonce), expires_at)
+        item["nonce"] = nonce
+        return item
+
+    def transition_approval(self, approval_id: str, status: str, approver_session: str | None = None) -> bool:
+        if status not in {"APPROVED", "REVOKED", "CONSUMED"}:
+            raise GovernanceError("APPROVAL_STATUS_INVALID", "Approval transition is invalid.")
+        if self.db.get_approval(approval_id) is None:
+            raise KeyError("approval not found")
+        if status == "CONSUMED":
+            raise GovernanceError("EXTERNAL_ACTION_DISABLED", "External action execution is disabled in this release.")
+        return self.db.transition_approval(approval_id, status, secret_hash(approver_session) if approver_session else None)
+
+    def list_approvals(self) -> list[dict]:
+        return self.db.list_approvals()
+
+    def run_agents(self, prompt: str) -> dict:
+        run_id = self.db.new_id()
+        result = run_bounded_local_pipeline(run_id, prompt)
+        import hashlib, json
+        self.db.create_agent_run(run_id, hashlib.sha256(prompt.encode("utf-8")).hexdigest(), result.status, result.depth, json.dumps(result.roles), json.dumps(result.evidence))
+        return result.as_dict()
+
     def stop(self) -> str:
         changed = self.lifecycle.begin_stop()
         if changed:
@@ -319,7 +408,11 @@ class MyLastAIGirlfriendsService:
             "provider_status": self.provider.status(),
             "remote_conversation_consent": self.remote_consent_enabled(),
             "policy_version": self.policy.version,
+            "capabilities": inventory(),
         }
+
+    def capability_inventory(self) -> list[dict]:
+        return inventory()
 
     def health(self) -> dict:
         return self.runtime_info()

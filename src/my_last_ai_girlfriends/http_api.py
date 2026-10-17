@@ -12,8 +12,11 @@ from urllib.parse import parse_qs, urlsplit
 from .auth import AuthManager
 from .documents import DocumentError
 from .evaluation import run_local_evaluation
+from .governance import GovernanceError
 from .memory import MemoryError
+from .orchestration import OrchestrationError
 from .research import ResearchError
+from .release import local_readiness
 from .scheduler import SchedulerError
 from .tool_registry import list_tools
 from .redaction import redact
@@ -125,8 +128,26 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
         if path == "/v1/tools":
             self._send(HTTPStatus.OK, {"tools": list_tools()}, request_id)
             return
+        if path == "/v1/capabilities":
+            self._send(HTTPStatus.OK, {"capabilities": self.server.service.capability_inventory()}, request_id)
+            return
+        if path == "/v1/readiness/local":
+            self._send(HTTPStatus.OK, local_readiness(self.server.service.db), request_id)
+            return
         if path == "/v1/evaluations/local":
             self._send(HTTPStatus.OK, run_local_evaluation(self.server.service).as_dict(), request_id)
+            return
+        if path == "/v1/devices":
+            self._send(HTTPStatus.OK, {"devices": self.server.service.list_devices()}, request_id)
+            return
+        if path == "/v1/connectors":
+            self._send(HTTPStatus.OK, {"connectors": self.server.service.list_connectors()}, request_id)
+            return
+        if path == "/v1/skills":
+            self._send(HTTPStatus.OK, {"skills": self.server.service.list_skills()}, request_id)
+            return
+        if path == "/v1/approvals":
+            self._send(HTTPStatus.OK, {"approvals": self.server.service.list_approvals()}, request_id)
             return
         if path == "/v1/admin/budget":
             self._send(HTTPStatus.OK, self.server.service.budget_status(), request_id)
@@ -239,6 +260,72 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                     return
                 self._send(HTTPStatus.CREATED, self.server.service.create_schedule(conversation_id, title, prompt, run_at), request_id)
                 return
+            if path == "/v1/devices":
+                name, identity = payload.get("name"), payload.get("identity")
+                if not isinstance(name, str) or not isinstance(identity, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "DEVICE_FIELDS_INVALID", "name and identity are required strings.", request_id)
+                    return
+                self._send(HTTPStatus.CREATED, self.server.service.enroll_device(name, identity), request_id)
+                return
+            parts = [part for part in path.split("/") if part]
+            if len(parts) == 4 and parts[:2] == ["v1", "devices"] and parts[3] == "verify":
+                identity = payload.get("identity")
+                if not isinstance(identity, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "DEVICE_IDENTITY_INVALID", "identity is required.", request_id)
+                    return
+                self._send(HTTPStatus.OK, {"verified": self.server.service.verify_device(parts[2], identity)}, request_id)
+                return
+            if path == "/v1/connectors":
+                name, endpoint, scope = payload.get("name"), payload.get("endpoint"), payload.get("scope")
+                if not all(isinstance(value, str) for value in (name, endpoint, scope)):
+                    self._error(HTTPStatus.BAD_REQUEST, "CONNECTOR_FIELDS_INVALID", "name, endpoint and scope are required strings.", request_id)
+                    return
+                self._send(HTTPStatus.CREATED, self.server.service.register_connector(name, endpoint, scope), request_id)
+                return
+            if path == "/v1/skills":
+                values = [payload.get(key) for key in ("name", "version", "provenance")]
+                if not all(isinstance(value, str) for value in values) or not isinstance(payload.get("capabilities"), list):
+                    self._error(HTTPStatus.BAD_REQUEST, "SKILL_FIELDS_INVALID", "name, version, provenance and capabilities are required.", request_id)
+                    return
+                self._send(HTTPStatus.CREATED, self.server.service.create_skill(*values, payload["capabilities"]), request_id)
+                return
+            if path == "/v1/approvals":
+                action_type, parameters, expires_at = payload.get("action_type"), payload.get("parameters"), payload.get("expires_at")
+                if not isinstance(action_type, str) or not isinstance(parameters, dict) or not isinstance(expires_at, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "APPROVAL_FIELDS_INVALID", "action_type, parameters and expires_at are required.", request_id)
+                    return
+                self._send(HTTPStatus.CREATED, self.server.service.create_approval(action_type, parameters, expires_at), request_id)
+                return
+            if path == "/v1/agents/run":
+                prompt = payload.get("prompt")
+                if not isinstance(prompt, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "AGENT_PROMPT_REQUIRED", "prompt is required.", request_id)
+                    return
+                self._send(HTTPStatus.OK, self.server.service.run_agents(prompt), request_id)
+                return
+            parts = [part for part in path.split("/") if part]
+            if len(parts) == 4 and parts[0:2] == ["v1", "connectors"] and parts[3] == "status":
+                status = payload.get("status")
+                if not isinstance(status, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "STATUS_REQUIRED", "status is required.", request_id)
+                    return
+                self._send(HTTPStatus.OK, {"updated": self.server.service.transition_connector(parts[2], status)}, request_id)
+                return
+            if len(parts) == 4 and parts[0:2] == ["v1", "skills"] and parts[3] == "status":
+                status = payload.get("status")
+                if not isinstance(status, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "STATUS_REQUIRED", "status is required.", request_id)
+                    return
+                self._send(HTTPStatus.OK, {"updated": self.server.service.transition_skill(parts[2], status)}, request_id)
+                return
+            if len(parts) == 4 and parts[0:2] == ["v1", "approvals"] and parts[3] == "status":
+                status = payload.get("status")
+                session = payload.get("approver_session")
+                if not isinstance(status, str) or (session is not None and not isinstance(session, str)):
+                    self._error(HTTPStatus.BAD_REQUEST, "APPROVAL_STATUS_INVALID", "status is required and session must be a string.", request_id)
+                    return
+                self._send(HTTPStatus.OK, {"updated": self.server.service.transition_approval(parts[2], status, session)}, request_id)
+                return
             parts = [part for part in path.split("/") if part]
             if len(parts) == 4 and parts[:2] == ["v1", "conversations"] and parts[3] == "messages":
                 content = payload.get("content")
@@ -268,6 +355,12 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
             self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
             return
         except SchedulerError as exc:
+            self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
+            return
+        except GovernanceError as exc:
+            self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
+            return
+        except OrchestrationError as exc:
             self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
             return
         except RuntimeError as exc:
@@ -301,5 +394,11 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.OK, {"cancelled": self.server.service.cancel_schedule(parts[2])}, request_id)
             except KeyError:
                 self._error(HTTPStatus.NOT_FOUND, "SCHEDULE_NOT_FOUND", "Schedule does not exist.", request_id)
+            return
+        if len(parts) == 4 and parts[:2] == ["v1", "devices"] and parts[3] == "revoke":
+            try:
+                self._send(HTTPStatus.OK, {"revoked": self.server.service.revoke_device(parts[2])}, request_id)
+            except KeyError:
+                self._error(HTTPStatus.NOT_FOUND, "DEVICE_NOT_FOUND", "Device does not exist.", request_id)
             return
         self._error(HTTPStatus.NOT_FOUND, "NOT_FOUND", "Route not found.", request_id)

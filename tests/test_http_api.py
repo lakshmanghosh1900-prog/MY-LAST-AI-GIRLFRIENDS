@@ -77,6 +77,42 @@ class HttpApiTests(unittest.TestCase):
                 server.server_close()
                 service.close()
 
+    def test_capability_readiness_and_governance_routes_are_authenticated(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            server = MyLastAIGirlfriendsHTTPServer(("127.0.0.1", 0), service)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            port = server.server_address[1]
+            token = "T" * 48
+            headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+            connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+            try:
+                connection.request("GET", "/v1/capabilities", headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                capabilities = json.loads(response.read())["capabilities"]
+                self.assertIn("device_pairing", {item["id"] for item in capabilities})
+
+                connection.request("GET", "/v1/readiness/local", headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertTrue(json.loads(response.read())["ready_for_local_tests"])
+
+                connection.request("POST", "/v1/devices", body=json.dumps({"name": "phone", "identity": "proof"}), headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 201)
+                device_id = json.loads(response.read())["id"]
+                connection.request("POST", f"/v1/devices/{device_id}/verify", body=json.dumps({"identity": "proof"}), headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertTrue(json.loads(response.read())["verified"])
+            finally:
+                connection.close()
+                server.shutdown()
+                server.server_close()
+                service.close()
+
 
 if __name__ == "__main__":
     unittest.main()
