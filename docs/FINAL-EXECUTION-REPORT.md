@@ -16,11 +16,11 @@ failed push is historical evidence.
 | Repository | `https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS.git` |
 | Workspace | `C:\Users\User\Desktop\MY LAST AI GIRLFRIENDS` |
 | Working branch | `feat/mlag-real-ai-premium-ui` |
-| Last published feature tip at resume | `901e0e79d18a28697c86441f213731fcc2a83a0c` |
-| Current local status candidates | `6153b75`, `d93b852` — not published; Git authentication retry failed |
+| Last published feature tip at resume | `3acccc3ef86cf7f4c44410da76c9ea8d3985982a` |
+| Current local status | Matches the published feature tip at reconciliation |
 | Local `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | `origin/main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
-| Remote feature branch | `feat/mlag-real-ai-premium-ui` at `901e0e79d18a28697c86441f213731fcc2a83a0c` |
+| Remote feature branch | `feat/mlag-real-ai-premium-ui` at `3acccc3ef86cf7f4c44410da76c9ea8d3985982a` |
 | Pull request | None found for feature branch → `main` |
 | Integrated release commit | None; verified feature work is not merged into `main` |
 
@@ -57,7 +57,7 @@ introduced or falsely enabled.
 | 03 | `CLOSED — VERIFIED` | Gemini adapter tests plus three repeated live application requests succeeded with `ai_generated=true`; no fallback. |
 | 04 | `CLOSED — VERIFIED` | Bounded same-conversation context, isolation, role ordering, exact-once current prompt and privacy filtering pass. |
 | 05 | `CLOSED — VERIFIED` | Responsive branded UI, session/history controls, safe DOM text rendering, file boundaries and readable HTML extraction pass. |
-| 06 | `BLOCKED_EXTERNAL` | Deterministic checks pass, but host Docker build/smoke evidence is not present and Docker is unavailable here; current status updates are local-only and no release/main integration is claimed. |
+| 06 | `BLOCKED_EXTERNAL` | Owner-supplied container smoke assertions pass, but Docker build and cleanup are not proven/verified; no release/main integration is claimed. |
 | 07 | `NOT STARTED` | Dependency Stage 06 is not closed; long-term memory is not implemented. |
 | 08 | `NOT STARTED` | Dependency Stage 07 is not closed; broad document intelligence is not implemented. |
 | 09 | `NOT STARTED` | Dependency Stage 08 is not closed; research/citation engine is not implemented. |
@@ -78,7 +78,7 @@ introduced or falsely enabled.
 
 ### Task 00
 
-- Confirmed the branded implementation was local-only on a feature branch and
+- Confirmed the branded implementation was initially local-only on a feature branch and
   that `main`/`origin/main` still pointed to the older JARVIS baseline.
 - Inspected canonical docs, source, tests, metadata, Dockerfile, Makefile,
   lockfile, ignored configuration and database sidecars.
@@ -134,8 +134,8 @@ introduced or falsely enabled.
 | Invalid token startup | `PASS` — exit 2, secret-free configuration safe-stop |
 | Invalid real-mode HTTP provider URL | `PASS` — exit 2, HTTPS validation safe-stop |
 | Real Gemini application smoke | `PASS` — 3 sequential `SUCCEEDED` calls, `ai_generated=true` |
-| `docker --version` / Docker info | `BLOCKED_EXTERNAL` — Docker executable absent |
-| GitHub feature push | `BLOCKED_EXTERNAL` — HTTPS credentials unavailable |
+| `docker --version` / Docker info | `BLOCKED_EXTERNAL` — Docker executable absent; owner supplied smoke assertions separately |
+| GitHub feature push | `PASS` at `3acccc3`; earlier credential failures remain historical |
 
 The symlink test did not skip in this Linux container; all 32 discovered tests
 passed. The live provider smoke used the existing ignored local configuration,
@@ -178,6 +178,7 @@ d7a2430 docs: include final report commit evidence
 901e0e7 docs: reconcile published feature status
 6153b75 docs: record resumed release verification
 d93b852 docs: record current publication blocker
+3acccc3 docs: label historical Docker claims
 ```
 
 An earlier publication attempt was:
@@ -192,18 +193,29 @@ It failed before remote publication with:
 fatal: could not read Username for 'https://github.com': No such device or address
 ```
 
-The feature branch was later published and independently verified at `901e0e7`.
+The feature branch was later published and independently verified at `3acccc3`.
 The current remaining GitHub gap is that no pull request exists and `main` is
 still at `c98a091`; integration is intentionally deferred until the Stage 06
 Docker gate closes. Docker is not executable in this environment, so Docker
 build and authenticated container smoke remain `BLOCKED_EXTERNAL` rather than
-`PASS`. No host Docker evidence was present in the workspace or current
-execution message, so no Docker result is inferred.
+`PASS`. The owner later supplied container smoke assertions, but no Docker build
+output or cleanup result was supplied; those remain unproven/unverified.
 
-The resume status updates at `6153b75` and `d93b852` were not publishable from
-this execution environment because the Git credential helper again returned
-the Username authentication error. The local status records preserve that
-exact result.
+The resume status updates at `6153b75` and `d93b852` preserve earlier
+credential failures. They were later included in the owner-published feature
+branch now verified at `3acccc3`.
+
+## Owner-supplied Stage 06 evidence
+
+The owner supplement reports `STAGE06_CONTAINER_SMOKE=PASS` for feature SHA
+`3acccc3`, with authenticated `READY` health, unauthenticated HTTP `401`,
+authenticated conversation creation, and an offline response with
+`ai_generated=false` plus an explicit not-AI label. This is recorded as
+owner-supplied evidence, not independent reproduction.
+
+The same supplement does not provide Docker build command/output, and states
+that cleanup was run separately without a verified result. Docker build is
+`NOT_PROVEN`; cleanup is `NOT_VERIFIED`. Stage 06 therefore remains blocked.
 
 ## 8. Windows startup, authentication and recovery
 

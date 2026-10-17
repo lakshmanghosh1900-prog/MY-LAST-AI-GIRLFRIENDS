@@ -6,20 +6,17 @@
 
 **Initial execution baseline:** `2dc3162b08acea6914a29d89181c45f37f4ee883`
 
-**Last rechecked local/remote feature tip:** `d7a24301a05ba48d06c509d53c7eb8070882cd09`
+**Reconciliation snapshot:** local HEAD and the published feature branch both equal `3acccc3ef86cf7f4c44410da76c9ea8d3985982a`.
 
-**Latest published feature tip at this resume:** `901e0e79d18a28697c86441f213731fcc2a83a0c`
-
-**Current local-only status series:** `6153b75` followed by `d93b852`.
-The latest publication retry at `d93b852` failed with `fatal: could not read
-Username for 'https://github.com': No such device or address`. The exact current
-HEAD should be rechecked before the next resume.
+**Earlier publication retries:** the failed attempts at `6153b75` and
+`d93b852` are preserved as historical evidence; the current feature branch is
+published and verified at `3acccc3`.
 
 **Remote `origin/main` at baseline:** `c98a091330a05ef73823d9744bfd58d5c973059f`
 **Remote refresh:** `git fetch origin --prune` completed; remote `main` still
 points to `c98a091330a05ef73823d9744bfd58d5c973059f`.
 **Feature branch publication:** `PASS` — `origin/feat/mlag-real-ai-premium-ui`
-matches `901e0e79d18a28697c86441f213731fcc2a83a0c` after a fresh fetch.
+matches `3acccc3ef86cf7f4c44410da76c9ea8d3985982a` after a fresh fetch.
 
 **Pull request status:** `NOT FOUND` — GitHub API query for this head/base
 returned an empty list. The `gh` executable is not installed in this execution
@@ -47,7 +44,7 @@ state prevented the first launch.
 ### Reconciled state
 
 - The branded implementation started at `2dc3162`; the verified published
-  implementation tip at this resume is `901e0e7`; it is nine commits ahead of `origin/main`
+  implementation tip at this resume is `3acccc3`; it is fourteen commits ahead of `origin/main`
   and is not merged.
 - `main` and `origin/main` still contain the older `jarvis_omega` baseline.
 - The only visible untracked work item is the pre-existing empty file `main`;
@@ -89,7 +86,7 @@ for this filesystem condition. No database reset was performed.
 | 03 | CLOSED — VERIFIED | Gemini adapter contract/error tests and three repeated application-level live requests pass with configured private credentials; no fake fallback observed. |
 | 04 | CLOSED — VERIFIED | Same-conversation context, ordering, current-message de-duplication and cross-conversation isolation pass in deterministic service tests. |
 | 05 | CLOSED — VERIFIED | Branded responsive UI, history/session controls, keyboard behavior, safe text rendering, bounded file tool and readable HTML extraction are implemented and covered by contract/security tests. |
-| 06 | BLOCKED_EXTERNAL | Deterministic MVP suite is green, but no host Docker build/smoke evidence was supplied or found and Docker is unavailable here; the latest status record is also local-only, so PR/main integration remains open. |
+| 06 | BLOCKED_EXTERNAL | Owner-supplied container smoke checks pass, but Docker build output and cleanup evidence are not supplied/verified; PR/main integration remains open. |
 | 07 | NOT STARTED | Waiting for Stage 06. |
 | 08 | NOT STARTED | Waiting for Stage 07. |
 | 09 | NOT STARTED | Waiting for Stage 08. |
@@ -199,8 +196,8 @@ the documentation until its staged diff and checks are reviewed.
 ### Stage 02 publication
 
 Implementation commit: `9217368` (`fix(stage-02): complete rename and migration
-recovery`). The feature branch publication was subsequently verified at
-`d7a2430`; the branch is not merged into `main`.
+recovery`). The feature branch publication was subsequently verified through
+`3acccc3`; the branch is not merged into `main`.
 
 ## Stage 03 — Real Gemini AI brain
 
@@ -278,21 +275,39 @@ failed remote requests are not turned into fake assistant successes.
 - Reproducible runtime/lock checks: PASS — Python 3.12.11, `uv lock --check`,
   `uv sync --locked`.
 
+### Owner-supplied evidence
+
+The current owner supplement reports the following Windows-host container smoke
+checks for feature SHA `3acccc3`:
+
+- Docker container smoke: `PASS` (owner-supplied; not independently reproduced
+  in this Linux container).
+- Authenticated health reached `READY`: `PASS` (owner-supplied).
+- Unauthenticated health returned HTTP `401`: `PASS` (owner-supplied).
+- Authenticated conversation creation succeeded: `PASS` (owner-supplied).
+- Offline message succeeded with `ai_generated=false` and an explicit offline /
+  not-AI label: `PASS` (owner-supplied).
+
+These results prove the listed smoke assertions only. They do not prove the
+Docker image build command, image provenance, resource cleanup, PR review or
+main integration.
+
 ### Blocking evidence
 
-- Docker build/authenticated container smoke: `BLOCKED_EXTERNAL` because the
-  execution container has no `docker` executable (`docker: command not found`).
+- Docker build: `NOT_PROVEN` — the owner supplement contains no Docker build
+  command/output, and the execution container has no `docker` executable
+  (`docker: command not found`).
+- Container cleanup: `NOT_VERIFIED` — the owner states the `finally` cleanup was
+  executed separately, but no cleanup result/evidence was supplied.
 - Feature-branch publication: PASS — remote ref
-  `origin/feat/mlag-real-ai-premium-ui` equals `901e0e7`.
-- Latest status publication retry: `BLOCKED_EXTERNAL` — the current Git
-  credential helper could not authenticate the local `d93b852` candidate.
+  `origin/feat/mlag-real-ai-premium-ui` equals `3acccc3`.
+- Earlier credential failures are historical evidence only; the current
+  feature branch publication is verified.
 - Pull request/main integration: OPEN and intentionally deferred until the
   Stage 06 gate closes. GitHub reports no pull request for the branch, and the
   `gh` executable is unavailable in this container. No merge or main update is
   claimed.
-- Host verification evidence: `NOT_PRESENT` in the workspace and current
-  execution message. Docker build/authenticated smoke cannot be independently
-  verified here.
-- Because the mandatory Docker evidence cannot be executed or independently
-  verified, Stage 06 is not
+- Host container smoke evidence is present only as owner-supplied assertions;
+  build and cleanup evidence are not present. Because mandatory Docker build
+  and cleanup evidence cannot be verified, Stage 06 is not
   `CLOSED — VERIFIED`, and Stages 07–21 must not be falsely marked complete.

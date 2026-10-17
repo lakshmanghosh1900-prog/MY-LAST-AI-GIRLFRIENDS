@@ -117,7 +117,7 @@ git fetch origin --prune
 PASS
 
 git ls-remote --heads origin feat/mlag-real-ai-premium-ui
-PASS — 901e0e79d18a28697c86441f213731fcc2a83a0c
+PASS — 3acccc3ef86cf7f4c44410da76c9ea8d3985982a
 
 git ls-remote --heads origin main
 PASS — c98a091330a05ef73823d9744bfd58d5c973059f
@@ -126,21 +126,20 @@ GitHub API pull-request query for head feat/mlag-real-ai-premium-ui, base main
 PASS — empty result; no pull request currently exists
 ```
 
-The feature branch is published and matched the local tip at the time of this
-recheck. Subsequent local documentation updates in this execution are not
-represented as published until a later push succeeds. `main` remains at the
-earlier commit. No merge is claimed. The `gh` CLI is unavailable in this
-container, so PR creation/check operations remain an external follow-up.
+The feature branch is published and matches the local tip at this recheck.
+`main` remains at the earlier commit. No merge is claimed. The `gh` CLI is
+unavailable in this container, so PR creation/check operations remain an
+external follow-up.
 
-Resume publication retry:
+Historical resume publication retry:
 
 ```text
 git push origin feat/mlag-real-ai-premium-ui
 BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No such device or address
 ```
 
-The local status candidate at that retry was `d93b852`; the remote feature
-branch remains verified at `901e0e7`.
+The local status candidate at that retry was `d93b852`; later owner-side
+publication advanced the remote feature branch through `3acccc3`.
 
 ## Stage 02 verification — 17 October 2026
 
@@ -236,16 +235,35 @@ Native Windows Docker paths under /mnt/c and /c/Program Files/Docker
 NOT_FOUND in the mounted filesystem
 
 Host Docker build/smoke evidence supplied by the owner
-NOT_PRESENT in this workspace or execution message; no PASS inferred
+Container smoke assertions are present in the current owner supplement; build
+output and cleanup result are not present. No build or cleanup PASS inferred.
 ```
 
-The deterministic MVP checks are green. Stage 06 remains blocked because the
-required Docker build/container smoke cannot be executed in this environment.
-Feature publication is now verified. PR creation and main integration are
-deferred until the Docker-backed Stage 06 gate closes. No Docker pass, merge or
-release readiness is claimed.
+The deterministic MVP checks are green. The current owner supplement reports
+these container smoke assertions, recorded separately from local checks:
 
-Final resume candidate checks at local HEAD `9c500df`:
+```text
+owner: Docker container smoke reported PASS
+owner: authenticated health reached READY
+owner: unauthenticated health returned HTTP 401
+owner: authenticated conversation creation succeeded
+owner: offline message succeeded with ai_generated=false and explicit not-AI label
+```
+
+Owner evidence status:
+
+```text
+Docker build command/output       NOT_PROVEN
+Container cleanup                 NOT_VERIFIED — finally was separate and no result was supplied
+```
+
+The container assertions are not independently reproduced here because this
+execution container has no Docker CLI or native Windows bridge. Stage 06
+remains blocked on build provenance, cleanup evidence and normal PR/main
+integration. No Docker build PASS, cleanup PASS, merge or release readiness is
+claimed.
+
+Current reconciliation candidate checks at local/remote HEAD `3acccc3`:
 
 ```text
 uv run --locked python --version
