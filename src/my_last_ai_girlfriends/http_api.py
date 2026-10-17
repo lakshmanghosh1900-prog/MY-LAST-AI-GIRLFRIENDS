@@ -12,6 +12,7 @@ from urllib.parse import parse_qs, urlsplit
 from .auth import AuthManager
 from .documents import DocumentError
 from .memory import MemoryError
+from .research import ResearchError
 from .redaction import redact
 from .service import MyLastAIGirlfriendsService
 
@@ -146,6 +147,13 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                 self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
             return
         parts = [part for part in path.split("/") if part]
+        if len(parts) == 3 and parts[:2] == ["v1", "research"]:
+            try:
+                self._send(HTTPStatus.OK, self.server.service.research_run(parts[2]), request_id)
+            except KeyError:
+                self._error(HTTPStatus.NOT_FOUND, "RESEARCH_NOT_FOUND", "Research run does not exist.", request_id)
+            return
+        parts = [part for part in path.split("/") if part]
         if len(parts) == 3 and parts[0] == "v1" and parts[1] == "conversations":
             try:
                 self._send(HTTPStatus.OK, self.server.service.conversation(parts[2]), request_id)
@@ -197,6 +205,13 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                     return
                 self._send(HTTPStatus.CREATED, self.server.service.index_document(relative_path), request_id)
                 return
+            if path == "/v1/research":
+                urls = payload.get("urls")
+                if not isinstance(urls, list) or not all(isinstance(url, str) for url in urls):
+                    self._error(HTTPStatus.BAD_REQUEST, "RESEARCH_URLS_INVALID", "urls must be a list of strings.", request_id)
+                    return
+                self._send(HTTPStatus.OK, self.server.service.run_research(urls), request_id)
+                return
             parts = [part for part in path.split("/") if part]
             if len(parts) == 4 and parts[:2] == ["v1", "conversations"] and parts[3] == "messages":
                 content = payload.get("content")
@@ -220,6 +235,9 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
             self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
             return
         except DocumentError as exc:
+            self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
+            return
+        except ResearchError as exc:
             self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
             return
         except RuntimeError as exc:

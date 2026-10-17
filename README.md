@@ -174,7 +174,7 @@ conversation data.
 | Privacy and consent | IMPLEMENTED AND TESTED |
 | Budget tracking | IMPLEMENTED AND TESTED |
 | Document processing | LIMITED: approved local text indexing/search; PDF/DOCX and grounded answers not implemented |
-| Research and citations | LIMITED to source URL on public fetch |
+| Research and citations | LIMITED: explicit public-URL runs with source hashes/citations; search and claim verification not implemented |
 | Voice | NOT IMPLEMENTED |
 | Long-term memory | LIMITED: explicit local memory management implemented; automatic extraction and remote memory disabled |
 | Android companion | NOT IMPLEMENTED; REQUIRES PLATFORM REVIEW |

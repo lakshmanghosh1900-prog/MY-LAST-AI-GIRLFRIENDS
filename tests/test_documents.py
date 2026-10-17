@@ -32,7 +32,7 @@ class DocumentTests(unittest.TestCase):
             document = service.index_document("notes.txt")
             self.assertEqual(document["path"], "notes.txt")
             self.assertEqual(service.search_documents("research")[0]["path"], "notes.txt")
-            self.assertEqual(service.db.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], 4)
+            self.assertEqual(service.db.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], 5)
             self.assertTrue(service.delete_document(document["id"]))
             self.assertEqual(service.search_documents("research"), [])
             service.close()

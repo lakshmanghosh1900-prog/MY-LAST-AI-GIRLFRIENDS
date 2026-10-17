@@ -68,6 +68,7 @@ stage is declared complete.
 
 The dependency table above preserves the approved roadmap's initial statuses.
 The current implementation status is maintained in `docs/EXECUTION-STATUS.md`.
-The safe Stage 07A and Stage 08A slices now implemented are explicit local
-memory management and bounded text-document indexing/search; they do not close
-their full stages and do not authorize remote memory/document transfer.
+The safe Stage 07A, Stage 08A and Stage 09A slices now implemented are
+explicit local memory management, bounded text-document indexing/search and
+explicit public-URL research with source provenance; they do not close their
+full stages or authorize remote memory/document transfer.

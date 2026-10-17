@@ -111,6 +111,22 @@ authenticated search, deletion/tombstoning, traversal rejection and empty
 query rejection. This is local text indexing only; no PDF/DOCX extraction,
 provider grounding or citation claim is made.
 
+## Stage 09A research evidence
+
+```text
+PYTHONPATH="$PWD/src:$PWD/tests" uv run --locked python -m unittest tests.test_research tests.test_documents tests.test_memory tests.test_http_api -v
+PASS — 14 tests
+
+make check
+PASS — compileall and 43 tests, 43 passed, 0 failed, 0 skipped
+```
+
+Verified behavior includes explicit public HTTPS URL validation, secret-like
+query rejection, bounded multi-source runs, partial-failure status, source
+hashes, structured citations, authenticated API behavior and no automatic
+provider answer. Tests use mocked fetch boundaries; they do not claim live
+internet research quality.
+
 ### Authenticated application smoke
 
 The CLI was started with the ignored local configuration. Without printing the

@@ -94,7 +94,7 @@ for this filesystem condition. No database reset was performed.
 | 06 | BLOCKED_EXTERNAL | Owner-supplied Docker build and container-smoke checks pass; source-commit provenance is unverified, cleanup is PENDING, post-`3acccc3` documentation is local-only, and PR/main integration remains open. |
 | 07 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 07A explicit local memory management is implemented and tested; Stage 06 is not closed, automatic extraction/remote memory/retrieval remain disabled, and full Stage 07 acceptance is open. |
 | 08 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 08A local text indexing/search is implemented and tested; PDF/DOCX extraction, grounded provider answers, citations and full Stage 08 acceptance remain open. |
-| 09 | NOT STARTED | Waiting for Stage 08. |
+| 09 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 09A explicit public-URL multi-source research and citations are implemented/tested; search-provider integration, claim verification and conflict analysis remain open. |
 | 10 | NOT STARTED | Waiting for Stage 09. |
 | 11 | NOT STARTED | Waiting for Stage 10; audio hardware/services not evidenced. |
 | 12 | NOT STARTED | Waiting for Stage 11; unrestricted automation remains disabled. |
@@ -361,3 +361,17 @@ Implemented as a local-only bounded text slice:
 Evidence: 4 document tests plus the full 40-test suite passed. Full Stage 08
 remains open pending supported-format expansion, grounded answering and its
 security/recovery acceptance gate.
+
+## Stage 09A — Explicit public-source research
+
+**Status:** `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN`
+
+Implemented as a bounded provenance slice: authenticated research runs accept
+at most five explicit HTTPS URLs, reject secret-like query parameters, persist
+final URL/content type/byte count/hash/excerpt, expose structured `S1`-style
+citations, and report partial failures explicitly. No model-generated citation
+is treated as verified and no research answer is sent to Gemini automatically.
+
+Evidence: 3 research tests plus the full 43-test suite passed. Full Stage 09
+remains open pending search adapters, claim extraction/verification and
+conflicting-source handling.

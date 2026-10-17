@@ -12,6 +12,7 @@ from .memory import MemoryError, validate_expiry, validate_scope
 from .policy import DataClass, Decision, PolicyEngine
 from .providers import GeminiProvider, OfflineDemoProvider, Provider, ProviderError, estimate_tokens
 from .redaction import redact
+from .research import ResearchError, fetch_source
 from .storage import Database, migrate_legacy_database
 from .tools import SafeFileTool, SafeWebFetcher, ToolError
 
@@ -193,6 +194,56 @@ class MyLastAIGirlfriendsService:
         if deleted:
             self.db.add_audit("document_deleted", {"document_id": document_id})
         return deleted
+
+    def run_research(self, urls: list[str]) -> dict:
+        if not self.lifecycle.can_accept_work():
+            raise RuntimeError("service is not ready")
+        if not isinstance(urls, list) or not urls:
+            raise ResearchError("RESEARCH_URLS_REQUIRED", "At least one public HTTPS URL is required.")
+        if len(urls) > 5:
+            raise ResearchError("RESEARCH_TOO_MANY_SOURCES", "A research run accepts at most five URLs.")
+        run_id = self.db.create_research_run()
+        failures: list[str] = []
+        source_count = 0
+        for ordinal, url in enumerate(urls):
+            try:
+                source = fetch_source(self.web_tool, url)
+            except ResearchError as exc:
+                failures.append(exc.code)
+                continue
+            source_data = {
+                "requested_url": source.requested_url,
+                "final_url": source.final_url,
+                "content_type": source.content_type,
+                "byte_count": source.byte_count,
+                "content_sha256": source.content_sha256,
+                "excerpt": source.excerpt,
+            }
+            self.db.add_research_source(run_id, ordinal, source_data, source.text)
+            source_count += 1
+        status = "SUCCEEDED" if source_count and not failures else "PARTIAL" if source_count else "FAILED"
+        self.db.finish_research_run(run_id, status)
+        self.db.add_audit(
+            "research_run_completed",
+            {"run_id": run_id, "status": status, "source_count": source_count, "failure_count": len(failures)},
+        )
+        result = self.db.get_research_run(run_id) or {"id": run_id, "status": status, "sources": []}
+        result["failures"] = failures
+        result["citations"] = [
+            {"label": f"S{index + 1}", "source_id": source["id"], "url": source["final_url"], "excerpt": source["excerpt"], "content_sha256": source["content_sha256"]}
+            for index, source in enumerate(result["sources"])
+        ]
+        return result
+
+    def research_run(self, run_id: str) -> dict:
+        result = self.db.get_research_run(run_id)
+        if result is None:
+            raise KeyError("research run not found")
+        result["citations"] = [
+            {"label": f"S{index + 1}", "source_id": source["id"], "url": source["final_url"], "excerpt": source["excerpt"], "content_sha256": source["content_sha256"]}
+            for index, source in enumerate(result["sources"])
+        ]
+        return result
 
     def stop(self) -> str:
         changed = self.lifecycle.begin_stop()

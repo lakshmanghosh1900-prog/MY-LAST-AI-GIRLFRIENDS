@@ -274,6 +274,35 @@ class Database:
                     "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
                     (4, utc_now()),
                 )
+                applied.add(4)
+            if 5 not in applied:
+                self.connection.executescript("""
+                CREATE TABLE IF NOT EXISTS research_runs (
+                    id TEXT PRIMARY KEY,
+                    status TEXT NOT NULL CHECK(status IN ('RUNNING', 'SUCCEEDED', 'PARTIAL', 'FAILED')),
+                    created_at TEXT NOT NULL,
+                    completed_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS research_sources (
+                    id TEXT PRIMARY KEY,
+                    run_id TEXT NOT NULL REFERENCES research_runs(id),
+                    ordinal INTEGER NOT NULL,
+                    requested_url TEXT NOT NULL,
+                    final_url TEXT NOT NULL,
+                    content_type TEXT NOT NULL,
+                    byte_count INTEGER NOT NULL,
+                    content_sha256 TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    excerpt TEXT NOT NULL,
+                    fetched_at TEXT NOT NULL,
+                    UNIQUE(run_id, ordinal)
+                );
+                CREATE INDEX IF NOT EXISTS idx_research_sources_run ON research_sources(run_id, ordinal);
+                """)
+                self.connection.execute(
+                    "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                    (5, utc_now()),
+                )
 
     @contextmanager
     def transaction(self, immediate: bool = True) -> Iterator[sqlite3.Connection]:
@@ -551,6 +580,52 @@ class Database:
                 (utc_now(), utc_now(), document_id),
             )
         return cursor.rowcount == 1
+
+    def create_research_run(self) -> str:
+        run_id = self.new_id()
+        with self.transaction():
+            self.connection.execute(
+                "INSERT INTO research_runs(id, status, created_at) VALUES (?, 'RUNNING', ?)",
+                (run_id, utc_now()),
+            )
+        return run_id
+
+    def add_research_source(self, run_id: str, ordinal: int, source: dict, content: str) -> None:
+        with self.transaction():
+            self.connection.execute(
+                """INSERT INTO research_sources(
+                    id, run_id, ordinal, requested_url, final_url, content_type,
+                    byte_count, content_sha256, content, excerpt, fetched_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (self.new_id(), run_id, ordinal, source["requested_url"], source["final_url"],
+                 source["content_type"], source["byte_count"], source["content_sha256"],
+                 content, source["excerpt"], utc_now()),
+            )
+
+    def finish_research_run(self, run_id: str, status: str) -> None:
+        with self.transaction():
+            self.connection.execute(
+                "UPDATE research_runs SET status = ?, completed_at = ? WHERE id = ?",
+                (status, utc_now(), run_id),
+            )
+
+    def get_research_run(self, run_id: str) -> dict | None:
+        row = self.connection.execute(
+            "SELECT id, status, created_at, completed_at FROM research_runs WHERE id = ?",
+            (run_id,),
+        ).fetchone()
+        if not row:
+            return None
+        result = dict(row)
+        result["sources"] = [
+            dict(item) for item in self.connection.execute(
+                """SELECT id, ordinal, requested_url, final_url, content_type, byte_count,
+                          content_sha256, excerpt, fetched_at
+                   FROM research_sources WHERE run_id = ? ORDER BY ordinal""",
+                (run_id,),
+            ).fetchall()
+        ]
+        return result
 
     def month_usage(self, bucket_month: str) -> int:
         row = self.connection.execute(

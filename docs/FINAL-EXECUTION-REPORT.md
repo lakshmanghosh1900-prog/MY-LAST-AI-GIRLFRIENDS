@@ -60,7 +60,7 @@ introduced or falsely enabled.
 | 06 | `BLOCKED_EXTERNAL` | Owner-supplied Docker build and container-smoke assertions pass; source-commit provenance is unverified, cleanup is pending, and no release/main integration is claimed. |
 | 07 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 07A explicit local memory management is implemented/tested; full Stage 07 is dependency-gated and automatic extraction, remote memory and complete retention/recovery acceptance remain open. |
 | 08 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 08A local text indexing/search is implemented/tested; PDF/DOCX extraction, grounded provider answers, citations and complete document-security acceptance remain open. |
-| 09 | `NOT STARTED` | Dependency Stage 08 is not closed; research/citation engine is not implemented. |
+| 09 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 09A explicit public-URL research and structured source citations are implemented/tested; search, claim verification and conflict handling remain open. |
 | 10 | `NOT STARTED` | Dependency Stage 09 is not closed; persistent scheduler is not implemented. |
 | 11 | `NOT STARTED` | Dependency Stage 10 is not closed; voice services/hardware evidence is absent. |
 | 12 | `NOT STARTED` | Dependency Stage 11 is not closed; only existing bounded read-only tools remain enabled. |
@@ -135,6 +135,14 @@ file boundary. It adds migration 4, content hashes, deterministic chunks,
 authenticated index/list/search/delete routes and UI controls. It deliberately
 does not claim PDF/DOCX support, grounded provider answers, citations or remote
 document transfer.
+
+### Stage 09A safe implementation
+
+Implemented explicit public-URL research runs through the existing safe fetcher.
+Sources persist final URLs, content hashes, excerpts and fetch metadata;
+partial failures are explicit and citations are structured source references.
+No search provider, model-generated citation verification or automatic Gemini
+research answer is enabled.
 
 ## 5. Tests and checks actually executed
 
@@ -249,6 +257,13 @@ The targeted document/memory/API suite passed 11 tests and the current full
 deterministic suite passed 40 tests with zero failures and zero skips. Full
 Stage 08 remains open pending broader extraction, grounded answering and
 document-security/recovery requirements.
+
+## Stage 09A evidence
+
+The targeted research/document/memory/API suite passed 14 tests and the full
+deterministic suite passed 43 tests with zero failures and zero skips. Full
+Stage 09 remains open pending search adapters, claim verification and
+conflicting-source handling.
 
 ## 8. Windows startup, authentication and recovery
 
