@@ -98,7 +98,7 @@ for this filesystem condition. No database reset was performed.
 | 10 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 10A durable one-shot schedules, cancellation and idempotent due-run execution are implemented/tested; recurring plans, worker lifecycle, retry policy and full scheduler acceptance remain open. |
 | 11 | BLOCKED_EXTERNAL | Voice contract is not implemented; real microphone/audio-provider evidence requires hardware/services not available here. |
 | 12 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Static least-privilege registry now exposes only the existing read-only file/web tools with schema validation; broader automation and human approvals remain disabled. |
-| 13 | NOT STARTED | Waiting for Stage 12. |
+| 13 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Versioned deterministic local evaluation now covers truthful offline behavior, prohibited-input safe-stop and explicit memory; integrated quality benchmarks, live voice/tool/device flows and full Stage 13 acceptance remain open. |
 | 14 | NOT STARTED | Waiting for Stage 13; Android toolchain/device not evidenced. |
 | 15 | NOT STARTED | Waiting for Stage 14. |
 | 16 | NOT STARTED | Waiting for Stage 15; no connector is enabled. |
@@ -417,3 +417,16 @@ remain unavailable. Full Stage 12 requires broader approved tools, execution
 verification, cancellation and audit coverage.
 
 Evidence: 1 registry test plus the full 47-test suite passed.
+
+## Stage 13A — Deterministic local evaluation
+
+**Status:** `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN`
+
+Added a versioned `local-companion-eval-0.1.0` harness and authenticated
+`GET /v1/evaluations/local` endpoint. It evaluates truthful offline labeling,
+prohibited-input safe-stop behavior and explicit memory creation without live
+provider calls. Full Stage 13 remains open pending integrated quality/latency/
+cost benchmarks, Bengali/Banglish evaluation breadth, voice/device/tool failure
+flows and rollback procedures.
+
+Evidence: 1 evaluation test plus the full 48-test suite passed.

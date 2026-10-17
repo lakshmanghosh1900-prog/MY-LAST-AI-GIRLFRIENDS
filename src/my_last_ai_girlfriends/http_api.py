@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from .auth import AuthManager
 from .documents import DocumentError
+from .evaluation import run_local_evaluation
 from .memory import MemoryError
 from .research import ResearchError
 from .scheduler import SchedulerError
@@ -123,6 +124,9 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
             return
         if path == "/v1/tools":
             self._send(HTTPStatus.OK, {"tools": list_tools()}, request_id)
+            return
+        if path == "/v1/evaluations/local":
+            self._send(HTTPStatus.OK, run_local_evaluation(self.server.service).as_dict(), request_id)
             return
         if path == "/v1/admin/budget":
             self._send(HTTPStatus.OK, self.server.service.budget_status(), request_id)

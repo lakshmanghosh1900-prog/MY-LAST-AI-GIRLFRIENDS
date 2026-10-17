@@ -64,7 +64,7 @@ introduced or falsely enabled.
 | 10 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 10A durable one-shot local scheduling, cancellation and idempotent due runs are implemented/tested; worker recovery, recurring rules and full scheduler acceptance remain open. |
 | 11 | `BLOCKED_EXTERNAL` | No voice service is implemented; real audio hardware/provider evidence is unavailable. |
 | 12 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Static least-privilege registry and exact tool argument validation are implemented; broader automation, execution verification and approvals remain open. |
-| 13 | `NOT STARTED` | Dependency Stage 12 is not closed; no integrated future-capability evaluation suite exists. |
+| 13 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Versioned deterministic local evaluation exists for truthful offline, policy and memory flows; full quality/latency/cost, voice/device/tool integration and rollback acceptance remain open. |
 | 14 | `NOT STARTED` | Dependency Stage 13 is not closed; Android toolchain/device evidence is absent. |
 | 15 | `NOT STARTED` | Dependency Stage 14 is not closed; PC–phone connectivity is not implemented. |
 | 16 | `NOT STARTED` | Dependency Stage 15 is not closed; no MCP connector is enabled. |
@@ -157,6 +157,14 @@ Added a static registry for the two existing read-only tools, exact argument
 validation, capability metadata and authenticated `/v1/tools` listing. Unknown
 tools and arguments are rejected before execution. Shell/code execution,
 browser automation and external side effects remain disabled.
+
+### Stage 13A safe implementation
+
+Added versioned deterministic local evaluation `local-companion-eval-0.1.0`
+and authenticated `/v1/evaluations/local`. It checks truthful offline
+labeling, prohibited-input safe-stop and explicit memory creation without a
+live provider. It does not claim integrated voice, device, live-provider
+quality or external-action evaluation.
 
 ## 5. Tests and checks actually executed
 
@@ -287,6 +295,13 @@ Full Stage 10 remains open pending worker restart recovery, recurring/DST policy
 and complete scheduler operational acceptance. Stage 11 is externally blocked
 on real audio hardware/services. Stage 12 remains partial pending broader
 approved capabilities and execution-verification gates.
+
+## Stage 13A evidence
+
+The evaluation/tool/scheduler suite passed 5 tests and the complete
+deterministic suite passed 48 tests with zero failures and zero skips. Full
+Stage 13 remains open pending broader quality, latency, cost and integrated
+capability evaluation.
 
 ## 8. Windows startup, authentication and recovery
 

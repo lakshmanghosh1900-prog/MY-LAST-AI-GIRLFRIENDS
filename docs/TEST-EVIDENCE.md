@@ -152,6 +152,20 @@ available. Stage 12A verifies a static read-only registry, exact argument
 validation and rejection of unallowlisted tools; it does not claim arbitrary
 automation or external actions.
 
+## Stage 13A evaluation evidence
+
+```text
+PYTHONPATH="$PWD/src:$PWD/tests" uv run --locked python -m unittest tests.test_evaluation tests.test_tool_registry tests.test_scheduler -v
+PASS — 5 tests
+
+make check
+PASS — compileall and 48 tests, 48 passed, 0 failed, 0 skipped
+```
+
+The versioned local evaluation reports truthful offline output, prohibited
+input safe-stop and explicit memory creation. It is deterministic and does not
+claim live-provider quality, voice, device or external-action evaluation.
+
 Verified behavior includes timezone-required schedule normalization, durable
 one-shot creation, due execution, separate run persistence, idempotent second
 execution, cancellation and existing message-policy/task lifecycle reuse. No
