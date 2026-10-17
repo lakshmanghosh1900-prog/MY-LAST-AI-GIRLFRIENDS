@@ -280,9 +280,13 @@ docker build --tag my-last-ai-girlfriends:0.2.0 .
 docker run --rm --env-file .env -e MLAG_HOST=0.0.0.0 -e MLAG_ALLOW_NON_LOOPBACK_BINDING=true -p 127.0.0.1:8787:8787 my-last-ai-girlfriends:0.2.0
 ```
 
-## 14. Verification results
+## 14. Historical verification results (superseded)
 
-The final checks were run with the pinned interpreter:
+The following was the prior handoff's reported evidence, not a current resume
+result. Current execution evidence is authoritative in
+`docs/TEST-EVIDENCE.md`; the current deterministic suite has 32 passing tests,
+and Docker remains unverified because no host build/smoke artifact was supplied
+or available in the current environment:
 
 ```text
 Python 3.12.11 via uv run --locked

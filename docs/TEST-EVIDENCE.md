@@ -244,3 +244,22 @@ required Docker build/container smoke cannot be executed in this environment.
 Feature publication is now verified. PR creation and main integration are
 deferred until the Docker-backed Stage 06 gate closes. No Docker pass, merge or
 release readiness is claimed.
+
+Final resume candidate checks at local HEAD `9c500df`:
+
+```text
+uv run --locked python --version
+PASS — Python 3.12.11
+uv lock --check
+PASS
+uv sync --locked
+PASS
+uv run --locked python -m compileall -q src tests
+PASS
+make check
+PASS — 32 tests, 0 failures, 0 skips
+git diff --check
+PASS
+secret scan of release diff
+PASS — no credential/key markers; ordinary `Bearer` protocol references are not secrets
+```
