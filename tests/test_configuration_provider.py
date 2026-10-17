@@ -48,6 +48,29 @@ class ConfigurationAndProviderTests(unittest.TestCase):
             self.assertEqual(report.values["MLAG_AUTH_TOKEN"], "L" * 48)
             self.assertEqual(report.source["MLAG_AUTH_TOKEN"], "dotenv-legacy")
 
+    def test_new_and_legacy_values_in_one_source_are_reported_as_conflicts(self):
+        with tempfile.TemporaryDirectory() as raw:
+            path = Path(raw) / ".env"
+            path.write_text(
+                "MLAG_AUTH_TOKEN=" + "N" * 48 + "\n"
+                + "JARVIS_AUTH_TOKEN=" + "L" * 48 + "\n",
+                encoding="utf-8",
+            )
+            report = load_environment(path, {})
+            self.assertEqual(report.values["MLAG_AUTH_TOKEN"], "N" * 48)
+            self.assertIn("MLAG_AUTH_TOKEN", report.conflicts)
+
+    def test_real_mode_requires_a_credential_free_https_provider_url(self):
+        base = {
+            "MLAG_AUTH_TOKEN": "T" * 48,
+            "MLAG_MODE": "real",
+            "MLAG_GEMINI_API_KEY": "K" * 40,
+        }
+        for url in ("http://example.test/openai/", "https://user:pass@example.test/openai/", "not-a-url"):
+            with self.subTest(url=url):
+                with self.assertRaises(ConfigError):
+                    Config.from_report(load_environment(Path("missing.env"), {**base, "MLAG_PROVIDER_BASE_URL": url}))
+
     def test_placeholder_and_short_tokens_are_not_accepted(self):
         self.assertEqual(token_status("deleted"), "invalid-placeholder")
         self.assertEqual(token_status("short"), "too-short")

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Mapping
+from urllib.parse import urlsplit
 
 
 class ConfigError(ValueError):
@@ -135,7 +136,28 @@ def load_environment(path: Path = Path(".env"), environ: Mapping[str, str] | Non
         elif dotenv_value is not None:
             values[key] = dotenv_value
             source[key] = "dotenv-legacy" if key in legacy_dotenv_keys else "dotenv"
+    for old_key, new_key in LEGACY_ENV_MAP.items():
+        if old_key in dotenv and new_key in dotenv and dotenv[old_key] != dotenv[new_key]:
+            conflicts.append(new_key)
+        if old_key in process and new_key in process and process[old_key] != process[new_key]:
+            conflicts.append(new_key)
     return EnvReport(values, source, tuple(sorted(set(conflicts))), path)
+
+
+def _validate_provider_base_url(value: str, mode: str) -> str:
+    parsed = urlsplit(value.strip())
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not parsed.netloc
+        or parsed.username
+        or parsed.password
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ConfigError("MLAG_PROVIDER_BASE_URL must be a credential-free absolute HTTP(S) URL")
+    if mode == "real" and parsed.scheme != "https":
+        raise ConfigError("MLAG_PROVIDER_BASE_URL must use HTTPS in real mode")
+    return value.strip()
 
 
 def generate_auth_token() -> str:
@@ -224,7 +246,10 @@ class Config:
         if provider != "gemini":
             raise ConfigError("MLAG_PROVIDER must be gemini; use MLAG_MODE=offline for the local demo")
         model = values.get("MLAG_MODEL", "gemini-3.8-flash").strip() or "gemini-3.8-flash"
-        base_url = values.get("MLAG_PROVIDER_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/").strip()
+        base_url = _validate_provider_base_url(
+            values.get("MLAG_PROVIDER_BASE_URL", "https://generativelanguage.googleapis.com/v1beta/openai/"),
+            mode,
+        )
         api_key = values.get("MLAG_GEMINI_API_KEY", "").strip() or None
         if mode == "real" and not api_key:
             raise ConfigError("MLAG_GEMINI_API_KEY is required for MLAG_MODE=real")

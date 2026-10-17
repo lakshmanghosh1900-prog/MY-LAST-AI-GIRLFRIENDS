@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import sqlite3
 from pathlib import Path
 import sys
 
@@ -47,8 +48,12 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as exc:
         print(f"configuration safe-stop: {exc}", file=sys.stderr)
         return 2
-    service = MyLastAIGirlfriendsService(config)
-    server = MyLastAIGirlfriendsHTTPServer((config.host, config.port), service)
+    try:
+        service = MyLastAIGirlfriendsService(config)
+        server = MyLastAIGirlfriendsHTTPServer((config.host, config.port), service)
+    except (OSError, RuntimeError, ValueError, sqlite3.Error) as exc:
+        print(f"startup safe-stop: {type(exc).__name__}", file=sys.stderr)
+        return 2
     print(f"MY LAST AI GIRLFRIENDS listening on http://{config.host}:{config.port} ({config.mode} mode)")
     try:
         server.serve_forever()

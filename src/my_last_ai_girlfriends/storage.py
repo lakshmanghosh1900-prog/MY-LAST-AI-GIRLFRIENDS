@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import sqlite3
 import threading
@@ -11,6 +12,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
+from urllib.parse import quote
 
 
 class StorageError(RuntimeError):
@@ -157,11 +159,35 @@ class Database:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
-        self.connection = sqlite3.connect(self.path, check_same_thread=False, isolation_level=None)
+        self.connection = self._connect()
         self.connection.row_factory = sqlite3.Row
         self.connection.execute("PRAGMA foreign_keys = ON")
-        self.connection.execute("PRAGMA journal_mode = WAL")
+        try:
+            self.connection.execute("PRAGMA journal_mode = WAL")
+        except sqlite3.OperationalError as exc:
+            # Some mounted Windows/virtiofs workspaces can retain a stale WAL
+            # sidecar that makes SQLite's default VFS return disk I/O errors.
+            # Retry with SQLite's exclusive POSIX VFS only on non-Windows
+            # runtimes; native Windows keeps the normal portable VFS path.
+            if os.name == "nt" or "disk i/o error" not in str(exc).lower():
+                self.connection.close()
+                raise
+            self.connection.close()
+            self.connection = self._connect(vfs="unix-excl")
+            self.connection.row_factory = sqlite3.Row
+            self.connection.execute("PRAGMA foreign_keys = ON")
         self.connection.execute("PRAGMA busy_timeout = 5000")
+
+    def _connect(self, vfs: str | None = None) -> sqlite3.Connection:
+        if vfs is None:
+            return sqlite3.connect(self.path, check_same_thread=False, isolation_level=None)
+        encoded_path = quote(self.path.resolve().as_posix(), safe="/")
+        return sqlite3.connect(
+            f"file:{encoded_path}?mode=rwc&vfs={vfs}",
+            uri=True,
+            check_same_thread=False,
+            isolation_level=None,
+        )
 
     def initialize(self) -> None:
         with self.transaction():
