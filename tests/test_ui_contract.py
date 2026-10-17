@@ -16,6 +16,9 @@ class UiContractTests(unittest.TestCase):
         self.assertIn("Shift+Enter", html)
         self.assertIn("Local memory", html)
         self.assertIn("/v1/memory", html)
+        self.assertIn("SpeechRecognition", html)
+        self.assertIn("speechSynthesis", html)
+        self.assertIn("Voice input unavailable", html)
 
 
 if __name__ == "__main__":
