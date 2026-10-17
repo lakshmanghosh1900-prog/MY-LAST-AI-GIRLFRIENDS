@@ -63,3 +63,11 @@ The absence of an explicit Phase 0–7 source is a documentation discrepancy,
 not permission to overwrite historical documents. If a canonical Phase 0–7
 document is later recovered, this table must be reconciled against it before a
 stage is declared complete.
+
+## Current execution status
+
+The dependency table above preserves the approved roadmap's initial statuses.
+The current implementation status is maintained in `docs/EXECUTION-STATUS.md`.
+The safe Stage 07A slice now implemented is explicit, local-only memory
+management; it does not close Stage 07 and does not authorize remote memory
+injection.

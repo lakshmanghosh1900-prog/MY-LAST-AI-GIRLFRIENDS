@@ -176,7 +176,7 @@ conversation data.
 | Document processing | LIMITED to approved text previews |
 | Research and citations | LIMITED to source URL on public fetch |
 | Voice | NOT IMPLEMENTED |
-| Long-term memory | NOT IMPLEMENTED |
+| Long-term memory | LIMITED: explicit local memory management implemented; automatic extraction and remote memory disabled |
 | Android companion | NOT IMPLEMENTED; REQUIRES PLATFORM REVIEW |
 | Scheduling | NOT IMPLEMENTED |
 | MCP and skills | NOT IMPLEMENTED; REQUIRES SECURITY REVIEW |

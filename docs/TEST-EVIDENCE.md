@@ -74,6 +74,27 @@ make check
 PASS — compileall and 32 tests, 32 passed, 0 failed, 0 skipped
 ```
 
+## Stage 07A local memory evidence
+
+```text
+PYTHONPATH="$PWD/src:$PWD/tests" uv run --locked python -m unittest tests.test_memory tests.test_http_api -v
+PASS — 7 tests
+
+make check
+PASS — compileall and 36 tests, 36 passed, 0 failed, 0 skipped
+```
+
+Verified behavior includes explicit local creation, global and
+conversation-scoped listing, cross-conversation isolation, tombstone deletion,
+expiration filtering, migration version 3, unauthorized API rejection,
+prohibited/sensitive rejection and persistence through service restart. Memory
+contents are not written to audit metadata or provider context.
+
+The current canonical database file was not migrated because independent
+inspection found it has a zeroed/non-SQLite header; the valid recovery candidate
+remains preserved under the ignored migration-backups directory. Tests use
+temporary databases only.
+
 ### Authenticated application smoke
 
 The CLI was started with the ignored local configuration. Without printing the

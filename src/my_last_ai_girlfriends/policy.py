@@ -32,9 +32,10 @@ class PolicyEngine:
     version = "policy-0.1.0"
     allowed_tools = frozenset({"file.read_text", "web.fetch"})
 
-    def __init__(self, max_message_chars: int, allow_remote_personal_data: bool):
+    def __init__(self, max_message_chars: int, allow_remote_personal_data: bool, max_memory_chars: int = 2000):
         self.max_message_chars = max_message_chars
         self.allow_remote_personal_data = allow_remote_personal_data
+        self.max_memory_chars = max_memory_chars
 
     def classify(self, message: str) -> DataClass:
         lower = message.lower()
@@ -61,6 +62,18 @@ class PolicyEngine:
         if provider == "gemini" and data_class == DataClass.PERSONAL and (not self.allow_remote_personal_data or not remote_consent):
             return PolicyDecision(Decision.SAFE_STOP, "REMOTE_CONSENT_REQUIRED", "Enable local remote-conversation consent before ordinary personal text can leave this device.", data_class)
         return PolicyDecision(Decision.ALLOW, "MESSAGE_ALLOWED", "Message is within the configured data policy.", data_class)
+
+    def check_memory(self, content: str) -> PolicyDecision:
+        if not isinstance(content, str) or not content.strip():
+            return PolicyDecision(Decision.DENY, "MEMORY_CONTENT_REQUIRED", "Memory content is required.", DataClass.PERSONAL)
+        if len(content) > self.max_memory_chars:
+            return PolicyDecision(Decision.DENY, "MEMORY_TOO_LARGE", "Memory exceeds the configured limit.", self.classify(content))
+        data_class = self.classify(content)
+        if data_class == DataClass.PROHIBITED:
+            return PolicyDecision(Decision.DENY, "MEMORY_PROHIBITED_DATA", "Credentials and authentication secrets cannot be stored as memory.", data_class)
+        if data_class == DataClass.SENSITIVE:
+            return PolicyDecision(Decision.DENY, "MEMORY_SENSITIVE_DATA", "Sensitive memory is not enabled in this local memory slice.", data_class)
+        return PolicyDecision(Decision.ALLOW, "MEMORY_EXPLICIT_ALLOWED", "Explicit local memory is allowed.", data_class)
 
     def check_tool(self, name: str, arguments: dict) -> PolicyDecision:
         if name not in self.allowed_tools:

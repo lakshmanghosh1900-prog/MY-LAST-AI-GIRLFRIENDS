@@ -14,6 +14,8 @@ class UiContractTests(unittest.TestCase):
         self.assertNotIn("innerHTML", html)
         self.assertIn("mlag-token", html)
         self.assertIn("Shift+Enter", html)
+        self.assertIn("Local memory", html)
+        self.assertIn("/v1/memory", html)
 
 
 if __name__ == "__main__":

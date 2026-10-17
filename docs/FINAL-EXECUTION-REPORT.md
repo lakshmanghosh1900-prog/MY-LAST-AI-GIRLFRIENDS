@@ -58,7 +58,7 @@ introduced or falsely enabled.
 | 04 | `CLOSED — VERIFIED` | Bounded same-conversation context, isolation, role ordering, exact-once current prompt and privacy filtering pass. |
 | 05 | `CLOSED — VERIFIED` | Responsive branded UI, session/history controls, safe DOM text rendering, file boundaries and readable HTML extraction pass. |
 | 06 | `BLOCKED_EXTERNAL` | Owner-supplied Docker build and container-smoke assertions pass; source-commit provenance is unverified, cleanup is pending, and no release/main integration is claimed. |
-| 07 | `NOT STARTED` | Dependency Stage 06 is not closed; long-term memory is not implemented. |
+| 07 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 07A explicit local memory management is implemented/tested; full Stage 07 is dependency-gated and automatic extraction, remote memory and complete retention/recovery acceptance remain open. |
 | 08 | `NOT STARTED` | Dependency Stage 07 is not closed; broad document intelligence is not implemented. |
 | 09 | `NOT STARTED` | Dependency Stage 08 is not closed; research/citation engine is not implemented. |
 | 10 | `NOT STARTED` | Dependency Stage 09 is not closed; persistent scheduler is not implemented. |
@@ -118,6 +118,15 @@ introduced or falsely enabled.
 - Completed deterministic configuration, authentication, policy, privacy,
   context, tool, migration, provider, budget, API and UI checks.
 - Did not bypass the missing Docker or GitHub prerequisites.
+
+### Stage 07A safe implementation
+
+Implemented and tested a local-only explicit memory slice without modifying the
+unreadable live database. It includes versioned schema migration 3, global and
+conversation-scoped memory, expiration filtering, tombstone deletion,
+authenticated API routes, UI controls and policy rejection for prohibited or
+sensitive content. It deliberately does not perform automatic extraction,
+provider-context injection, embeddings, document import or remote transmission.
 
 ## 5. Tests and checks actually executed
 
@@ -217,6 +226,14 @@ owner-supplied evidence, not independent reproduction.
 The same supplement reports Docker build `OWNER-SUPPLIED PASS`, with exact
 source-commit/image provenance `UNVERIFIED`. Cleanup was run separately without
 a verified result and remains `PENDING`. Stage 06 therefore remains blocked.
+
+## Stage 07A evidence
+
+The targeted memory/API suite passed 7 tests and the complete deterministic
+suite passed 36 tests with zero failures and zero skips. Full Stage 07 is not
+closed: it depends on the unresolved Stage 06 release/integration gate and
+requires additional retention, correction, deletion, recovery and evaluation
+work beyond this safe first slice.
 
 ## 8. Windows startup, authentication and recovery
 

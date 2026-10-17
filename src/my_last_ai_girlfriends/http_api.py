@@ -7,9 +7,10 @@ import secrets
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from .auth import AuthManager
+from .memory import MemoryError
 from .redaction import redact
 from .service import MyLastAIGirlfriendsService
 
@@ -125,6 +126,14 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
         if path == "/v1/settings":
             self._send(HTTPStatus.OK, {"remote_conversation_consent": self.server.service.remote_consent_enabled()}, request_id)
             return
+        if path == "/v1/memory":
+            query = parse_qs(urlsplit(self.path).query)
+            conversation_id = query.get("conversation_id", [None])[0]
+            try:
+                self._send(HTTPStatus.OK, {"memories": self.server.service.list_memories(conversation_id)}, request_id)
+            except KeyError:
+                self._error(HTTPStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND", "Conversation does not exist.", request_id)
+            return
         parts = [part for part in path.split("/") if part]
         if len(parts) == 3 and parts[0] == "v1" and parts[1] == "conversations":
             try:
@@ -153,6 +162,23 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                     return
                 self._send(HTTPStatus.OK, self.server.service.set_remote_consent(enabled), request_id)
                 return
+            if path == "/v1/memory":
+                content = payload.get("content")
+                scope = payload.get("scope", "global")
+                conversation_id = payload.get("conversation_id")
+                expires_at = payload.get("expires_at")
+                if not isinstance(content, str) or not isinstance(scope, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "MEMORY_FIELDS_INVALID", "content and scope are required strings.", request_id)
+                    return
+                if conversation_id is not None and not isinstance(conversation_id, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "CONVERSATION_ID_INVALID", "conversation_id must be a string.", request_id)
+                    return
+                if expires_at is not None and not isinstance(expires_at, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "MEMORY_EXPIRY_INVALID", "expires_at must be an ISO timestamp string.", request_id)
+                    return
+                result = self.server.service.create_memory(content, scope, conversation_id, expires_at)
+                self._send(HTTPStatus.CREATED, result, request_id)
+                return
             parts = [part for part in path.split("/") if part]
             if len(parts) == 4 and parts[:2] == ["v1", "conversations"] and parts[3] == "messages":
                 content = payload.get("content")
@@ -172,7 +198,27 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
         except KeyError:
             self._error(HTTPStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND", "Conversation does not exist.", request_id)
             return
+        except MemoryError as exc:
+            self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
+            return
         except RuntimeError as exc:
             self._error(HTTPStatus.SERVICE_UNAVAILABLE, "SERVICE_NOT_READY", str(exc), request_id)
+            return
+        self._error(HTTPStatus.NOT_FOUND, "NOT_FOUND", "Route not found.", request_id)
+
+    def do_DELETE(self) -> None:
+        request_id = self._request_id()
+        if not self._authorized(request_id):
+            return
+        parsed = urlsplit(self.path)
+        parts = [part for part in parsed.path.split("/") if part]
+        if len(parts) == 3 and parts[:2] == ["v1", "memory"]:
+            query = parse_qs(parsed.query)
+            conversation_id = query.get("conversation_id", [None])[0]
+            try:
+                deleted = self.server.service.delete_memory(parts[2], conversation_id)
+                self._send(HTTPStatus.OK, {"deleted": deleted}, request_id)
+            except KeyError:
+                self._error(HTTPStatus.NOT_FOUND, "MEMORY_NOT_FOUND", "Memory does not exist.", request_id)
             return
         self._error(HTTPStatus.NOT_FOUND, "NOT_FOUND", "Route not found.", request_id)

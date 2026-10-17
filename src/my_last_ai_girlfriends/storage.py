@@ -221,6 +221,32 @@ class Database:
                 "INSERT OR IGNORE INTO schema_migrations(version, applied_at) VALUES (?, ?)",
                 (2, utc_now()),
             )
+            applied = {row[0] for row in self.connection.execute("SELECT version FROM schema_migrations")}
+            if 3 not in applied:
+                self.connection.executescript("""
+                CREATE TABLE IF NOT EXISTS memory_items (
+                    id TEXT PRIMARY KEY,
+                    scope TEXT NOT NULL CHECK(scope IN ('global', 'conversation')),
+                    conversation_id TEXT REFERENCES conversations(id),
+                    content TEXT NOT NULL,
+                    data_class TEXT NOT NULL CHECK(data_class IN ('PUBLIC', 'PERSONAL')),
+                    source_type TEXT NOT NULL CHECK(source_type IN ('explicit', 'imported')),
+                    source_message_id TEXT REFERENCES messages(id),
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    expires_at TEXT,
+                    deleted_at TEXT,
+                    confirmed INTEGER NOT NULL DEFAULT 1 CHECK(confirmed IN (0, 1)),
+                    CHECK((scope = 'global' AND conversation_id IS NULL) OR
+                          (scope = 'conversation' AND conversation_id IS NOT NULL))
+                );
+                CREATE INDEX IF NOT EXISTS idx_memory_scope ON memory_items(scope, conversation_id, updated_at);
+                CREATE INDEX IF NOT EXISTS idx_memory_expiry ON memory_items(expires_at, deleted_at);
+                """)
+                self.connection.execute(
+                    "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                    (3, utc_now()),
+                )
 
     @contextmanager
     def transaction(self, immediate: bool = True) -> Iterator[sqlite3.Connection]:
@@ -358,6 +384,71 @@ class Database:
                 "INSERT INTO settings(key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",
                 (key, value, utc_now()),
             )
+
+    def create_memory(
+        self,
+        scope: str,
+        conversation_id: str | None,
+        content: str,
+        data_class: str,
+        expires_at: str | None,
+        source_type: str = "explicit",
+        source_message_id: str | None = None,
+    ) -> dict:
+        memory_id = self.new_id()
+        now = utc_now()
+        with self.transaction():
+            self.connection.execute(
+                """INSERT INTO memory_items(
+                    id, scope, conversation_id, content, data_class, source_type,
+                    source_message_id, created_at, updated_at, expires_at, confirmed
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+                (memory_id, scope, conversation_id, content, data_class, source_type,
+                 source_message_id, now, now, expires_at),
+            )
+        return self.get_memory(memory_id) or {}
+
+    def get_memory(self, memory_id: str) -> dict | None:
+        row = self.connection.execute(
+            """SELECT id, scope, conversation_id, content, data_class, source_type,
+                      source_message_id, created_at, updated_at, expires_at, confirmed
+               FROM memory_items WHERE id = ? AND deleted_at IS NULL""",
+            (memory_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def list_memories(self, conversation_id: str | None = None, limit: int = 100) -> list[dict]:
+        now = utc_now()
+        if conversation_id is None:
+            rows = self.connection.execute(
+                """SELECT id, scope, conversation_id, content, data_class, source_type,
+                          source_message_id, created_at, updated_at, expires_at, confirmed
+                   FROM memory_items
+                   WHERE deleted_at IS NULL AND scope = 'global'
+                     AND (expires_at IS NULL OR expires_at > ?)
+                   ORDER BY updated_at DESC, id DESC LIMIT ?""",
+                (now, limit),
+            ).fetchall()
+        else:
+            rows = self.connection.execute(
+                """SELECT id, scope, conversation_id, content, data_class, source_type,
+                          source_message_id, created_at, updated_at, expires_at, confirmed
+                   FROM memory_items
+                   WHERE deleted_at IS NULL
+                     AND (scope = 'global' OR conversation_id = ?)
+                     AND (expires_at IS NULL OR expires_at > ?)
+                   ORDER BY updated_at DESC, id DESC LIMIT ?""",
+                (conversation_id, now, limit),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def delete_memory(self, memory_id: str) -> bool:
+        with self.transaction():
+            cursor = self.connection.execute(
+                "UPDATE memory_items SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+                (utc_now(), utc_now(), memory_id),
+            )
+        return cursor.rowcount == 1
 
     def month_usage(self, bucket_month: str) -> int:
         row = self.connection.execute(

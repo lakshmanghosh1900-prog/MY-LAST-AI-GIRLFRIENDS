@@ -219,6 +219,7 @@ class Config:
     max_output_tokens: int
     max_message_chars: int
     max_context_messages: int
+    max_memory_chars: int
     max_file_bytes: int
     max_fetch_bytes: int
     fetch_timeout_seconds: int
@@ -282,6 +283,7 @@ class Config:
             max_output_tokens=_int(values.get("MLAG_MAX_OUTPUT_TOKENS", "2048"), "MLAG_MAX_OUTPUT_TOKENS", 128, 32000),
             max_message_chars=_int(values.get("MLAG_MAX_MESSAGE_CHARS", "12000"), "MLAG_MAX_MESSAGE_CHARS", 64, 100000),
             max_context_messages=_int(values.get("MLAG_MAX_CONTEXT_MESSAGES", "20"), "MLAG_MAX_CONTEXT_MESSAGES", 2, 100),
+            max_memory_chars=_int(values.get("MLAG_MAX_MEMORY_CHARS", "2000"), "MLAG_MAX_MEMORY_CHARS", 64, 20000),
             max_file_bytes=_int(values.get("MLAG_MAX_FILE_BYTES", "1048576"), "MLAG_MAX_FILE_BYTES", 1024, 100000000),
             max_fetch_bytes=_int(values.get("MLAG_MAX_FETCH_BYTES", "1048576"), "MLAG_MAX_FETCH_BYTES", 1024, 100000000),
             fetch_timeout_seconds=_int(values.get("MLAG_FETCH_TIMEOUT_SECONDS", "10"), "MLAG_FETCH_TIMEOUT_SECONDS", 1, 60),

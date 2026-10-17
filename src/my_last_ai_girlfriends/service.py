@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from .budget import BudgetLedger
 from .config import Config
 from .lifecycle import Lifecycle
+from .memory import MemoryError, validate_expiry, validate_scope
 from .policy import DataClass, Decision, PolicyEngine
 from .providers import GeminiProvider, OfflineDemoProvider, Provider, ProviderError, estimate_tokens
 from .redaction import redact
@@ -48,7 +49,11 @@ class MyLastAIGirlfriendsService:
         self.db = db or Database(self.config.data_dir / "my_last_ai_girlfriends.sqlite3")
         self.db.initialize()
         self.lifecycle = Lifecycle()
-        self.policy = PolicyEngine(self.config.max_message_chars, self.config.allow_remote_personal_data)
+        self.policy = PolicyEngine(
+            self.config.max_message_chars,
+            self.config.allow_remote_personal_data,
+            self.config.max_memory_chars,
+        )
         self.budget = BudgetLedger(self.db, self.config.monthly_budget_usd_micros)
         self.file_tool = SafeFileTool(self.config.allowed_root, self.config.max_file_bytes)
         self.web_tool = SafeWebFetcher(self.config.max_fetch_bytes, self.config.fetch_timeout_seconds)
@@ -93,6 +98,57 @@ class MyLastAIGirlfriendsService:
         self.db.set_setting("remote_conversation_consent", "true" if enabled else "false")
         self.db.add_audit("remote_conversation_consent_changed", {"enabled": bool(enabled)})
         return self.runtime_info()
+
+    def create_memory(
+        self,
+        content: str,
+        scope: str = "global",
+        conversation_id: str | None = None,
+        expires_at: str | None = None,
+    ) -> dict:
+        if not self.lifecycle.can_accept_work():
+            raise RuntimeError("service is not ready")
+        validate_scope(scope, conversation_id)
+        if conversation_id is not None and not self.db.conversation_exists(conversation_id):
+            raise KeyError("conversation not found")
+        decision = self.policy.check_memory(content)
+        if decision.decision != Decision.ALLOW:
+            raise MemoryError(decision.code, decision.reason)
+        normalized_expiry = validate_expiry(expires_at)
+        item = self.db.create_memory(
+            scope,
+            conversation_id,
+            content.strip(),
+            decision.data_class.value,
+            normalized_expiry,
+        )
+        self.db.add_audit(
+            "memory_created",
+            {"memory_id": item["id"], "scope": scope, "data_class": decision.data_class.value},
+        )
+        item["confirmed"] = bool(item.get("confirmed"))
+        return item
+
+    def list_memories(self, conversation_id: str | None = None) -> list[dict]:
+        if conversation_id is not None and not self.db.conversation_exists(conversation_id):
+            raise KeyError("conversation not found")
+        items = self.db.list_memories(conversation_id)
+        for item in items:
+            item["confirmed"] = bool(item.get("confirmed"))
+        return items
+
+    def delete_memory(self, memory_id: str, conversation_id: str | None = None) -> bool:
+        item = self.db.get_memory(memory_id)
+        if item is None:
+            raise KeyError("memory not found")
+        if conversation_id is not None and not self.db.conversation_exists(conversation_id):
+            raise KeyError("conversation not found")
+        if item["scope"] == "conversation" and item["conversation_id"] != conversation_id:
+            raise KeyError("memory not found")
+        deleted = self.db.delete_memory(memory_id)
+        if deleted:
+            self.db.add_audit("memory_deleted", {"memory_id": memory_id, "scope": item["scope"]})
+        return deleted
 
     def stop(self) -> str:
         changed = self.lifecycle.begin_stop()

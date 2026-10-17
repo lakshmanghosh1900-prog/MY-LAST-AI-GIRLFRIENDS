@@ -92,7 +92,7 @@ for this filesystem condition. No database reset was performed.
 | 04 | CLOSED — VERIFIED | Same-conversation context, ordering, current-message de-duplication and cross-conversation isolation pass in deterministic service tests. |
 | 05 | CLOSED — VERIFIED | Branded responsive UI, history/session controls, keyboard behavior, safe text rendering, bounded file tool and readable HTML extraction are implemented and covered by contract/security tests. |
 | 06 | BLOCKED_EXTERNAL | Owner-supplied Docker build and container-smoke checks pass; source-commit provenance is unverified, cleanup is PENDING, post-`3acccc3` documentation is local-only, and PR/main integration remains open. |
-| 07 | NOT STARTED | Waiting for Stage 06. |
+| 07 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 07A explicit local memory management is implemented and tested; Stage 06 is not closed, automatic extraction/remote memory/retrieval remain disabled, and full Stage 07 acceptance is open. |
 | 08 | NOT STARTED | Waiting for Stage 07. |
 | 09 | NOT STARTED | Waiting for Stage 08. |
 | 10 | NOT STARTED | Waiting for Stage 09. |
@@ -317,3 +317,26 @@ integration.
   cleanup remains pending and source provenance is unverified. Because cleanup
   and integration gates remain open, Stage 06 is not
   `CLOSED — VERIFIED`, and Stages 07–21 must not be falsely marked complete.
+
+## Stage 07A — Explicit local memory management
+
+**Status:** `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN`
+
+Implemented as a safe local slice without touching the unreadable live database:
+
+- Versioned SQLite migration 3 adds `memory_items` with scope, expiration,
+  confirmation, source and tombstone fields.
+- Authenticated create/list/delete API routes support global and
+  conversation-scoped memory.
+- Memory is explicitly user-created; prohibited credentials and sensitive
+  content are rejected before persistence.
+- Expired memory is excluded from reads; deletion is tombstoned.
+- Conversation-scoped memory cannot be listed or deleted through another
+  conversation.
+- UI settings include explicit local memory save/list/delete controls.
+- Memory is not injected into provider context and no automatic extraction,
+  embeddings, document import or remote memory transfer exists.
+
+Evidence: 4 new memory tests plus the full 36-test suite passed. Full Stage 07
+remains open pending Stage 06 integration and later requirements including
+retention review, correction/contradiction handling and recovery drills.
