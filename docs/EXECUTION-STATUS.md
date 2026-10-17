@@ -71,8 +71,8 @@ for this filesystem condition. No database reset was performed.
 |---|---|---|
 | 01 | CLOSED — VERIFIED | Configuration conflict and HTTPS validation tests pass; mounted SQLite WAL/SHM fallback starts the real CLI; authenticated health and conversation smoke pass; 29-test regression suite is green. |
 | 02 | CLOSED — VERIFIED | Canonical package/CLI metadata, active UI/docs and MLAG configuration are consistent; idempotent legacy migration preserves source and relationships; 29-test regression suite and real CLI smoke pass. |
-| 03 | NOT STARTED | Waiting for Stage 02 gate; live Gemini evidence remains external. |
-| 04 | NOT STARTED | Waiting for Stage 03 gate. |
+| 03 | CLOSED — VERIFIED | Gemini adapter contract/error tests and three repeated application-level live requests pass with configured private credentials; no fake fallback observed. |
+| 04 | CLOSED — VERIFIED | Same-conversation context, ordering, current-message de-duplication and cross-conversation isolation pass in deterministic service tests. |
 | 05 | NOT STARTED | Waiting for Stage 04 gate. |
 | 06 | NOT STARTED | MVP release gate cannot open until Stages 01–05 are verified. |
 | 07 | NOT STARTED | Waiting for Stage 06. |
@@ -186,3 +186,41 @@ the documentation until its staged diff and checks are reviewed.
 The implementation is ready for a focused local commit after staged-diff
 review. Remote publication remains `BLOCKED_EXTERNAL` by the recorded GitHub
 authentication failure; no push or merge is claimed.
+
+## Stage 03 — Real Gemini AI brain
+
+**Status:** `CLOSED — VERIFIED`
+
+### Acceptance evidence
+
+- Provider URL normalization, bearer header construction, request payload,
+  model handling and output extraction: PASS — adapter tests.
+- Empty output, malformed schema, unsupported tool calls, authentication,
+  quota/rate, HTTP and network error classification: PASS — provider tests.
+- No automatic retry or fake/offline fallback after provider failure: PASS —
+  service regression test; live failure behavior remains explicit.
+- Application-level live smoke: PASS. With the existing private local
+  configuration, one authenticated application conversation completed three
+  sequential Gemini requests without an intermittent local-request failure:
+  `SUCCEEDED`, provider `gemini`, model `gemini-3.8-flash`, `ai_generated=true`
+  for all three responses. The first response returned the requested marker,
+  the second recalled it, and the third returned a new requested marker.
+- Credentials were read only by the local process; no key or response payload
+  was copied into repository evidence.
+
+### Stage 03 tests
+
+- Provider targeted suite: PASS — 12 tests.
+- Full regression suite after Stage 03: PASS — 32 tests, 0 failures, 0 skips.
+
+## Stage 04 — Conversation context and isolation
+
+**Status:** `CLOSED — VERIFIED`
+
+The existing bounded context implementation was audited and exercised through
+the service tests. It retrieves only the selected conversation, preserves
+chronological role/content ordering, excludes the current persisted message
+before appending it once, enforces message/input bounds, and filters sensitive
+or prohibited history before remote submission. The same suite verifies that a
+second conversation cannot receive the first conversation's follow-up and that
+failed remote requests are not turned into fake assistant successes.

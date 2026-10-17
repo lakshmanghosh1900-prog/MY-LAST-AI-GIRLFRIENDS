@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import urllib.error
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -125,6 +126,39 @@ class ConfigurationAndProviderTests(unittest.TestCase):
             with self.assertRaises(ProviderError) as caught:
                 provider.complete([{"role": "user", "content": "hello"}], 128, 7)
         self.assertEqual(caught.exception.code, "PROVIDER_SCHEMA")
+
+    def test_gemini_rejects_empty_and_unsupported_tool_outputs(self):
+        provider = GeminiProvider("https://example.test/v1beta/openai/", "secret-key", "gemini-3.8-flash", 0.75, 3.75)
+        for payload, code in (
+            ({"choices": [{"message": {"content": ""}}]}, "PROVIDER_EMPTY_OUTPUT"),
+            ({"choices": [{"message": {"content": "answer", "tool_calls": [{"id": "x"}]}}]}, "PROVIDER_TOOL_CALL_REJECTED"),
+        ):
+            with self.subTest(code=code), patch("urllib.request.urlopen", lambda *_args, **_kwargs: _Response(payload)):
+                with self.assertRaises(ProviderError) as caught:
+                    provider.complete([{"role": "user", "content": "hello"}], 128, 7)
+                self.assertEqual(caught.exception.code, code)
+
+    def test_gemini_classifies_auth_quota_and_network_failures_without_retry(self):
+        provider = GeminiProvider("https://example.test/v1beta/openai/", "secret-key", "gemini-3.8-flash", 0.75, 3.75)
+        for status, code, unknown in (
+            (401, "PROVIDER_AUTHENTICATION", False),
+            (429, "PROVIDER_RATE_LIMIT", True),
+            (503, "PROVIDER_HTTP_ERROR", True),
+        ):
+            def raise_http_error(*_args, _status=status, **_kwargs):
+                raise urllib.error.HTTPError("https://example.test", _status, "provider", {}, None)
+
+            with self.subTest(status=status), patch("urllib.request.urlopen", raise_http_error):
+                with self.assertRaises(ProviderError) as caught:
+                    provider.complete([{"role": "user", "content": "hello"}], 128, 7)
+                self.assertEqual(caught.exception.code, code)
+                self.assertEqual(caught.exception.usage_unknown, unknown)
+
+        with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("offline")):
+            with self.assertRaises(ProviderError) as caught:
+                provider.complete([{"role": "user", "content": "hello"}], 128, 7)
+        self.assertEqual(caught.exception.code, "PROVIDER_TIMEOUT_OR_NETWORK")
+        self.assertTrue(caught.exception.usage_unknown)
 
 
 if __name__ == "__main__":

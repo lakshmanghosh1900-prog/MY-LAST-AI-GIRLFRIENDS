@@ -129,6 +129,45 @@ The current CLI was started against the recovered canonical database and an
 authenticated `GET /v1/health` returned `200`, `state=READY` and
 `database=ready`. No token value or conversation content was printed.
 
+## Stage 03 live application evidence — 17 October 2026
+
+The configured local `.env` was used in memory by the running application. The
+token and provider key were not printed or stored in this document. After an
+authenticated health check, remote conversation consent was enabled through
+the application endpoint and one conversation received three sequential
+requests.
+
+```text
+health: 200, mode=real, provider=gemini, connected=false before a call
+consent: 200, enabled=true
+conversation: 201
+request 1: 200, SUCCEEDED, provider=gemini, model=gemini-3.8-flash, ai_generated=true
+request 2: 200, SUCCEEDED, provider=gemini, model=gemini-3.8-flash, ai_generated=true
+request 3: 200, SUCCEEDED, provider=gemini, model=gemini-3.8-flash, ai_generated=true
+```
+
+The first and third prompts requested exact markers; the observed responses
+contained the requested markers. The second response recalled the first marker,
+proving application-level same-conversation context for this run. This is a
+real provider smoke result for this configured environment, not a mock result.
+
+## Stage 03 deterministic provider evidence
+
+```text
+PYTHONPATH="$PWD/src" uv run --locked python -m unittest tests.test_configuration_provider -v
+PASS — 12 tests
+
+make check
+PASS — compileall and 32 tests, 32 passed, 0 failed, 0 skipped
+```
+
+## Stage 04 deterministic context evidence
+
+The service suite verifies bounded chronological context, exact-once current
+message insertion, same-conversation history, cross-conversation isolation,
+prohibited-input handling, and no offline fallback after real-provider failure.
+Those checks are included in the 32-test `make check` result above.
+
 ## Evidence rules
 
 - A mocked provider response proves only the adapter contract, not live Gemini.
