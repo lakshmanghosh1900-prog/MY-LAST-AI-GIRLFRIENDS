@@ -1,6 +1,6 @@
 # MY LAST AI GIRLFRIENDS — Final Execution Report
 
-**Report date:** 17 October 2026
+**Report date:** 18 October 2026
 
 **Decision:** `BLOCKED`
 
@@ -16,12 +16,12 @@ failed push is historical evidence.
 | Repository | `https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS.git` |
 | Workspace | `C:\Users\User\Desktop\MY LAST AI GIRLFRIENDS` |
 | Working branch | `feat/mlag-real-ai-premium-ui` |
-| Last published feature tip at resume | `3acccc3ef86cf7f4c44410da76c9ea8d3985982a` |
-| Current local status | Implementation tip `c6ef387` is local-only; push blocked by unavailable Git credentials |
+| Last published feature tip at resume | Owner-verified `ebd37c3d5588b02b8af27b3a02a90125e94b55c2` |
+| Current local status | Local HEAD `a3106fb` is two local continuation commits ahead of the published baseline; current local suite is 53 tests |
 | Local `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | `origin/main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
-| Remote feature branch | `feat/mlag-real-ai-premium-ui` at `3acccc3ef86cf7f4c44410da76c9ea8d3985982a` |
-| Pull request | None found for feature branch → `main` |
+| Remote feature branch | `feat/mlag-real-ai-premium-ui` at owner-verified `ebd37c3d5588b02b8af27b3a02a90125e94b55c2` |
+| Pull request | Draft #1 open for feature branch → `main`; no merge attempted |
 | Integrated release commit | None; verified feature work is not merged into `main` |
 
 The pre-existing empty untracked file named `main` was preserved. No reset,
@@ -44,15 +44,14 @@ force-push, destructive cleanup, or overwrite of local user work was used.
 
 No React, Node.js, Next.js, Prisma, Supabase, public hosting, shell execution,
 unrestricted automation, payments, banking, Accessibility automation, MCP,
-voice, Android, long-term memory, scheduler or external side-effect system was
-introduced or falsely enabled.
+voice, Android or external side-effect system was introduced or falsely enabled.
 
 ## 3. Stage completion table
 
 | Stage | Status | Evidence / exact limitation |
 |---|---|---|
 | Task 00 | `CLOSED — VERIFIED` | Local/remote history, source, docs, ignored data and branch relationship reconciled; database recovery evidence recorded. |
-| 01 | `CLOSED — VERIFIED` | Configuration conflicts, HTTPS validation, token/startup safety, SQLite mounted-workspace fallback, authenticated launch and 32-test regression pass. |
+| 01 | `CLOSED — VERIFIED` | Configuration conflicts, HTTPS validation, token/startup safety, SQLite mounted-workspace fallback and authenticated launch pass; published baseline has 48 tests and current local continuation has 53. |
 | 02 | `CLOSED — VERIFIED` | Package/CLI/product rename, MLAG naming, idempotent transactional legacy migration, source preservation and relationship checks pass. |
 | 03 | `CLOSED — VERIFIED` | Gemini adapter tests plus three repeated live application requests succeeded with `ai_generated=true`; no fallback. |
 | 04 | `CLOSED — VERIFIED` | Bounded same-conversation context, isolation, role ordering, exact-once current prompt and privacy filtering pass. |
@@ -65,14 +64,14 @@ introduced or falsely enabled.
 | 11 | `BLOCKED_EXTERNAL` | No voice service is implemented; real audio hardware/provider evidence is unavailable. |
 | 12 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Static least-privilege registry and exact tool argument validation are implemented; broader automation, execution verification and approvals remain open. |
 | 13 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Versioned deterministic local evaluation exists for truthful offline, policy and memory flows; full quality/latency/cost, voice/device/tool integration and rollback acceptance remain open. |
-| 14 | `NOT STARTED` | Dependency Stage 13 is not closed; Android toolchain/device evidence is absent. |
-| 15 | `NOT STARTED` | Dependency Stage 14 is not closed; PC–phone connectivity is not implemented. |
-| 16 | `NOT STARTED` | Dependency Stage 15 is not closed; no MCP connector is enabled. |
-| 17 | `NOT STARTED` | Dependency Stage 16 is not closed; no self-learning/skill activation exists. |
-| 18 | `NOT STARTED` | Dependency Stage 17 is not closed; no multi-agent orchestration exists. |
-| 19 | `NOT STARTED` | Dependency Stage 18 is not closed; external side effects remain disabled. |
-| 20 | `NOT STARTED` | Dependency Stage 19 is not closed; no device mesh/local brain is enabled. |
-| 21 | `NOT STARTED` | Dependency Stage 20 is not closed; final cross-feature hardening gate is unavailable. |
+| 14 | `BLOCKED_EXTERNAL / CONTRACT PARTIAL` | Android companion remains unavailable; truthful capability inventory reports the missing toolchain/device. |
+| 15 | `PARTIAL — LOCAL GOVERNANCE` | Hashed device enrollment, identity verification, last-seen updates, revocation and authenticated routes exist; encrypted transport is not enabled. |
+| 16 | `PARTIAL — REGISTRY ONLY` | Credential-free HTTPS connector registry and lifecycle exist; connector/MCP execution is disabled. |
+| 17 | `PARTIAL — REVIEW LIFECYCLE` | Versioned skills with provenance and capability allowlisting exist; self-learning and skill execution are disabled. |
+| 18 | `PARTIAL — BOUNDED LOCAL` | Fixed-role local orchestration and durable evidence exist; remote delegation is disabled. |
+| 19 | `PARTIAL — RECORDS ONLY` | Hashed approval records and lifecycle exist; external action consumption is disabled. |
+| 20 | `BLOCKED_EXTERNAL / INVENTORY ONLY` | Device/brain capability inventory exists; Android mesh and local-model hardware are unavailable. |
+| 21 | `PARTIAL — LOCAL GATE` | Integrity/schema/secret-free readiness endpoints exist; Docker cleanup, provenance and PR/main integration remain open. |
 
 ## 4. Work completed by verified stage
 
@@ -174,7 +173,8 @@ quality or external-action evaluation.
 | `uv lock --check` | `PASS` |
 | `uv sync --locked` | `PASS` |
 | `uv run --locked python -m compileall -q src tests` | `PASS` |
-| `make check` | `PASS` — 32 tests, 32 passed, 0 failed, 0 skipped |
+| `make -C /tmp/mlag-ebd-baseline check` | `PASS` — published `ebd37c3`, 48 tests, 48 passed, 0 failed, 0 skipped |
+| `make check` | `PASS` — local `a3106fb` continuation, 53 tests, 53 passed, 0 failed, 0 skipped |
 | Configuration targeted suite | `PASS` — 11 tests |
 | Migration targeted suite | `PASS` — 2 tests |
 | Authenticated local health/conversation smoke | `PASS` — health 200, conversation 201 |
@@ -182,9 +182,9 @@ quality or external-action evaluation.
 | Invalid real-mode HTTP provider URL | `PASS` — exit 2, HTTPS validation safe-stop |
 | Real Gemini application smoke | `PASS` — 3 sequential `SUCCEEDED` calls, `ai_generated=true` |
 | `docker --version` / Docker info | `BLOCKED_EXTERNAL` — Docker executable absent; owner supplied build/smoke assertions separately |
-| GitHub feature push | `PASS` at `3acccc3`; earlier credential failures remain historical |
+| GitHub feature publication | `PASS` — owner-verified at `ebd37c3`; local `1df67f6`/`a3106fb` continuation is not yet published |
 
-The symlink test did not skip in this Linux container; all 32 discovered tests
+The symlink test did not skip in this Linux container; all 53 discovered tests
 passed. The live provider smoke used the existing ignored local configuration,
 but no key, token, raw conversation, or model response was written to the
 repository report.
@@ -240,9 +240,10 @@ It failed before remote publication with:
 fatal: could not read Username for 'https://github.com': No such device or address
 ```
 
-The feature branch was later published and independently verified at `3acccc3`.
-The current remaining GitHub gap is that no pull request exists and `main` is
-still at `c98a091`; integration is intentionally deferred until the Stage 06
+The feature branch was later published at the historical `3acccc3` checkpoint
+and is now owner-verified at `ebd37c3`.
+The current remaining GitHub gap is that draft PR #1 is not merged and `main`
+is still at `c98a091`; integration is intentionally deferred until the Stage 06
 Docker gate closes. Docker is not executable in this environment, so Docker
 build and authenticated container smoke remain `BLOCKED_EXTERNAL` rather than
 `PASS`. The owner later supplied a successful Docker image-build result and
@@ -250,13 +251,13 @@ container smoke assertions. Exact source-commit/image provenance remains
 unverified, and cleanup remains pending.
 
 The resume status updates at `6153b75` and `d93b852` preserve earlier
-credential failures. They were later included in the owner-published feature
-branch now verified at `3acccc3`.
+credential failures. They are historical commits included in the later
+owner-published feature branch now verified at `ebd37c3`.
 
 ## Owner-supplied Stage 06 evidence
 
-The owner supplement reports `STAGE06_CONTAINER_SMOKE=PASS` for feature SHA
-`3acccc3`, with authenticated `READY` health, unauthenticated HTTP `401`,
+The historical owner supplement reports `STAGE06_CONTAINER_SMOKE=PASS` for
+feature SHA `3acccc3`, with authenticated `READY` health, unauthenticated HTTP `401`,
 authenticated conversation creation, and an offline response with
 `ai_generated=false` plus an explicit not-AI label. This is recorded as
 owner-supplied evidence, not independent reproduction.
@@ -303,6 +304,60 @@ deterministic suite passed 48 tests with zero failures and zero skips. Full
 Stage 13 remains open pending broader quality, latency, cost and integrated
 capability evaluation.
 
+## Current database recovery evidence
+
+The canonical path is `data/my_last_ai_girlfriends.sqlite3`. Read-only
+inspection found a zeroed 126,976-byte header and SQLite returned
+`DatabaseError: file is not a database`; SHA-256 is
+`2e3c9e3a21b33a867a9958ebbec68e960cf8daae652073f91bca0b6cdc8810d5`.
+
+The preserved recovery candidate is
+`data/migration-backups/my_last_ai_girlfriends.recovered.20261017T103434Z.sqlite3`.
+It has SHA-256
+`47ada56b639d5edf9194e79f19a3391b031c5ca20dbbfc56eafad1ebffaea073`, integrity
+`ok`, and retains 1 conversation, 24 messages, 17 tasks, 8 provider calls, 16
+budget events and 114 audit events. The invalid original is separately preserved
+byte-for-byte at
+`data/migration-backups/canonical-invalid-preserved-20261018T000000Z.sqlite3`.
+
+An isolated copy of the candidate initialized through migration 8 with integrity
+`ok`, schema version `8`, unchanged existing counts and new governance tables.
+No migration or replacement was performed against the canonical live path.
+
+## Stages 14–21 current local slices
+
+- Stage 14 is `BLOCKED_EXTERNAL`: Android toolchain/device evidence is absent,
+  but the capability inventory truthfully reports that limitation.
+- Stage 15 has local hashed device enrollment, one-time pairing challenges,
+  identity verification, last-seen updates, revocation and authenticated API
+  routes; encrypted transport is not enabled.
+- Stage 16 has a credential-free HTTPS connector registry, scopes and lifecycle;
+  connector/MCP execution is disabled.
+- Stage 17 has provenance and draft/review/approval/revocation skill lifecycle;
+  shell/arbitrary-code capabilities and skill execution are disabled.
+- Stage 18 has bounded fixed-role local orchestration with depth/capability
+  limits and durable evidence; remote delegation is disabled.
+- Stage 19 has hashed approval parameter/nonce/session records and lifecycle;
+  external action consumption remains disabled.
+- Stage 20 exposes a truthful device/local-brain inventory but cannot verify
+  Android mesh or local-model hardware here.
+- Stage 21 exposes authenticated `/v1/readiness/local` and
+  `/v1/capabilities`; Docker cleanup, provenance, PR and `main` integration
+  remain open.
+
+After these additions, `make check` passed 53 tests and the governance/API
+targeted suite passed 8 tests. These are partial slices, not completed stages.
+
+## Draft PR #1 status
+
+The existing draft PR #1 was checked through GitHub's pull-request API. At the
+published head `ebd37c3`, the API reports `open`, `draft=true`,
+`mergeable=true`, `mergeable_state=clean`, zero status contexts and zero check
+runs. The requested `mergeability=false` state was not reproducible and appears
+to be stale/UI-specific. No merge was attempted. The PR description remains
+stale because it still describes the 48-test baseline and says Stages 14–21 are
+not started; it is not treated as current evidence.
+
 ## 8. Windows startup, authentication and recovery
 
 From PowerShell:
@@ -344,12 +399,13 @@ for the observed stale-sidecar condition. Do not reset the database.
 
 The bounded local-first MVP implementation through Stage 05 is verified, and a
 real application-level Gemini smoke passed in the configured environment. The
-deterministic suite is green with 32 passing tests and no skips. The owner has
-supplied PASS evidence for the Docker image build and container smoke, but exact
-source-commit/image provenance is unverified and cleanup remains PENDING. The
-local evidence commits `2200953` and `94a990c` (and subsequent status-only
-documentation) are not published from this environment, and PR/main
-integration is still open. Stages 07–21 were
-correctly not started because Stage 06 has not closed. The project must not be
-described as fully complete or production-ready until cleanup, publication,
-review/integration and all remaining release gates are verified.
+published `ebd37c3` baseline has 48 passing tests; the local continuation through
+`a3106fb` has 53 passing tests with no skips. The owner has supplied PASS
+evidence for the Docker image build and container smoke, but exact
+source-commit/image provenance is unverified and cleanup remains PENDING. Local
+continuation commits are not yet published, PR #1 remains a draft, and main
+integration is still open. Stages 07–10 and 12–13 remain partial; Stage 11 and
+Stage 14/20 are externally blocked; safe local slices exist for Stages 15–19 and
+21. The project must not be described as fully complete or production-ready
+until cleanup, publication, review/integration and all remaining release gates
+are verified.

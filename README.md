@@ -177,11 +177,14 @@ conversation data.
 | Research and citations | LIMITED: explicit public-URL runs with source hashes/citations; search and claim verification not implemented |
 | Voice | BLOCKED: no audio stack/hardware; not implemented |
 | Long-term memory | LIMITED: explicit local memory management implemented; automatic extraction and remote memory disabled |
-| Android companion | NOT IMPLEMENTED; REQUIRES PLATFORM REVIEW |
+| Android companion | BLOCKED EXTERNAL: toolchain/device verification unavailable |
 | Scheduling | LIMITED: authenticated durable one-shot local reminders; recurring/background execution not implemented |
-| MCP and skills | NOT IMPLEMENTED; REQUIRES SECURITY REVIEW |
-| Background agents | NOT IMPLEMENTED |
-| External actions/approval | NOT IMPLEMENTED; requires separate security review |
+| Device pairing | LIMITED: local hashed enrollment/verification/revocation; encrypted transport disabled |
+| MCP connectors | LIMITED: credential-free HTTPS registry/lifecycle; connector execution disabled |
+| Skills | LIMITED: provenance and review lifecycle; shell/code execution disabled |
+| Background agents | LIMITED: bounded local fixed-role orchestration; remote delegation disabled |
+| External actions/approval | LIMITED: hashed approval records; external action consumption disabled |
+| Local release readiness | LIMITED: authenticated integrity/capability endpoints; Docker/PR/main gates remain open |
 | Multi-user/public hosting | NOT IMPLEMENTED; requires privacy/security review |
 
 Payments, messaging, shell execution, arbitrary code execution, banking,

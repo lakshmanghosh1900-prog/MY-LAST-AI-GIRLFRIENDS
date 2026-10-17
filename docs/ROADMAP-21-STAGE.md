@@ -72,3 +72,25 @@ The safe Stage 07A, Stage 08A and Stage 09A slices now implemented are
 explicit local memory management, bounded text-document indexing/search and
 explicit public-URL research with source provenance; they do not close their
 full stages or authorize remote memory/document transfer.
+
+The owner-verified published feature baseline is
+`ebd37c3d5588b02b8af27b3a02a90125e94b55c2`. Local continuation commits
+`1df67f6` and `a3106fb` are not published or stage-complete. Current status is:
+
+| Stage | Current status | Implemented slice / remaining gate |
+|---|---|---|
+| 14 | `BLOCKED_EXTERNAL / CONTRACT PARTIAL` | Capability inventory truthfully reports missing Android toolchain/device evidence. |
+| 15 | `PARTIAL — LOCAL GOVERNANCE` | Hashed device enrollment, one-time pairing challenges, identity verification, last-seen tracking, revocation and authenticated routes; no encrypted PC–phone transport. |
+| 16 | `PARTIAL — REGISTRY ONLY` | Credential-free HTTPS connector registration, scope and lifecycle; no MCP/connector execution. |
+| 17 | `PARTIAL — REVIEW LIFECYCLE` | Provenance, capability allowlisting and draft/review/approved/revoked skills; no code execution or self-learning. |
+| 18 | `PARTIAL — BOUNDED LOCAL` | Fixed-role bounded orchestration and durable evidence; no remote delegation. |
+| 19 | `PARTIAL — RECORDS ONLY` | Hashed approval parameters/nonces/sessions and lifecycle; external action consumption disabled. |
+| 20 | `BLOCKED_EXTERNAL / INVENTORY ONLY` | Device/local-brain inventory; Android mesh and local-model hardware unavailable. |
+| 21 | `PARTIAL — LOCAL GATE` | Integrity/schema/secret-free readiness endpoints; Docker cleanup, provenance, PR and `main` integration remain open. |
+
+The current deterministic suite is 53 passing tests. The canonical SQLite path
+is `data/my_last_ai_girlfriends.sqlite3`; it is preserved and not migrated
+because its header is invalid. The verified recovery candidate remains in
+`data/migration-backups/`, and migrations through version 8 have only been
+executed on an isolated copy with all existing row counts preserved. No live
+replacement has been performed.

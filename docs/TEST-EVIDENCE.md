@@ -168,21 +168,52 @@ claim live-provider quality, voice, device or external-action evaluation.
 
 ## Current publication checkpoint
 
-Local HEAD `c6ef387` contains the latest verified implementation and
-documentation. A normal push was attempted:
+The owner-verified published feature branch baseline is
+`ebd37c3d5588b02b8af27b3a02a90125e94b55c2`. Its isolated worktree check below
+ran 48 tests. Local HEAD is `a3106fb`, which adds the Stage 15–21 governance
+slice plus one-time device pairing and currently runs 53 tests; it has not been published. Earlier
+`3acccc3` and `c6ef387` references in this file are historical checkpoints only.
+
+The published baseline and local continuation checks are:
 
 ```text
-git push origin feat/mlag-real-ai-premium-ui
-BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No device or address
-```
+make -C /tmp/mlag-ebd-baseline check
+PASS — published ebd37c3 baseline, compileall and 48 tests, 48 passed, 0 failed, 0 skipped
 
-The remote feature branch remains at `3acccc3`; no post-`3acccc3` local commit
-is claimed as published.
+make check
+PASS — compileall and 53 tests, 53 passed, 0 failed, 0 skipped
+
+PYTHONPATH="$PWD/src:$PWD/tests" uv run --locked python -m unittest tests.test_governance tests.test_http_api -v
+PASS — 8 tests
+```
 
 Verified behavior includes timezone-required schedule normalization, durable
 one-shot creation, due execution, separate run persistence, idempotent second
 execution, cancellation and existing message-policy/task lifecycle reuse. No
 background worker or external side effect is claimed.
+
+### Current SQLite recovery evidence
+
+```text
+canonical: data/my_last_ai_girlfriends.sqlite3
+canonical SHA-256: 2e3c9e3a21b33a867a9958ebbec68e960cf8daae652073f91bca0b6cdc8810d5
+canonical result: DatabaseError: file is not a database
+
+recovery: data/migration-backups/my_last_ai_girlfriends.recovered.20261017T103434Z.sqlite3
+recovery SHA-256: 47ada56b639d5edf9194e79f19a3391b031c5ca20dbbfc56eafad1ebffaea073
+recovery integrity: ok
+recovery counts: conversations=1 messages=24 tasks=17 provider_calls=8 budget_events=16 audit_events=114
+original preservation: data/migration-backups/canonical-invalid-preserved-20261018T000000Z.sqlite3
+original/preservation hashes: identical
+
+isolated recovery migration: PASS — schema version 8, integrity ok, all six
+existing record counts preserved, governance tables created
+live replacement: NOT PERFORMED
+```
+
+The canonical file and its owner data remain untouched. The recovery candidate
+was copied to a temporary isolated database before initialization; no migration
+was run against the invalid live path.
 
 ### Authenticated application smoke
 
@@ -220,7 +251,7 @@ authentication was unavailable:
 `fatal: could not read Username for 'https://github.com': No such device or
 address`.
 
-## Current Git publication evidence — rechecked at resume
+## Historical Git publication evidence — rechecked at the `3acccc3` resume checkpoint
 
 ```text
 git fetch origin --prune
@@ -233,13 +264,13 @@ git ls-remote --heads origin main
 PASS — c98a091330a05ef73823d9744bfd58d5c973059f
 
 GitHub API pull-request query for head feat/mlag-real-ai-premium-ui, base main
-PASS — empty result; no pull request currently exists
+HISTORICAL PASS — empty result; no pull request existed at that checkpoint
 ```
 
-The feature branch is published and matches the local tip at this recheck.
-`main` remains at the earlier commit. No merge is claimed. The `gh` CLI is
-unavailable in this container, so PR creation/check operations remain an
-external follow-up.
+The feature branch was published and matched the local tip at that historical
+recheck. `main` remains at the earlier commit. No merge was claimed. The current
+owner-verified publication and PR #1 state are recorded in the current
+checkpoint sections below; the `gh` CLI remains unavailable in this container.
 
 Historical resume publication retry:
 
@@ -369,16 +400,17 @@ Image source-commit provenance   UNVERIFIED
 Container cleanup                 PENDING — finally was separate; result not supplied
 ```
 
-The owner-evidence documentation series after published SHA `3acccc3` is local
-only, and the latest publication retry failed:
+Earlier owner-evidence publication retries after `3acccc3` are historical. The
+current owner-published baseline is `ebd37c3`:
 
 ```text
 git push origin feat/mlag-real-ai-premium-ui
-BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No such device or address
+NOT RUN for the current unpublished continuation commits
 ```
 
-Remote feature SHA remains `3acccc3`; post-`3acccc3` evidence commits are not
-yet remote. The local commits `2200953` and `94a990c` remain preserved.
+Remote feature SHA: owner-verified `ebd37c3`; local continuation commits
+`1df67f6`, `a3106fb` and later changes are not remote. The local commits `2200953` and
+`94a990c` remain preserved.
 
 The container assertions and build result are not independently reproduced
 here because this execution container has no Docker CLI or native Windows
@@ -386,7 +418,8 @@ bridge. Stage 06 remains blocked on cleanup and normal PR/main integration;
 source-commit provenance is also unverified. No cleanup PASS, merge or release
 readiness is claimed.
 
-Current reconciliation candidate checks at local/remote HEAD `3acccc3`:
+Current reconciliation candidate checks at published baseline `ebd37c3` plus
+local continuation `a3106fb`:
 
 ```text
 uv run --locked python --version
@@ -398,9 +431,24 @@ PASS
 uv run --locked python -m compileall -q src tests
 PASS
 make check
-PASS — 32 tests, 0 failures, 0 skips
+PASS — 53 tests, 0 failures, 0 skips
 git diff --check
 PASS
 secret scan of release diff
 PASS — no credential/key markers; ordinary `Bearer` protocol references are not secrets
 ```
+
+### Draft PR #1 status
+
+```text
+GitHub pull-request API: open, draft=true, head=ebd37c3, base=c98a091
+mergeable: true
+mergeable_state: clean
+status contexts: 0
+check runs: 0
+```
+
+The API did not reproduce a `mergeable=false` state. The PR remains a draft and
+was not merged; its body is stale relative to the published 48-test baseline and
+the local continuation. The `gh` executable is unavailable, so no PR mutation or
+merge operation was attempted.
