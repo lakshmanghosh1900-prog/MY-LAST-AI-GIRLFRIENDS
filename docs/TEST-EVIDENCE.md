@@ -110,14 +110,14 @@ authentication was unavailable:
 `fatal: could not read Username for 'https://github.com': No such device or
 address`.
 
-## Current Git publication evidence — rechecked 17 October 2026
+## Current Git publication evidence — rechecked at resume
 
 ```text
 git fetch origin --prune
 PASS
 
 git ls-remote --heads origin feat/mlag-real-ai-premium-ui
-PASS — d7a24301a05ba48d06c509d53c7eb8070882cd09
+PASS — 901e0e79d18a28697c86441f213731fcc2a83a0c
 
 git ls-remote --heads origin main
 PASS — c98a091330a05ef73823d9744bfd58d5c973059f
@@ -126,8 +126,10 @@ GitHub API pull-request query for head feat/mlag-real-ai-premium-ui, base main
 PASS — empty result; no pull request currently exists
 ```
 
-The feature branch is published and matches the local tip. `main` remains at
-the earlier commit. No merge is claimed. The `gh` CLI is unavailable in this
+The feature branch is published and matched the local tip at the time of this
+recheck. Subsequent local documentation updates in this execution are not
+represented as published until a later push succeeds. `main` remains at the
+earlier commit. No merge is claimed. The `gh` CLI is unavailable in this
 container, so PR creation/check operations remain an external follow-up.
 
 ## Stage 02 verification — 17 October 2026
@@ -222,6 +224,9 @@ NOT_RUN — no native Windows command bridge is available in this WSL execution 
 
 Native Windows Docker paths under /mnt/c and /c/Program Files/Docker
 NOT_FOUND in the mounted filesystem
+
+Host Docker build/smoke evidence supplied by the owner
+NOT_PRESENT in this workspace or execution message; no PASS inferred
 ```
 
 The deterministic MVP checks are green. Stage 06 remains blocked because the

@@ -8,11 +8,13 @@
 
 **Last rechecked local/remote feature tip:** `d7a24301a05ba48d06c509d53c7eb8070882cd09`
 
+**Latest published feature tip at this resume:** `901e0e79d18a28697c86441f213731fcc2a83a0c`
+
 **Remote `origin/main` at baseline:** `c98a091330a05ef73823d9744bfd58d5c973059f`
 **Remote refresh:** `git fetch origin --prune` completed; remote `main` still
 points to `c98a091330a05ef73823d9744bfd58d5c973059f`.
 **Feature branch publication:** `PASS` — `origin/feat/mlag-real-ai-premium-ui`
-matches `d7a24301a05ba48d06c509d53c7eb8070882cd09` after a fresh fetch.
+matches `901e0e79d18a28697c86441f213731fcc2a83a0c` after a fresh fetch.
 
 **Pull request status:** `NOT FOUND` — GitHub API query for this head/base
 returned an empty list. The `gh` executable is not installed in this execution
@@ -40,7 +42,7 @@ state prevented the first launch.
 ### Reconciled state
 
 - The branded implementation started at `2dc3162`; the verified published
-  implementation tip is `d7a2430`; it is eight commits ahead of `origin/main`
+  implementation tip at this resume is `901e0e7`; it is nine commits ahead of `origin/main`
   and is not merged.
 - `main` and `origin/main` still contain the older `jarvis_omega` baseline.
 - The only visible untracked work item is the pre-existing empty file `main`;
@@ -82,7 +84,7 @@ for this filesystem condition. No database reset was performed.
 | 03 | CLOSED — VERIFIED | Gemini adapter contract/error tests and three repeated application-level live requests pass with configured private credentials; no fake fallback observed. |
 | 04 | CLOSED — VERIFIED | Same-conversation context, ordering, current-message de-duplication and cross-conversation isolation pass in deterministic service tests. |
 | 05 | CLOSED — VERIFIED | Branded responsive UI, history/session controls, keyboard behavior, safe text rendering, bounded file tool and readable HTML extraction are implemented and covered by contract/security tests. |
-| 06 | BLOCKED_EXTERNAL | Deterministic MVP suite is green, but Docker is unavailable in the execution container; feature publication is verified, while PR/main integration remains open. |
+| 06 | BLOCKED_EXTERNAL | Deterministic MVP suite is green, but no host Docker build/smoke evidence was supplied or found and Docker is unavailable here; PR/main integration remains open. |
 | 07 | NOT STARTED | Waiting for Stage 06. |
 | 08 | NOT STARTED | Waiting for Stage 07. |
 | 09 | NOT STARTED | Waiting for Stage 08. |
@@ -276,10 +278,14 @@ failed remote requests are not turned into fake assistant successes.
 - Docker build/authenticated container smoke: `BLOCKED_EXTERNAL` because the
   execution container has no `docker` executable (`docker: command not found`).
 - Feature-branch publication: PASS — remote ref
-  `origin/feat/mlag-real-ai-premium-ui` equals `d7a2430`.
+  `origin/feat/mlag-real-ai-premium-ui` equals `901e0e7`.
 - Pull request/main integration: OPEN and intentionally deferred until the
   Stage 06 gate closes. GitHub reports no pull request for the branch, and the
   `gh` executable is unavailable in this container. No merge or main update is
   claimed.
-- Because the mandatory Docker evidence cannot be executed, Stage 06 is not
+- Host verification evidence: `NOT_PRESENT` in the workspace and current
+  execution message. Docker build/authenticated smoke cannot be independently
+  verified here.
+- Because the mandatory Docker evidence cannot be executed or independently
+  verified, Stage 06 is not
   `CLOSED — VERIFIED`, and Stages 07–21 must not be falsely marked complete.
