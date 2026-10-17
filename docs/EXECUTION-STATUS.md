@@ -69,12 +69,12 @@ for this filesystem condition. No database reset was performed.
 
 | Stage | Status | Evidence / blocker |
 |---|---|---|
-| 01 | CLOSED — VERIFIED | Configuration conflict and HTTPS validation tests pass; mounted SQLite WAL/SHM fallback starts the real CLI; authenticated health and conversation smoke pass; 29-test regression suite is green. |
-| 02 | CLOSED — VERIFIED | Canonical package/CLI metadata, active UI/docs and MLAG configuration are consistent; idempotent legacy migration preserves source and relationships; 29-test regression suite and real CLI smoke pass. |
+| 01 | CLOSED — VERIFIED | Configuration conflict and HTTPS validation tests pass; mounted SQLite WAL/SHM fallback starts the real CLI; authenticated health and conversation smoke pass; 31-test regression suite is green. |
+| 02 | CLOSED — VERIFIED | Canonical package/CLI metadata, active UI/docs and MLAG configuration are consistent; idempotent legacy migration preserves source and relationships; 31-test regression suite and real CLI smoke pass. |
 | 03 | CLOSED — VERIFIED | Gemini adapter contract/error tests and three repeated application-level live requests pass with configured private credentials; no fake fallback observed. |
 | 04 | CLOSED — VERIFIED | Same-conversation context, ordering, current-message de-duplication and cross-conversation isolation pass in deterministic service tests. |
-| 05 | NOT STARTED | Waiting for Stage 04 gate. |
-| 06 | NOT STARTED | MVP release gate cannot open until Stages 01–05 are verified. |
+| 05 | CLOSED — VERIFIED | Branded responsive UI, history/session controls, keyboard behavior, safe text rendering, bounded file tool and readable HTML extraction are implemented and covered by contract/security tests. |
+| 06 | BLOCKED_EXTERNAL | Deterministic MVP suite is green, but Docker is unavailable in the execution container and remote GitHub authentication is unavailable; no main integration or release closure is claimed. |
 | 07 | NOT STARTED | Waiting for Stage 06. |
 | 08 | NOT STARTED | Waiting for Stage 07. |
 | 09 | NOT STARTED | Waiting for Stage 08. |
@@ -123,7 +123,7 @@ for this filesystem condition. No database reset was performed.
   conflict tests pass without exposing values.
 - Database recovery: PASS — recovered database integrity is `ok` with row
   counts retained; the fallback runtime launched successfully.
-- Regression suite: PASS — `make check`, 29 tests passed, 0 failed, 0 skipped.
+- Regression suite: PASS — `make check`, 31 tests passed, 0 failed, 0 skipped.
 
 ### Stage 01 commit/push
 
@@ -139,7 +139,7 @@ synchronization is claimed.
 | `uv run --locked python --version` | PASS | CPython 3.12.11 |
 | `uv lock --check` | PASS | Lockfile resolved and checked |
 | `uv sync --locked` | PASS | Editable package installed |
-| `make check` | PASS | Compileall and 27 tests passed |
+| `make check` | PASS | Compileall and 31 tests passed |
 | `uv run --locked my-last-ai-girlfriends doctor` | PASS | Valid token status, real Gemini mode, key presence reported without values |
 | CLI launch using current mounted database | FAIL — repaired data state | Initial launch stopped on SQLite disk I/O from stale mounted WAL/SHM sidecars |
 | Direct live Gemini call | NOT RUN | Must remain separate from deterministic offline tests and requires owner configuration/network |
@@ -179,13 +179,13 @@ the documentation until its staged diff and checks are reviewed.
   returned `200`, state `READY`, and `database=ready`.
 - Rename audit: PASS — no active legacy package, CLI or UI branding remains;
   retained legacy names are documented compatibility/history only.
-- Regression suite: PASS — `make check`, 29 tests passed, 0 failed, 0 skipped.
+- Regression suite: PASS — `make check`, 31 tests passed, 0 failed, 0 skipped.
 
 ### Stage 02 publication
 
-The implementation is ready for a focused local commit after staged-diff
-review. Remote publication remains `BLOCKED_EXTERNAL` by the recorded GitHub
-authentication failure; no push or merge is claimed.
+Implementation commit: `9217368` (`fix(stage-02): complete rename and migration
+recovery`). Remote publication remains `BLOCKED_EXTERNAL` by the recorded
+GitHub authentication failure; no push or merge is claimed.
 
 ## Stage 03 — Real Gemini AI brain
 
@@ -210,8 +210,8 @@ authentication failure; no push or merge is claimed.
 
 ### Stage 03 tests
 
-- Provider targeted suite: PASS — 12 tests.
-- Full regression suite after Stage 03: PASS — 32 tests, 0 failures, 0 skips.
+- Provider targeted suite: PASS — 11 tests.
+- Full regression suite after Stage 03: PASS — 31 tests, 0 failures, 0 skips.
 
 ## Stage 04 — Conversation context and isolation
 
@@ -224,3 +224,52 @@ before appending it once, enforces message/input bounds, and filters sensitive
 or prohibited history before remote submission. The same suite verifies that a
 second conversation cannot receive the first conversation's follow-up and that
 failed remote requests are not turned into fake assistant successes.
+
+## Stage 05 — Premium UI/UX and readable web tools
+
+**Status:** `CLOSED — VERIFIED`
+
+### Acceptance evidence
+
+- Product branding, desktop/mobile layout, conversation drawer/history,
+  keyboard Enter/Shift+Enter behavior, disabled-send state, settings/consent,
+  logout/session reset and live message announcements: PASS — UI contract and
+  authenticated HTTP/service tests.
+- Dynamic model/fetched text is written with DOM `textContent`; no
+  `innerHTML`, external CDN or script rendering path exists: PASS — UI contract
+  test and source audit.
+- Approved-root file reading rejects traversal, hidden paths, symlinks, binary
+  content, unsupported suffixes and oversized files: PASS — tool tests.
+- HTTPS-only public fetching rejects credentials, fragments, non-443 ports and
+  private resolved addresses; readable HTML extraction removes active/untrusted
+  markup and preserves text: PASS — tool tests.
+- The UI remains explicit about offline mode being not AI and does not render a
+  provider failure as a successful answer.
+
+## Stage 06 — MVP verification, security and release
+
+**Status:** `BLOCKED_EXTERNAL`
+
+### Checks completed
+
+- Configuration/startup, authentication/host/origin, policy classification,
+  consent, conversation isolation/context, file/web boundaries, provider
+  adapter failures, concurrent budget reservation, settlement idempotency,
+  migrations, offline labeling, API and UI contracts: PASS — 31 deterministic
+  tests and compileall.
+- Real Gemini application smoke: PASS — recorded under Stage 03.
+- Secret review and staged diff review: PASS for local commits; ignored local
+  `.env`, databases, sidecars and generated artifacts were not staged.
+- Reproducible runtime/lock checks: PASS — Python 3.12.11, `uv lock --check`,
+  `uv sync --locked`.
+
+### Blocking evidence
+
+- Docker build/authenticated container smoke: `BLOCKED_EXTERNAL` because the
+  execution container has no `docker` executable (`docker: command not found`).
+- GitHub feature-branch push and normal main integration:
+  `BLOCKED_EXTERNAL` because GitHub HTTPS credentials were unavailable. The
+  exact failed push and error are recorded above and in `TEST-EVIDENCE.md`.
+- Because required release evidence and remote integration cannot be verified,
+  Stage 06 is not `CLOSED — VERIFIED`, and Stages 07–21 must not be falsely
+  marked complete.

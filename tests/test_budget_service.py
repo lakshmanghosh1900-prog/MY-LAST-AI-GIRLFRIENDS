@@ -81,6 +81,21 @@ class BudgetAndServiceTests(unittest.TestCase):
             self.assertLessEqual(ledger.usage_usd_micros(), 1000)
             db.close()
 
+    def test_budget_settlement_is_idempotent_and_tracks_actual_usage(self):
+        with tempfile.TemporaryDirectory() as raw:
+            db = Database(Path(raw) / "budget.sqlite3")
+            db.initialize()
+            conversation = db.create_conversation()
+            task = db.create_task(conversation)
+            ledger = BudgetLedger(db, monthly_limit_usd_micros=1000)
+            reservation = ledger.reserve(task, 600, task)
+            self.assertTrue(reservation.accepted)
+            ledger.settle(task, reservation, 200, task)
+            ledger.settle(task, reservation, 200, task)
+            self.assertEqual(ledger.usage_usd_micros(), 200)
+            self.assertEqual(db.connection.execute("SELECT COUNT(*) FROM budget_events WHERE event_type = 'settle'").fetchone()[0], 1)
+            db.close()
+
     def test_offline_demo_is_explicit_and_context_is_conversation_local(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
