@@ -170,8 +170,8 @@ claim live-provider quality, voice, device or external-action evaluation.
 
 The owner-verified published feature branch baseline is
 `fdf5fc473813609b23232960c397895fe8cc64fd`. Its isolated worktree check below
-ran the earlier 48-test baseline. Local HEAD is `deaefb4`, whose implementation
-tip `13494fc` adds integrated Stage 07–21 local workflows, browser voice, read-only MCP, approved local
+ran the earlier 48-test baseline. Local implementation tip `13494fc` adds
+integrated Stage 07–21 local workflows, browser voice, read-only MCP, approved local
 actions, Ollama support and explicit memory context; it currently runs 72 tests
 and has not been published. Earlier
 `3acccc3` and `c6ef387` references in this file are historical checkpoints only.
