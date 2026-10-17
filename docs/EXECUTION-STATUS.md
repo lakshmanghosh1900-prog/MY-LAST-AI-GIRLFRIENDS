@@ -18,6 +18,10 @@ points to `c98a091330a05ef73823d9744bfd58d5c973059f`.
 **Feature branch publication:** `PASS` — `origin/feat/mlag-real-ai-premium-ui`
 matches `3acccc3ef86cf7f4c44410da76c9ea8d3985982a` after a fresh fetch.
 
+**Current local implementation tip:** `c6ef387` with Stages 07A–13A local
+extensions. It is not yet published; the latest normal push retry failed with
+`fatal: could not read Username for 'https://github.com': No device or address`.
+
 **Current local evidence/documentation series:** commits after published
 `3acccc3` remain local-only. The latest push was attempted and failed with
 `fatal: could not read Username for 'https://github.com': No such device or

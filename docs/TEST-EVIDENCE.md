@@ -166,6 +166,19 @@ The versioned local evaluation reports truthful offline output, prohibited
 input safe-stop and explicit memory creation. It is deterministic and does not
 claim live-provider quality, voice, device or external-action evaluation.
 
+## Current publication checkpoint
+
+Local HEAD `c6ef387` contains the latest verified implementation and
+documentation. A normal push was attempted:
+
+```text
+git push origin feat/mlag-real-ai-premium-ui
+BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No device or address
+```
+
+The remote feature branch remains at `3acccc3`; no post-`3acccc3` local commit
+is claimed as published.
+
 Verified behavior includes timezone-required schedule normalization, durable
 one-shot creation, due execution, separate run persistence, idempotent second
 execution, cancellation and existing message-policy/task lifecycle reuse. No
