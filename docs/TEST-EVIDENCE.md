@@ -139,7 +139,7 @@ git push origin feat/mlag-real-ai-premium-ui
 BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No such device or address
 ```
 
-The local status candidate at that retry was `6153b75`; the remote feature
+The local status candidate at that retry was `d93b852`; the remote feature
 branch remains verified at `901e0e7`.
 
 ## Stage 02 verification — 17 October 2026

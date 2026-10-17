@@ -10,9 +10,10 @@
 
 **Latest published feature tip at this resume:** `901e0e79d18a28697c86441f213731fcc2a83a0c`
 
-**Current local status candidate:** `6153b75` (`docs: record resumed release
-verification`). Its publication retry failed with `fatal: could not read Username
-for 'https://github.com': No such device or address`.
+**Current local-only status series:** `6153b75` followed by `d93b852`.
+The latest publication retry at `d93b852` failed with `fatal: could not read
+Username for 'https://github.com': No such device or address`. The exact current
+HEAD should be rechecked before the next resume.
 
 **Remote `origin/main` at baseline:** `c98a091330a05ef73823d9744bfd58d5c973059f`
 **Remote refresh:** `git fetch origin --prune` completed; remote `main` still
@@ -284,7 +285,7 @@ failed remote requests are not turned into fake assistant successes.
 - Feature-branch publication: PASS — remote ref
   `origin/feat/mlag-real-ai-premium-ui` equals `901e0e7`.
 - Latest status publication retry: `BLOCKED_EXTERNAL` — the current Git
-  credential helper could not authenticate the local `6153b75` candidate.
+  credential helper could not authenticate the local `d93b852` candidate.
 - Pull request/main integration: OPEN and intentionally deferred until the
   Stage 06 gate closes. GitHub reports no pull request for the branch, and the
   `gh` executable is unavailable in this container. No merge or main update is

@@ -17,7 +17,7 @@ failed push is historical evidence.
 | Workspace | `C:\Users\User\Desktop\MY LAST AI GIRLFRIENDS` |
 | Working branch | `feat/mlag-real-ai-premium-ui` |
 | Last published feature tip at resume | `901e0e79d18a28697c86441f213731fcc2a83a0c` |
-| Current local status candidate | `6153b75` — not published; Git authentication retry failed |
+| Current local status candidates | `6153b75`, `d93b852` — not published; Git authentication retry failed |
 | Local `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | `origin/main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | Remote feature branch | `feat/mlag-real-ai-premium-ui` at `901e0e79d18a28697c86441f213731fcc2a83a0c` |
@@ -177,6 +177,7 @@ c7141ee test(stage-03): verify Gemini application boundaries
 d7a2430 docs: include final report commit evidence
 901e0e7 docs: reconcile published feature status
 6153b75 docs: record resumed release verification
+d93b852 docs: record current publication blocker
 ```
 
 An earlier publication attempt was:
@@ -199,9 +200,10 @@ build and authenticated container smoke remain `BLOCKED_EXTERNAL` rather than
 `PASS`. No host Docker evidence was present in the workspace or current
 execution message, so no Docker result is inferred.
 
-The resume status update at `6153b75` was not publishable from this execution
-environment because the Git credential helper again returned the Username
-authentication error. The local status records preserve that exact result.
+The resume status updates at `6153b75` and `d93b852` were not publishable from
+this execution environment because the Git credential helper again returned
+the Username authentication error. The local status records preserve that
+exact result.
 
 ## 8. Windows startup, authentication and recovery
 
