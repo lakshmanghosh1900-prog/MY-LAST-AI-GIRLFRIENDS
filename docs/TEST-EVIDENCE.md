@@ -132,6 +132,16 @@ represented as published until a later push succeeds. `main` remains at the
 earlier commit. No merge is claimed. The `gh` CLI is unavailable in this
 container, so PR creation/check operations remain an external follow-up.
 
+Resume publication retry:
+
+```text
+git push origin feat/mlag-real-ai-premium-ui
+BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No such device or address
+```
+
+The local status candidate at that retry was `6153b75`; the remote feature
+branch remains verified at `901e0e7`.
+
 ## Stage 02 verification — 17 October 2026
 
 ```text

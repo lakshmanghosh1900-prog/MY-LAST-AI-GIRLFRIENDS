@@ -17,6 +17,7 @@ failed push is historical evidence.
 | Workspace | `C:\Users\User\Desktop\MY LAST AI GIRLFRIENDS` |
 | Working branch | `feat/mlag-real-ai-premium-ui` |
 | Last published feature tip at resume | `901e0e79d18a28697c86441f213731fcc2a83a0c` |
+| Current local status candidate | `6153b75` — not published; Git authentication retry failed |
 | Local `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | `origin/main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | Remote feature branch | `feat/mlag-real-ai-premium-ui` at `901e0e79d18a28697c86441f213731fcc2a83a0c` |
@@ -56,7 +57,7 @@ introduced or falsely enabled.
 | 03 | `CLOSED — VERIFIED` | Gemini adapter tests plus three repeated live application requests succeeded with `ai_generated=true`; no fallback. |
 | 04 | `CLOSED — VERIFIED` | Bounded same-conversation context, isolation, role ordering, exact-once current prompt and privacy filtering pass. |
 | 05 | `CLOSED — VERIFIED` | Responsive branded UI, session/history controls, safe DOM text rendering, file boundaries and readable HTML extraction pass. |
-| 06 | `BLOCKED_EXTERNAL` | Deterministic checks pass, but host Docker build/smoke evidence is not present and Docker is unavailable here; no release/main integration claim. |
+| 06 | `BLOCKED_EXTERNAL` | Deterministic checks pass, but host Docker build/smoke evidence is not present and Docker is unavailable here; current status updates are local-only and no release/main integration is claimed. |
 | 07 | `NOT STARTED` | Dependency Stage 06 is not closed; long-term memory is not implemented. |
 | 08 | `NOT STARTED` | Dependency Stage 07 is not closed; broad document intelligence is not implemented. |
 | 09 | `NOT STARTED` | Dependency Stage 08 is not closed; research/citation engine is not implemented. |
@@ -175,6 +176,7 @@ c7141ee test(stage-03): verify Gemini application boundaries
 5343ac8 docs: publish factual execution report
 d7a2430 docs: include final report commit evidence
 901e0e7 docs: reconcile published feature status
+6153b75 docs: record resumed release verification
 ```
 
 An earlier publication attempt was:
@@ -196,6 +198,10 @@ Docker gate closes. Docker is not executable in this environment, so Docker
 build and authenticated container smoke remain `BLOCKED_EXTERNAL` rather than
 `PASS`. No host Docker evidence was present in the workspace or current
 execution message, so no Docker result is inferred.
+
+The resume status update at `6153b75` was not publishable from this execution
+environment because the Git credential helper again returned the Username
+authentication error. The local status records preserve that exact result.
 
 ## 8. Windows startup, authentication and recovery
 
