@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -21,7 +22,15 @@ from .memory import (
     validate_expiry,
     validate_scope,
 )
-from .governance import GovernanceError, canonical_json, new_nonce, secret_hash, validate_connector_endpoint
+from .governance import (
+    GovernanceError,
+    SkillNotFoundError,
+    canonical_json,
+    new_nonce,
+    secret_hash,
+    validate_connector_endpoint,
+    validate_skill_definition,
+)
 from .orchestration import OrchestrationError, run_bounded_local_pipeline
 from .policy import DataClass, Decision, PolicyEngine
 from .providers import GeminiProvider, OllamaProvider, OfflineDemoProvider, Provider, ProviderError, estimate_tokens
@@ -423,17 +432,56 @@ class MyLastAIGirlfriendsService:
         self.db.add_audit("connector_invoked", {"connector_id": connector_id, "method": method, "parameters_hash": secret_hash(canonical_json(params))})
         return {"connector_id": connector_id, "scope": scope, "result": result}
 
-    def create_skill(self, name: str, version: str, provenance: str, capabilities: list[str]) -> dict:
+    def _skill_response(self, item: dict) -> dict:
+        result = dict(item)
+        try:
+            capabilities = json.loads(result.get("capabilities_json", "{}"))
+            if isinstance(capabilities, dict) and isinstance(capabilities.get("capabilities"), list):
+                result["capabilities"] = capabilities["capabilities"]
+        except (TypeError, ValueError):
+            pass
+        definition_json = result.get("definition_json")
+        if definition_json:
+            try:
+                definition = json.loads(definition_json)
+                if isinstance(definition, dict):
+                    result["definition"] = definition
+            except (TypeError, ValueError):
+                pass
+        else:
+            result["definition"] = None
+        return result
+
+    def create_skill(
+        self,
+        name: str,
+        version: str,
+        provenance: str,
+        capabilities: list[str],
+        definition: dict | None = None,
+    ) -> dict:
         if not all(isinstance(value, str) and value.strip() for value in (name, version, provenance)):
             raise GovernanceError("SKILL_FIELDS_INVALID", "Skill name, version and provenance are required.")
         if not isinstance(capabilities, list) or not all(isinstance(item, str) and item.strip() for item in capabilities):
             raise GovernanceError("SKILL_CAPABILITIES_INVALID", "Skill capabilities must be strings.")
         if any(item.startswith("shell") or item.startswith("code") for item in capabilities):
             raise GovernanceError("SKILL_CAPABILITY_REJECTED", "Shell and arbitrary code capabilities are disabled.")
-        return self.db.add_skill(name.strip(), version.strip(), provenance.strip(), canonical_json({"capabilities": capabilities}))
+        definition_json = None
+        if definition is not None:
+            normalized = validate_skill_definition(definition, capabilities)
+            definition_json = canonical_json(normalized)
+        return self._skill_response(
+            self.db.add_skill(
+                name.strip(),
+                version.strip(),
+                provenance.strip(),
+                canonical_json({"capabilities": capabilities}),
+                definition_json,
+            )
+        )
 
     def list_skills(self) -> list[dict]:
-        return self.db.list_skills()
+        return [self._skill_response(item) for item in self.db.list_skills()]
 
     def transition_skill(self, skill_id: str, status: str) -> bool:
         if status not in {"DRAFT", "REVIEW", "APPROVED", "REVOKED"}:
@@ -445,6 +493,64 @@ class MyLastAIGirlfriendsService:
         if self.db.get_skill(skill_id) is None:
             raise KeyError("skill not found")
         return self.db.transition_skill(skill_id, status)
+
+    def execute_skill(self, skill_id: str) -> dict:
+        skill = self.db.get_skill(skill_id)
+        if skill is None:
+            raise SkillNotFoundError("SKILL_NOT_FOUND", "The requested skill does not exist.")
+        if skill["status"] != "APPROVED":
+            raise GovernanceError("SKILL_NOT_APPROVED", "Only an approved skill can execute.")
+        if not skill.get("definition_json"):
+            raise GovernanceError("SKILL_DEFINITION_REQUIRED", "This metadata-only skill has no executable definition.")
+        try:
+            definition = json.loads(skill["definition_json"])
+            capability_payload = json.loads(skill["capabilities_json"])
+            capabilities = capability_payload.get("capabilities") if isinstance(capability_payload, dict) else None
+            normalized = validate_skill_definition(definition, capabilities)
+        except (TypeError, ValueError, AttributeError) as exc:
+            raise GovernanceError("SKILL_DEFINITION_INVALID", "The stored skill definition is not valid JSON.") from exc
+
+        execution_id = self.db.new_id()
+        definition_hash = hashlib.sha256(canonical_json(normalized).encode("utf-8")).hexdigest()
+        arguments = normalized["steps"][0]["arguments"]
+        decision = self.policy.check_tool("file.read_text", arguments)
+        if decision.decision != Decision.ALLOW:
+            self.db.add_audit(
+                "skill_execution_failed",
+                {"execution_id": execution_id, "skill_id": skill_id, "version": skill["version"], "definition_hash": definition_hash, "status": "FAILED", "error_code": decision.code},
+            )
+            raise GovernanceError(decision.code, decision.reason)
+        try:
+            result = execute_registered_tool("file.read_text", arguments, file_tool=self.file_tool, web_tool=self.web_tool)
+        except ToolExecutionError as exc:
+            self.db.add_audit(
+                "skill_execution_failed",
+                {"execution_id": execution_id, "skill_id": skill_id, "version": skill["version"], "definition_hash": definition_hash, "status": "FAILED", "error_code": exc.code},
+            )
+            raise GovernanceError(exc.code, str(exc)) from exc
+        output = result["text"]
+        truncated = len(output) > self.config.max_message_chars
+        output = output[: self.config.max_message_chars]
+        self.db.add_audit(
+            "skill_execution_succeeded",
+            {
+                "execution_id": execution_id,
+                "skill_id": skill_id,
+                "version": skill["version"],
+                "definition_hash": definition_hash,
+                "output_hash": hashlib.sha256(output.encode("utf-8")).hexdigest(),
+                "status": "SUCCEEDED",
+                "truncated": truncated,
+            },
+        )
+        return {
+            "execution_id": execution_id,
+            "skill_id": skill_id,
+            "version": skill["version"],
+            "status": "SUCCEEDED",
+            "output": output,
+            "truncated": truncated,
+        }
 
     def create_approval(self, action_type: str, parameters: dict, expires_at: str) -> dict:
         if action_type not in {"calendar.write", "email.send", "local.schedule.create"}:

@@ -421,6 +421,15 @@ class Database:
                     "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
                     (9, utc_now()),
                 )
+                applied.add(9)
+            if 10 not in applied:
+                columns = {row[1] for row in self.connection.execute("PRAGMA table_info(skills)")}
+                if "definition_json" not in columns:
+                    self.connection.execute("ALTER TABLE skills ADD COLUMN definition_json TEXT")
+                self.connection.execute(
+                    "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                    (10, utc_now()),
+                )
 
     @contextmanager
     def transaction(self, immediate: bool = True) -> Iterator[sqlite3.Connection]:
@@ -945,10 +954,20 @@ class Database:
             cursor = self.connection.execute("UPDATE connectors SET status = ?, updated_at = ? WHERE id = ?", (status, utc_now(), connector_id))
         return cursor.rowcount == 1
 
-    def add_skill(self, name: str, version: str, provenance: str, capabilities_json: str) -> dict:
+    def add_skill(
+        self,
+        name: str,
+        version: str,
+        provenance: str,
+        capabilities_json: str,
+        definition_json: str | None = None,
+    ) -> dict:
         skill_id = self.new_id(); now = utc_now()
         with self.transaction():
-            self.connection.execute("INSERT INTO skills(id, name, version, provenance, capabilities_json, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'DRAFT', ?, ?)", (skill_id, name, version, provenance, capabilities_json, now, now))
+            self.connection.execute(
+                "INSERT INTO skills(id, name, version, provenance, capabilities_json, definition_json, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'DRAFT', ?, ?)",
+                (skill_id, name, version, provenance, capabilities_json, definition_json, now, now),
+            )
         return self.get_skill(skill_id) or {}
 
     def get_skill(self, skill_id: str) -> dict | None:

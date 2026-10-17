@@ -127,6 +127,8 @@ class HttpApiTests(unittest.TestCase):
                 self.assertEqual(response.status, 200)
                 capabilities = json.loads(response.read())["capabilities"]
                 self.assertIn("device_pairing", {item["id"] for item in capabilities})
+                skill_capability = next(item for item in capabilities if item["id"] == "reviewed_skills")
+                self.assertIn("declarative local file-read", skill_capability["reason"])
 
                 connection.request("GET", "/v1/readiness/local", headers=headers)
                 response = connection.getresponse()

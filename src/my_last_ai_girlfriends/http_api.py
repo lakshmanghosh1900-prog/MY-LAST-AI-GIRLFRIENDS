@@ -12,7 +12,7 @@ from urllib.parse import parse_qs, urlsplit
 from .auth import AuthManager
 from .documents import DocumentError
 from .evaluation import run_local_evaluation
-from .governance import GovernanceError
+from .governance import GovernanceError, SkillNotFoundError
 from .memory import MemoryError
 from .orchestration import OrchestrationError
 from .research import ResearchError
@@ -358,7 +358,11 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                 if not all(isinstance(value, str) for value in values) or not isinstance(payload.get("capabilities"), list):
                     self._error(HTTPStatus.BAD_REQUEST, "SKILL_FIELDS_INVALID", "name, version, provenance and capabilities are required.", request_id)
                     return
-                self._send(HTTPStatus.CREATED, self.server.service.create_skill(*values, payload["capabilities"]), request_id)
+                definition = payload.get("definition")
+                if definition is not None and not isinstance(definition, dict):
+                    self._error(HTTPStatus.BAD_REQUEST, "SKILL_DEFINITION_INVALID", "definition must be an object when provided.", request_id)
+                    return
+                self._send(HTTPStatus.CREATED, self.server.service.create_skill(*values, payload["capabilities"], definition), request_id)
                 return
             if path == "/v1/approvals":
                 action_type, parameters, expires_at = payload.get("action_type"), payload.get("parameters"), payload.get("expires_at")
@@ -397,6 +401,12 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                     return
                 self._send(HTTPStatus.OK, {"updated": self.server.service.transition_skill(parts[2], status)}, request_id)
                 return
+            if len(parts) == 4 and parts[0:2] == ["v1", "skills"] and parts[3] == "run":
+                if payload:
+                    self._error(HTTPStatus.BAD_REQUEST, "SKILL_RUN_BODY_INVALID", "Skill execution does not accept runtime arguments.", request_id)
+                    return
+                self._send(HTTPStatus.OK, self.server.service.execute_skill(parts[2]), request_id)
+                return
             if len(parts) == 4 and parts[0:2] == ["v1", "approvals"] and parts[3] == "status":
                 status = payload.get("status")
                 session = payload.get("approver_session")
@@ -425,6 +435,9 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
             if path == "/v1/admin/start":
                 self._send(HTTPStatus.OK, {"state": self.server.service.start()}, request_id)
                 return
+        except SkillNotFoundError as exc:
+            self._error(HTTPStatus.NOT_FOUND, exc.code, str(exc), request_id)
+            return
         except KeyError:
             self._error(HTTPStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND", "Conversation does not exist.", request_id)
             return
