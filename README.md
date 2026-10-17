@@ -173,7 +173,7 @@ conversation data.
 | Local persistence | IMPLEMENTED AND TESTED |
 | Privacy and consent | IMPLEMENTED AND TESTED |
 | Budget tracking | IMPLEMENTED AND TESTED |
-| Document processing | LIMITED to approved text previews |
+| Document processing | LIMITED: approved local text indexing/search; PDF/DOCX and grounded answers not implemented |
 | Research and citations | LIMITED to source URL on public fetch |
 | Voice | NOT IMPLEMENTED |
 | Long-term memory | LIMITED: explicit local memory management implemented; automatic extraction and remote memory disabled |

@@ -95,6 +95,22 @@ inspection found it has a zeroed/non-SQLite header; the valid recovery candidate
 remains preserved under the ignored migration-backups directory. Tests use
 temporary databases only.
 
+## Stage 08A local document evidence
+
+```text
+PYTHONPATH="$PWD/src:$PWD/tests" uv run --locked python -m unittest tests.test_documents tests.test_memory tests.test_http_api -v
+PASS — 11 tests
+
+make check
+PASS — compileall and 40 tests, 40 passed, 0 failed, 0 skipped
+```
+
+Verified behavior includes deterministic bounded chunking, approved-root text
+indexing, content hashing, migration version 4, idempotent re-indexing,
+authenticated search, deletion/tombstoning, traversal rejection and empty
+query rejection. This is local text indexing only; no PDF/DOCX extraction,
+provider grounding or citation claim is made.
+
 ### Authenticated application smoke
 
 The CLI was started with the ignored local configuration. Without printing the

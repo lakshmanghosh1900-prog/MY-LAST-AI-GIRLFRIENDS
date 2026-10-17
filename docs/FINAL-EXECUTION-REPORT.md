@@ -59,7 +59,7 @@ introduced or falsely enabled.
 | 05 | `CLOSED — VERIFIED` | Responsive branded UI, session/history controls, safe DOM text rendering, file boundaries and readable HTML extraction pass. |
 | 06 | `BLOCKED_EXTERNAL` | Owner-supplied Docker build and container-smoke assertions pass; source-commit provenance is unverified, cleanup is pending, and no release/main integration is claimed. |
 | 07 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 07A explicit local memory management is implemented/tested; full Stage 07 is dependency-gated and automatic extraction, remote memory and complete retention/recovery acceptance remain open. |
-| 08 | `NOT STARTED` | Dependency Stage 07 is not closed; broad document intelligence is not implemented. |
+| 08 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 08A local text indexing/search is implemented/tested; PDF/DOCX extraction, grounded provider answers, citations and complete document-security acceptance remain open. |
 | 09 | `NOT STARTED` | Dependency Stage 08 is not closed; research/citation engine is not implemented. |
 | 10 | `NOT STARTED` | Dependency Stage 09 is not closed; persistent scheduler is not implemented. |
 | 11 | `NOT STARTED` | Dependency Stage 10 is not closed; voice services/hardware evidence is absent. |
@@ -127,6 +127,14 @@ conversation-scoped memory, expiration filtering, tombstone deletion,
 authenticated API routes, UI controls and policy rejection for prohibited or
 sensitive content. It deliberately does not perform automatic extraction,
 provider-context injection, embeddings, document import or remote transmission.
+
+### Stage 08A safe implementation
+
+Implemented a local-only bounded text-document index using the existing safe
+file boundary. It adds migration 4, content hashes, deterministic chunks,
+authenticated index/list/search/delete routes and UI controls. It deliberately
+does not claim PDF/DOCX support, grounded provider answers, citations or remote
+document transfer.
 
 ## 5. Tests and checks actually executed
 
@@ -234,6 +242,13 @@ suite passed 36 tests with zero failures and zero skips. Full Stage 07 is not
 closed: it depends on the unresolved Stage 06 release/integration gate and
 requires additional retention, correction, deletion, recovery and evaluation
 work beyond this safe first slice.
+
+## Stage 08A evidence
+
+The targeted document/memory/API suite passed 11 tests and the current full
+deterministic suite passed 40 tests with zero failures and zero skips. Full
+Stage 08 remains open pending broader extraction, grounded answering and
+document-security/recovery requirements.
 
 ## 8. Windows startup, authentication and recovery
 

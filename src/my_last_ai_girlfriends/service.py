@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from .budget import BudgetLedger
 from .config import Config
+from .documents import DocumentError, read_and_prepare
 from .lifecycle import Lifecycle
 from .memory import MemoryError, validate_expiry, validate_scope
 from .policy import DataClass, Decision, PolicyEngine
@@ -148,6 +149,49 @@ class MyLastAIGirlfriendsService:
         deleted = self.db.delete_memory(memory_id)
         if deleted:
             self.db.add_audit("memory_deleted", {"memory_id": memory_id, "scope": item["scope"]})
+        return deleted
+
+    def index_document(self, relative_path: str) -> dict:
+        if not self.lifecycle.can_accept_work():
+            raise RuntimeError("service is not ready")
+        prepared = read_and_prepare(self.file_tool, relative_path, max(128, min(2000, self.config.max_message_chars)))
+        item = self.db.upsert_document(
+            prepared.path,
+            prepared.content_sha256,
+            prepared.byte_count,
+            prepared.suffix,
+            prepared.chunks,
+        )
+        self.db.add_audit(
+            "document_indexed",
+            {"document_id": item["id"], "path": prepared.path, "chunk_count": len(prepared.chunks)},
+        )
+        return {
+            "id": item["id"],
+            "path": item["path"],
+            "content_sha256": item["content_sha256"],
+            "byte_count": item["byte_count"],
+            "suffix": item["suffix"],
+            "chunk_count": len(prepared.chunks),
+            "indexed_at": item["indexed_at"],
+        }
+
+    def list_documents(self) -> list[dict]:
+        return self.db.list_documents()
+
+    def search_documents(self, query: str) -> list[dict]:
+        if not isinstance(query, str) or not query.strip():
+            raise DocumentError("DOCUMENT_QUERY_REQUIRED", "A search query is required.")
+        if len(query) > 200:
+            raise DocumentError("DOCUMENT_QUERY_TOO_LARGE", "The document query is too large.")
+        return self.db.search_documents(query.strip())
+
+    def delete_document(self, document_id: str) -> bool:
+        if self.db.get_document(document_id) is None:
+            raise KeyError("document not found")
+        deleted = self.db.delete_document(document_id)
+        if deleted:
+            self.db.add_audit("document_deleted", {"document_id": document_id})
         return deleted
 
     def stop(self) -> str:

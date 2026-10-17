@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from .auth import AuthManager
+from .documents import DocumentError
 from .memory import MemoryError
 from .redaction import redact
 from .service import MyLastAIGirlfriendsService
@@ -134,6 +135,16 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
             except KeyError:
                 self._error(HTTPStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND", "Conversation does not exist.", request_id)
             return
+        if path == "/v1/documents":
+            self._send(HTTPStatus.OK, {"documents": self.server.service.list_documents()}, request_id)
+            return
+        if path == "/v1/documents/search":
+            query = parse_qs(urlsplit(self.path).query).get("q", [""])[0]
+            try:
+                self._send(HTTPStatus.OK, {"results": self.server.service.search_documents(query)}, request_id)
+            except DocumentError as exc:
+                self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
+            return
         parts = [part for part in path.split("/") if part]
         if len(parts) == 3 and parts[0] == "v1" and parts[1] == "conversations":
             try:
@@ -179,6 +190,13 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                 result = self.server.service.create_memory(content, scope, conversation_id, expires_at)
                 self._send(HTTPStatus.CREATED, result, request_id)
                 return
+            if path == "/v1/documents":
+                relative_path = payload.get("path")
+                if not isinstance(relative_path, str):
+                    self._error(HTTPStatus.BAD_REQUEST, "DOCUMENT_PATH_REQUIRED", "path must be a string.", request_id)
+                    return
+                self._send(HTTPStatus.CREATED, self.server.service.index_document(relative_path), request_id)
+                return
             parts = [part for part in path.split("/") if part]
             if len(parts) == 4 and parts[:2] == ["v1", "conversations"] and parts[3] == "messages":
                 content = payload.get("content")
@@ -201,6 +219,9 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
         except MemoryError as exc:
             self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
             return
+        except DocumentError as exc:
+            self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
+            return
         except RuntimeError as exc:
             self._error(HTTPStatus.SERVICE_UNAVAILABLE, "SERVICE_NOT_READY", str(exc), request_id)
             return
@@ -220,5 +241,11 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.OK, {"deleted": deleted}, request_id)
             except KeyError:
                 self._error(HTTPStatus.NOT_FOUND, "MEMORY_NOT_FOUND", "Memory does not exist.", request_id)
+            return
+        if len(parts) == 3 and parts[:2] == ["v1", "documents"]:
+            try:
+                self._send(HTTPStatus.OK, {"deleted": self.server.service.delete_document(parts[2])}, request_id)
+            except KeyError:
+                self._error(HTTPStatus.NOT_FOUND, "DOCUMENT_NOT_FOUND", "Document does not exist.", request_id)
             return
         self._error(HTTPStatus.NOT_FOUND, "NOT_FOUND", "Route not found.", request_id)

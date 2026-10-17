@@ -247,6 +247,33 @@ class Database:
                     "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
                     (3, utc_now()),
                 )
+                applied.add(3)
+            if 4 not in applied:
+                self.connection.executescript("""
+                CREATE TABLE IF NOT EXISTS documents (
+                    id TEXT PRIMARY KEY,
+                    path TEXT NOT NULL UNIQUE,
+                    content_sha256 TEXT NOT NULL,
+                    byte_count INTEGER NOT NULL,
+                    suffix TEXT NOT NULL,
+                    indexed_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    deleted_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS document_chunks (
+                    id TEXT PRIMARY KEY,
+                    document_id TEXT NOT NULL REFERENCES documents(id),
+                    ordinal INTEGER NOT NULL,
+                    content TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    UNIQUE(document_id, ordinal)
+                );
+                CREATE INDEX IF NOT EXISTS idx_document_chunks_search ON document_chunks(document_id, ordinal);
+                """)
+                self.connection.execute(
+                    "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                    (4, utc_now()),
+                )
 
     @contextmanager
     def transaction(self, immediate: bool = True) -> Iterator[sqlite3.Connection]:
@@ -447,6 +474,81 @@ class Database:
             cursor = self.connection.execute(
                 "UPDATE memory_items SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
                 (utc_now(), utc_now(), memory_id),
+            )
+        return cursor.rowcount == 1
+
+    def upsert_document(
+        self,
+        path: str,
+        content_sha256: str,
+        byte_count: int,
+        suffix: str,
+        chunks: tuple[str, ...],
+    ) -> dict:
+        now = utc_now()
+        with self.transaction():
+            existing = self.connection.execute(
+                "SELECT id FROM documents WHERE path = ?", (path,)
+            ).fetchone()
+            document_id = str(existing["id"]) if existing else self.new_id()
+            self.connection.execute(
+                """INSERT INTO documents(id, path, content_sha256, byte_count, suffix, indexed_at, updated_at, deleted_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+                   ON CONFLICT(path) DO UPDATE SET content_sha256=excluded.content_sha256,
+                     byte_count=excluded.byte_count, suffix=excluded.suffix,
+                     indexed_at=excluded.indexed_at, updated_at=excluded.updated_at,
+                     deleted_at=NULL""",
+                (document_id, path, content_sha256, byte_count, suffix, now, now),
+            )
+            self.connection.execute("DELETE FROM document_chunks WHERE document_id = ?", (document_id,))
+            for ordinal, content in enumerate(chunks):
+                self.connection.execute(
+                    "INSERT INTO document_chunks(id, document_id, ordinal, content, created_at) VALUES (?, ?, ?, ?, ?)",
+                    (self.new_id(), document_id, ordinal, content, now),
+                )
+        return self.get_document(document_id) or {}
+
+    def get_document(self, document_id: str) -> dict | None:
+        row = self.connection.execute(
+            """SELECT id, path, content_sha256, byte_count, suffix, indexed_at, updated_at
+               FROM documents WHERE id = ? AND deleted_at IS NULL""",
+            (document_id,),
+        ).fetchone()
+        if not row:
+            return None
+        result = dict(row)
+        result["chunks"] = [
+            dict(item) for item in self.connection.execute(
+                "SELECT ordinal, content FROM document_chunks WHERE document_id = ? ORDER BY ordinal",
+                (document_id,),
+            ).fetchall()
+        ]
+        return result
+
+    def list_documents(self, limit: int = 100) -> list[dict]:
+        rows = self.connection.execute(
+            """SELECT id, path, content_sha256, byte_count, suffix, indexed_at, updated_at,
+                      (SELECT COUNT(*) FROM document_chunks c WHERE c.document_id = d.id) AS chunk_count
+               FROM documents d WHERE deleted_at IS NULL ORDER BY updated_at DESC, id DESC LIMIT ?""",
+            (limit,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def search_documents(self, query: str, limit: int = 20) -> list[dict]:
+        rows = self.connection.execute(
+            """SELECT d.id, d.path, d.content_sha256, c.ordinal, c.content
+               FROM documents d JOIN document_chunks c ON c.document_id = d.id
+               WHERE d.deleted_at IS NULL AND instr(lower(c.content), lower(?)) > 0
+               ORDER BY d.updated_at DESC, d.id DESC, c.ordinal ASC LIMIT ?""",
+            (query, limit),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def delete_document(self, document_id: str) -> bool:
+        with self.transaction():
+            cursor = self.connection.execute(
+                "UPDATE documents SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+                (utc_now(), utc_now(), document_id),
             )
         return cursor.rowcount == 1
 

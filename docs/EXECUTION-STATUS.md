@@ -93,7 +93,7 @@ for this filesystem condition. No database reset was performed.
 | 05 | CLOSED — VERIFIED | Branded responsive UI, history/session controls, keyboard behavior, safe text rendering, bounded file tool and readable HTML extraction are implemented and covered by contract/security tests. |
 | 06 | BLOCKED_EXTERNAL | Owner-supplied Docker build and container-smoke checks pass; source-commit provenance is unverified, cleanup is PENDING, post-`3acccc3` documentation is local-only, and PR/main integration remains open. |
 | 07 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 07A explicit local memory management is implemented and tested; Stage 06 is not closed, automatic extraction/remote memory/retrieval remain disabled, and full Stage 07 acceptance is open. |
-| 08 | NOT STARTED | Waiting for Stage 07. |
+| 08 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 08A local text indexing/search is implemented and tested; PDF/DOCX extraction, grounded provider answers, citations and full Stage 08 acceptance remain open. |
 | 09 | NOT STARTED | Waiting for Stage 08. |
 | 10 | NOT STARTED | Waiting for Stage 09. |
 | 11 | NOT STARTED | Waiting for Stage 10; audio hardware/services not evidenced. |
@@ -340,3 +340,24 @@ Implemented as a safe local slice without touching the unreadable live database:
 Evidence: 4 new memory tests plus the full 36-test suite passed. Full Stage 07
 remains open pending Stage 06 integration and later requirements including
 retention review, correction/contradiction handling and recovery drills.
+
+## Stage 08A — Local text document indexing
+
+**Status:** `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN`
+
+Implemented as a local-only bounded text slice:
+
+- Versioned SQLite migration 4 adds document and chunk tables.
+- Approved text files are read through the existing root/symlink/size/type
+  boundary, hashed and deterministically chunked.
+- Authenticated index/list/search/delete API routes are available.
+- Re-indexing the same path is idempotent and search preserves path/hash/chunk
+  provenance.
+- UI settings expose local indexing and search; document contents are not sent
+  to Gemini.
+- PDF/DOCX parsing, grounded provider answers, source-page citations and
+  malicious-document sandboxing are not implemented in this slice.
+
+Evidence: 4 document tests plus the full 40-test suite passed. Full Stage 08
+remains open pending supported-format expansion, grounded answering and its
+security/recovery acceptance gate.
