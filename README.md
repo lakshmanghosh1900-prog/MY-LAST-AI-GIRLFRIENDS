@@ -173,17 +173,18 @@ conversation data.
 | Local persistence | IMPLEMENTED AND TESTED |
 | Privacy and consent | IMPLEMENTED AND TESTED |
 | Budget tracking | IMPLEMENTED AND TESTED |
-| Document processing | LIMITED: approved local text indexing/search; PDF/DOCX and grounded answers not implemented |
-| Research and citations | LIMITED: explicit public-URL runs with source hashes/citations; search and claim verification not implemented |
-| Voice | BLOCKED: no audio stack/hardware; not implemented |
-| Long-term memory | LIMITED: explicit local memory management implemented; automatic extraction and remote memory disabled |
-| Android companion | BLOCKED EXTERNAL: toolchain/device verification unavailable |
+| Document processing | LIMITED: approved local text indexing/search with bounded extractive citations; PDF/DOCX and provider-grounded answers not implemented |
+| Research and citations | LIMITED: explicit public-URL runs with source hashes/citations and heuristic claim comparison; search and robust verification not implemented |
+| Voice | LIMITED: truthful browser-native speech recognition/synthesis controls; server audio and hardware/provider verification unavailable |
+| Long-term memory | LIMITED: explicit local recall and consented selected-memory context; automatic extraction/remote transfer disabled |
+| Android companion | BLOCKED EXTERNAL: dependency-free API contract/diagnostics exist; SDK/device verification unavailable |
 | Scheduling | LIMITED: authenticated durable one-shot local reminders; recurring/background execution not implemented |
 | Device pairing | LIMITED: local hashed enrollment, one-time challenge verification and revocation; encrypted transport disabled |
-| MCP connectors | LIMITED: credential-free HTTPS registry/lifecycle; connector execution disabled |
+| MCP connectors | LIMITED: approved credential-free HTTPS read-only JSON-RPC transport; write/external scopes disabled |
 | Skills | LIMITED: provenance and review lifecycle; shell/code execution disabled |
 | Background agents | LIMITED: bounded local fixed-role orchestration; remote delegation disabled |
-| External actions/approval | LIMITED: hashed approval records; external action consumption disabled |
+| External actions/approval | LIMITED: single-use approved local schedule action; calendar/email side effects disabled |
+| Optional local brain | LIMITED: Ollama adapter is supported when a local Ollama endpoint/model is available |
 | Local release readiness | LIMITED: authenticated integrity/capability endpoints; Docker/PR/main gates remain open |
 | Multi-user/public hosting | NOT IMPLEMENTED; requires privacy/security review |
 

@@ -169,10 +169,11 @@ claim live-provider quality, voice, device or external-action evaluation.
 ## Current publication checkpoint
 
 The owner-verified published feature branch baseline is
-`ebd37c3d5588b02b8af27b3a02a90125e94b55c2`. Its isolated worktree check below
-ran 48 tests. Local HEAD is `52b5ef1`, which adds the Stage 15–21 governance
-slice, one-time device pairing, durable agent-run readback and approval expiry
-validation and currently runs 53 tests; it has not been published. Earlier
+`fdf5fc473813609b23232960c397895fe8cc64fd`. Its isolated worktree check below
+ran the earlier 48-test baseline. Local HEAD is `13494fc`, which adds integrated
+Stage 07–21 local workflows, browser voice, read-only MCP, approved local
+actions, Ollama support and explicit memory context; it currently runs 72 tests
+and has not been published. Earlier
 `3acccc3` and `c6ef387` references in this file are historical checkpoints only.
 
 The published baseline and local continuation checks are:
@@ -182,10 +183,10 @@ make -C /tmp/mlag-ebd-baseline check
 PASS — published ebd37c3 baseline, compileall and 48 tests, 48 passed, 0 failed, 0 skipped
 
 make check
-PASS — compileall and 53 tests, 53 passed, 0 failed, 0 skipped
+PASS — compileall and 72 tests, 72 passed, 0 failed, 0 skipped
 
 PYTHONPATH="$PWD/src:$PWD/tests" uv run --locked python -m unittest tests.test_governance tests.test_http_api -v
-PASS — 8 tests
+PASS — covered by the 72-test full suite; governance/API routes are authenticated
 ```
 
 Verified behavior includes timezone-required schedule normalization, durable
@@ -207,7 +208,7 @@ recovery counts: conversations=1 messages=24 tasks=17 provider_calls=8 budget_ev
 original preservation: data/migration-backups/canonical-invalid-preserved-20261018T000000Z.sqlite3
 original/preservation hashes: identical
 
-isolated recovery migration: PASS — schema version 8, integrity ok, all six
+isolated recovery migration: PASS — schema version 9, integrity ok, all six
 existing record counts preserved, governance tables created
 live replacement: NOT PERFORMED
 ```
@@ -402,15 +403,16 @@ Container cleanup                 PENDING — finally was separate; result not s
 ```
 
 Earlier owner-evidence publication retries after `3acccc3` are historical. The
-current owner-published baseline is `ebd37c3`:
+current owner-published baseline is `fdf5fc4`:
 
 ```text
 git push origin feat/mlag-real-ai-premium-ui
 BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No such device or address
 ```
 
-Remote feature SHA: owner-verified `ebd37c3`; local continuation commits
-`1df67f6`, `a3106fb`, `52b5ef1` and later changes are not remote. The local commits `2200953` and
+Remote feature SHA: owner-verified `fdf5fc4`; local continuation commits
+`ec2a046`, `d6f8b1b`, `fb6a82a`, `b8aa7cd`, `2719ddd`, `3684e32`, `13494fc`
+and later changes are not remote. The local commits `2200953` and
 `94a990c` remain preserved.
 
 The container assertions and build result are not independently reproduced
@@ -419,8 +421,8 @@ bridge. Stage 06 remains blocked on cleanup and normal PR/main integration;
 source-commit provenance is also unverified. No cleanup PASS, merge or release
 readiness is claimed.
 
-Current reconciliation candidate checks at published baseline `ebd37c3` plus
-local continuation `52b5ef1`:
+Current reconciliation candidate checks at published baseline `fdf5fc4` plus
+local continuation `13494fc`:
 
 ```text
 uv run --locked python --version
@@ -432,7 +434,7 @@ PASS
 uv run --locked python -m compileall -q src tests
 PASS
 make check
-PASS — 53 tests, 0 failures, 0 skips
+PASS — 72 tests, 0 failures, 0 skips
 git diff --check
 PASS
 secret scan of release diff

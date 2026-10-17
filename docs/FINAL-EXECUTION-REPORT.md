@@ -16,11 +16,11 @@ failed push is historical evidence.
 | Repository | `https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS.git` |
 | Workspace | `C:\Users\User\Desktop\MY LAST AI GIRLFRIENDS` |
 | Working branch | `feat/mlag-real-ai-premium-ui` |
-| Last published feature tip at resume | Owner-verified `ebd37c3d5588b02b8af27b3a02a90125e94b55c2` |
-| Current local status | Local HEAD `52b5ef1` is three local continuation commits ahead of the published baseline; current local suite is 53 tests |
+| Last published feature tip at resume | Owner-verified `fdf5fc473813609b23232960c397895fe8cc64fd` |
+| Current local status | Local HEAD `13494fc` is seven local continuation commits ahead of the published baseline; current local suite is 72 tests |
 | Local `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | `origin/main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
-| Remote feature branch | `feat/mlag-real-ai-premium-ui` at owner-verified `ebd37c3d5588b02b8af27b3a02a90125e94b55c2` |
+| Remote feature branch | `feat/mlag-real-ai-premium-ui` at owner-verified `fdf5fc473813609b23232960c397895fe8cc64fd` |
 | Pull request | Draft #1 open for feature branch → `main`; no merge attempted |
 | Integrated release commit | None; verified feature work is not merged into `main` |
 
@@ -36,22 +36,24 @@ force-push, destructive cleanup, or overwrite of local user work was used.
 - Package: `src/my_last_ai_girlfriends/`.
 - Distribution/CLI: `my-last-ai-girlfriends`.
 - Configuration prefix: `MLAG_`.
-- Provider: explicit offline demo or Google Gemini through its
-  OpenAI-compatible API.
+- Provider: explicit offline demo, Google Gemini through its OpenAI-compatible
+  API, or an optional loopback-only Ollama adapter.
 - Loopback-first bearer authentication, host/origin checks, local consent,
   bounded context, transactional budget ledger, read-only workspace file tool,
   and constrained HTTPS public fetcher.
 
 No React, Node.js, Next.js, Prisma, Supabase, public hosting, shell execution,
-unrestricted automation, payments, banking, Accessibility automation, MCP,
-voice, Android or external side-effect system was introduced or falsely enabled.
+unrestricted automation, payments, banking or Accessibility automation was
+introduced. Browser-native voice, a dependency-free Android contract, bounded
+read-only MCP, and a local schedule action exist only as explicitly limited
+slices; external calendar/email side effects remain disabled.
 
 ## 3. Stage completion table
 
 | Stage | Status | Evidence / exact limitation |
 |---|---|---|
 | Task 00 | `CLOSED — VERIFIED` | Local/remote history, source, docs, ignored data and branch relationship reconciled; database recovery evidence recorded. |
-| 01 | `CLOSED — VERIFIED` | Configuration conflicts, HTTPS validation, token/startup safety, SQLite mounted-workspace fallback and authenticated launch pass; published baseline has 48 tests and current local continuation has 53. |
+| 01 | `CLOSED — VERIFIED` | Configuration conflicts, HTTPS validation, token/startup safety, SQLite mounted-workspace fallback and authenticated launch pass; published baseline has 48 tests and current local continuation has 72. |
 | 02 | `CLOSED — VERIFIED` | Package/CLI/product rename, MLAG naming, idempotent transactional legacy migration, source preservation and relationship checks pass. |
 | 03 | `CLOSED — VERIFIED` | Gemini adapter tests plus three repeated live application requests succeeded with `ai_generated=true`; no fallback. |
 | 04 | `CLOSED — VERIFIED` | Bounded same-conversation context, isolation, role ordering, exact-once current prompt and privacy filtering pass. |
@@ -61,16 +63,16 @@ voice, Android or external side-effect system was introduced or falsely enabled.
 | 08 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 08A local text indexing/search is implemented/tested; PDF/DOCX extraction, grounded provider answers, citations and complete document-security acceptance remain open. |
 | 09 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 09A explicit public-URL research and structured source citations are implemented/tested; search, claim verification and conflict handling remain open. |
 | 10 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 10A durable one-shot local scheduling, cancellation and idempotent due runs are implemented/tested; worker recovery, recurring rules and full scheduler acceptance remain open. |
-| 11 | `BLOCKED_EXTERNAL` | No voice service is implemented; real audio hardware/provider evidence is unavailable. |
-| 12 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Static least-privilege registry and exact tool argument validation are implemented; broader automation, execution verification and approvals remain open. |
+| 11 | `PARTIAL — BROWSER NATIVE` | Truthful browser speech-recognition/synthesis controls and unsupported states are implemented; real audio hardware/provider evidence is unavailable. |
+| 12 | `PARTIAL — READ-ONLY REGISTRY` | Static least-privilege registry, exact argument validation and bounded read-only handler execution are implemented; broader automation and approval gates remain open. |
 | 13 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Versioned deterministic local evaluation exists for truthful offline, policy and memory flows; full quality/latency/cost, voice/device/tool integration and rollback acceptance remain open. |
 | 14 | `BLOCKED_EXTERNAL / CONTRACT PARTIAL` | Android companion remains unavailable; truthful capability inventory reports the missing toolchain/device. |
-| 15 | `PARTIAL — LOCAL GOVERNANCE` | Hashed device enrollment, identity verification, last-seen updates, revocation and authenticated routes exist; encrypted transport is not enabled. |
-| 16 | `PARTIAL — REGISTRY ONLY` | Credential-free HTTPS connector registry and lifecycle exist; connector/MCP execution is disabled. |
+| 15 | `PARTIAL — LOCAL GOVERNANCE` | Hashed device enrollment, one-time replay-resistant pairing, diagnostics, identity verification, last-seen updates, revocation and authenticated routes exist; encrypted transport is not enabled. |
+| 16 | `PARTIAL — READ-ONLY MCP` | Approved credential-free HTTPS JSON-RPC `tools/list`/`tools/call` transport exists under explicit read scopes; write/external scopes are disabled. |
 | 17 | `PARTIAL — REVIEW LIFECYCLE` | Versioned skills with provenance and capability allowlisting exist; self-learning and skill execution are disabled. |
-| 18 | `PARTIAL — BOUNDED LOCAL` | Fixed-role local orchestration and durable evidence exist; remote delegation is disabled. |
-| 19 | `PARTIAL — RECORDS ONLY` | Hashed approval records and lifecycle exist; external action consumption is disabled. |
-| 20 | `BLOCKED_EXTERNAL / INVENTORY ONLY` | Device/brain capability inventory exists; Android mesh and local-model hardware are unavailable. |
+| 18 | `PARTIAL — BOUNDED LOCAL` | Fixed-role local orchestration, durable evidence and authenticated readback exist; provider-backed multi-step delegation remains open. |
+| 19 | `PARTIAL — LOCAL ACTIONS` | Hashed approvals and single-use local schedule execution exist; calendar/email side effects remain disabled. |
+| 20 | `PARTIAL — LOCAL PROVIDER` | Optional loopback Ollama adapter and capability inventory exist; no local service/device mesh was verified. |
 | 21 | `PARTIAL — LOCAL GATE` | Integrity/schema/secret-free readiness endpoints exist; Docker cleanup, provenance and PR/main integration remain open. |
 
 ## 4. Work completed by verified stage
@@ -174,7 +176,7 @@ quality or external-action evaluation.
 | `uv sync --locked` | `PASS` |
 | `uv run --locked python -m compileall -q src tests` | `PASS` |
 | `make -C /tmp/mlag-ebd-baseline check` | `PASS` — published `ebd37c3`, 48 tests, 48 passed, 0 failed, 0 skipped |
-| `make check` | `PASS` — local `52b5ef1` continuation, 53 tests, 53 passed, 0 failed, 0 skipped |
+| `make check` | `PASS` — local `13494fc` continuation, 72 tests, 72 passed, 0 failed, 0 skipped |
 | Configuration targeted suite | `PASS` — 11 tests |
 | Migration targeted suite | `PASS` — 2 tests |
 | Authenticated local health/conversation smoke | `PASS` — health 200, conversation 201 |
@@ -241,7 +243,7 @@ fatal: could not read Username for 'https://github.com': No such device or addre
 ```
 
 The feature branch was later published at the historical `3acccc3` checkpoint
-and is now owner-verified at `ebd37c3`.
+and is now owner-verified at `fdf5fc4`.
 The current remaining GitHub gap is that draft PR #1 is not merged and `main`
 is still at `c98a091`; integration is intentionally deferred until the Stage 06
 Docker gate closes. Docker is not executable in this environment, so Docker
@@ -252,7 +254,7 @@ unverified, and cleanup remains pending.
 
 The resume status updates at `6153b75` and `d93b852` preserve earlier
 credential failures. They are historical commits included in the later
-owner-published feature branch now verified at `ebd37c3`.
+owner-published feature branch now verified at `fdf5fc4`.
 
 ## Owner-supplied Stage 06 evidence
 
@@ -320,8 +322,8 @@ budget events and 114 audit events. The invalid original is separately preserved
 byte-for-byte at
 `data/migration-backups/canonical-invalid-preserved-20261018T000000Z.sqlite3`.
 
-An isolated copy of the candidate initialized through migration 8 with integrity
-`ok`, schema version `8`, unchanged existing counts and new governance tables.
+An isolated copy of the candidate initialized through migration 9 with integrity
+`ok`, schema version `9`, unchanged existing counts and governance/action tables.
 No migration or replacement was performed against the canonical live path.
 
 ## Stages 14–21 current local slices
@@ -331,28 +333,29 @@ No migration or replacement was performed against the canonical live path.
 - Stage 15 has local hashed device enrollment, one-time pairing challenges,
   identity verification, last-seen updates, revocation and authenticated API
   routes; encrypted transport is not enabled.
-- Stage 16 has a credential-free HTTPS connector registry, scopes and lifecycle;
-  connector/MCP execution is disabled.
+- Stage 16 has approved credential-free HTTPS JSON-RPC `tools/list`/`tools/call`
+  transport under explicit read scopes; write/external scopes are disabled.
 - Stage 17 has provenance and draft/review/approval/revocation skill lifecycle;
   shell/arbitrary-code capabilities and skill execution are disabled.
 - Stage 18 has bounded fixed-role local orchestration with depth/capability
-  limits, durable evidence and authenticated readback; remote delegation is
-  disabled.
+  limits, durable evidence and authenticated readback; provider-backed multi-step
+  delegation remains open.
 - Stage 19 has hashed approval parameter/nonce/session records, future-expiry
-  validation and lifecycle; external action consumption remains disabled.
-- Stage 20 exposes a truthful device/local-brain inventory but cannot verify
-  Android mesh or local-model hardware here.
+  validation and single-use local schedule execution; calendar/email side effects
+  remain disabled.
+- Stage 20 exposes a truthful device/local-brain inventory and optional loopback
+  Ollama adapter; no local Ollama service or Android mesh was verified here.
 - Stage 21 exposes authenticated `/v1/readiness/local` and
   `/v1/capabilities`; Docker cleanup, provenance, PR and `main` integration
   remain open.
 
-After these additions, `make check` passed 53 tests and the governance/API
-targeted suite passed 8 tests. These are partial slices, not completed stages.
+After these additions, `make check` passed 72 tests with zero failures or skips.
+These are partial slices, not completed stages.
 
 ## Draft PR #1 status
 
-The existing draft PR #1 was checked through GitHub's pull-request API. At the
-published head `ebd37c3`, the API reports `open`, `draft=true`,
+The existing draft PR #1 was checked through GitHub's pull-request API. The last
+complete API check was at the earlier published head `ebd37c3`; it reported `open`, `draft=true`,
 `mergeable=true`, `mergeable_state=clean`, zero status contexts and zero check
 runs. The requested `mergeability=false` state was not reproducible and appears
 to be stale/UI-specific. No merge was attempted. The PR description remains
@@ -400,8 +403,8 @@ for the observed stale-sidecar condition. Do not reset the database.
 
 The bounded local-first MVP implementation through Stage 05 is verified, and a
 real application-level Gemini smoke passed in the configured environment. The
-published `ebd37c3` baseline has 48 passing tests; the local continuation through
-`52b5ef1` has 53 passing tests with no skips. The owner has supplied PASS
+published `fdf5fc4` baseline has the earlier 48-test evidence; the local
+continuation through `13494fc` has 72 passing tests with no skips. The owner has supplied PASS
 evidence for the Docker image build and container smoke, but exact
 source-commit/image provenance is unverified and cleanup remains PENDING. Local
 continuation commits are not yet published, PR #1 remains a draft, and main
