@@ -225,6 +225,7 @@ class Config:
     max_file_bytes: int
     max_fetch_bytes: int
     fetch_timeout_seconds: int
+    scheduler_interval_seconds: int
 
     @classmethod
     def from_report(cls, report: EnvReport) -> "Config":
@@ -289,6 +290,7 @@ class Config:
             max_file_bytes=_int(values.get("MLAG_MAX_FILE_BYTES", "1048576"), "MLAG_MAX_FILE_BYTES", 1024, 100000000),
             max_fetch_bytes=_int(values.get("MLAG_MAX_FETCH_BYTES", "1048576"), "MLAG_MAX_FETCH_BYTES", 1024, 100000000),
             fetch_timeout_seconds=_int(values.get("MLAG_FETCH_TIMEOUT_SECONDS", "10"), "MLAG_FETCH_TIMEOUT_SECONDS", 1, 60),
+            scheduler_interval_seconds=_int(values.get("MLAG_SCHEDULER_INTERVAL_SECONDS", "30"), "MLAG_SCHEDULER_INTERVAL_SECONDS", 1, 3600),
         )
 
     @classmethod

@@ -430,6 +430,20 @@ class Database:
                     "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
                     (10, utc_now()),
                 )
+                applied.add(10)
+            if 11 not in applied:
+                schedule_columns = {row[1] for row in self.connection.execute("PRAGMA table_info(schedules)")}
+                if "recurrence" not in schedule_columns:
+                    self.connection.execute("ALTER TABLE schedules ADD COLUMN recurrence TEXT NOT NULL DEFAULT 'once'")
+                if "next_run_at" not in schedule_columns:
+                    self.connection.execute("ALTER TABLE schedules ADD COLUMN next_run_at TEXT")
+                self.connection.execute(
+                    "UPDATE schedules SET next_run_at = COALESCE(next_run_at, run_at) WHERE next_run_at IS NULL"
+                )
+                self.connection.execute(
+                    "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                    (11, utc_now()),
+                )
 
     @contextmanager
     def transaction(self, immediate: bool = True) -> Iterator[sqlite3.Connection]:
@@ -773,13 +787,13 @@ class Database:
         ).fetchall()
         return [dict(row) for row in rows]
 
-    def create_schedule(self, conversation_id: str, title: str, prompt: str, run_at: str) -> dict:
+    def create_schedule(self, conversation_id: str, title: str, prompt: str, run_at: str, recurrence: str = "once") -> dict:
         schedule_id = self.new_id()
         now = utc_now()
         with self.transaction():
             self.connection.execute(
-                "INSERT INTO schedules(id, conversation_id, title, prompt, run_at, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'SCHEDULED', ?, ?)",
-                (schedule_id, conversation_id, title, prompt, run_at, now, now),
+                "INSERT INTO schedules(id, conversation_id, title, prompt, run_at, recurrence, next_run_at, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'SCHEDULED', ?, ?)",
+                (schedule_id, conversation_id, title, prompt, run_at, recurrence, run_at, now, now),
             )
         return self.get_schedule(schedule_id) or {}
 
@@ -793,9 +807,9 @@ class Database:
     def list_schedules(self, conversation_id: str | None = None) -> list[dict]:
         with self._lock:
             if conversation_id:
-                rows = self.connection.execute("SELECT * FROM schedules WHERE conversation_id = ? ORDER BY run_at, id", (conversation_id,)).fetchall()
+                rows = self.connection.execute("SELECT * FROM schedules WHERE conversation_id = ? ORDER BY next_run_at, id", (conversation_id,)).fetchall()
             else:
-                rows = self.connection.execute("SELECT * FROM schedules ORDER BY run_at, id").fetchall()
+                rows = self.connection.execute("SELECT * FROM schedules ORDER BY next_run_at, id").fetchall()
             return [dict(row) for row in rows]
 
     def cancel_schedule(self, schedule_id: str) -> bool:
@@ -812,16 +826,19 @@ class Database:
         # sqlite3 connection calls during scheduler/API activity.
         with self._lock:
             rows = self.connection.execute(
-                "SELECT * FROM schedules WHERE status = 'SCHEDULED' AND run_at <= ? ORDER BY run_at, id",
+                "SELECT * FROM schedules WHERE status = 'SCHEDULED' AND next_run_at <= ? ORDER BY next_run_at, id",
                 (now,),
             ).fetchall()
             return [dict(row) for row in rows]
 
     def create_schedule_run(self, schedule_id: str) -> dict:
         run_id = self.new_id()
-        key = f"schedule:{schedule_id}"
         now = utc_now()
         with self.transaction():
+            schedule = self.connection.execute("SELECT next_run_at FROM schedules WHERE id = ? AND status = 'SCHEDULED'", (schedule_id,)).fetchone()
+            if schedule is None:
+                return {}
+            key = f"schedule:{schedule_id}:{schedule['next_run_at']}"
             existing = self.connection.execute("SELECT * FROM schedule_runs WHERE idempotency_key = ?", (key,)).fetchone()
             if existing:
                 return dict(existing)
@@ -861,9 +878,21 @@ class Database:
                 (status, task_id, status, utc_now(), reason, run_id),
             )
 
-    def complete_schedule(self, schedule_id: str) -> None:
+    def complete_schedule(self, schedule_id: str, occurrence_status: str = "SUCCEEDED") -> None:
         with self.transaction():
-            self.connection.execute("UPDATE schedules SET status = 'COMPLETED', updated_at = ? WHERE id = ?", (utc_now(), schedule_id))
+            schedule = self.connection.execute("SELECT recurrence, next_run_at FROM schedules WHERE id = ?", (schedule_id,)).fetchone()
+            if schedule is None:
+                return
+            if schedule["recurrence"] == "once":
+                if occurrence_status == "SUCCEEDED":
+                    self.connection.execute("UPDATE schedules SET status = 'COMPLETED', updated_at = ? WHERE id = ?", (utc_now(), schedule_id))
+                return
+            from .scheduler import next_run_at
+            next_value = next_run_at(schedule["next_run_at"], schedule["recurrence"])
+            self.connection.execute(
+                "UPDATE schedules SET next_run_at = ?, updated_at = ? WHERE id = ? AND status = 'SCHEDULED'",
+                (next_value, utc_now(), schedule_id),
+            )
 
     def enroll_device(self, name: str, identity_hash: str) -> dict:
         device_id = self.new_id()

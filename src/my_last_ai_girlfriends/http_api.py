@@ -295,10 +295,11 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
                 title = payload.get("title")
                 prompt = payload.get("prompt")
                 run_at = payload.get("run_at")
-                if not all(isinstance(value, str) for value in (conversation_id, title, prompt, run_at)):
+                recurrence = payload.get("recurrence", "once")
+                if not all(isinstance(value, str) for value in (conversation_id, title, prompt, run_at, recurrence)):
                     self._error(HTTPStatus.BAD_REQUEST, "SCHEDULE_FIELDS_INVALID", "conversation_id, title, prompt and run_at are required strings.", request_id)
                     return
-                self._send(HTTPStatus.CREATED, self.server.service.create_schedule(conversation_id, title, prompt, run_at), request_id)
+                self._send(HTTPStatus.CREATED, self.server.service.create_schedule(conversation_id, title, prompt, run_at, recurrence), request_id)
                 return
             if path == "/v1/schedules/run-due":
                 now = payload.get("now")

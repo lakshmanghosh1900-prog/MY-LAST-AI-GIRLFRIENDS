@@ -305,12 +305,12 @@ class MyLastAIGirlfriendsService:
             raise KeyError("research run not found")
         return analyze_claims(claims, sources)
 
-    def create_schedule(self, conversation_id: str, title: str, prompt: str, run_at: str) -> dict:
+    def create_schedule(self, conversation_id: str, title: str, prompt: str, run_at: str, recurrence: str = "once") -> dict:
         if not self.db.conversation_exists(conversation_id):
             raise KeyError("conversation not found")
-        spec = validate_schedule(title, prompt, run_at, self.config.max_message_chars)
-        result = self.db.create_schedule(conversation_id, spec.title, spec.prompt, spec.run_at)
-        self.db.add_audit("schedule_created", {"schedule_id": result["id"], "conversation_id": conversation_id})
+        spec = validate_schedule(title, prompt, run_at, self.config.max_message_chars, recurrence)
+        result = self.db.create_schedule(conversation_id, spec.title, spec.prompt, spec.run_at, spec.recurrence)
+        self.db.add_audit("schedule_created", {"schedule_id": result["id"], "conversation_id": conversation_id, "recurrence": spec.recurrence})
         return result
 
     def list_schedules(self, conversation_id: str | None = None) -> list[dict]:
@@ -340,8 +340,8 @@ class MyLastAIGirlfriendsService:
                 response = self.handle_message(schedule["conversation_id"], schedule["prompt"])
                 final_status = "SUCCEEDED" if response.status == "SUCCEEDED" else "FAILED"
                 self.db.update_schedule_run(run["id"], final_status, response.task_id, response.status)
-                if final_status == "SUCCEEDED":
-                    self.db.complete_schedule(schedule["id"])
+                if final_status == "SUCCEEDED" or schedule.get("recurrence", "once") != "once":
+                    self.db.complete_schedule(schedule["id"], final_status)
                 run = self.db.get_schedule_run(run["id"]) or run
             except Exception as exc:
                 self.db.update_schedule_run(run["id"], "FAILED", reason=type(exc).__name__)

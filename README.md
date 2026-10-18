@@ -70,6 +70,17 @@ Open <http://127.0.0.1:8787>. The first page accepts the local token. The
 application will say **Offline demo · not AI** until real mode is configured and
 an actual Gemini completion succeeds.
 
+To run the restart-safe local scheduler worker alongside the authenticated API:
+
+```powershell
+uv run --locked my-last-ai-girlfriends worker
+```
+
+The worker reloads due schedules from SQLite on every tick. Recurrence values
+are `once`, `hourly`, `daily` or `weekly`, and use fixed UTC intervals so DST
+cannot silently shift execution. Failed recurring occurrences are recorded and
+advance to the next occurrence without an automatic retry.
+
 ## Real Gemini mode
 
 The provider uses Google's OpenAI-compatible documentation:
@@ -198,3 +209,17 @@ self-learning remain disabled.
   implementation blueprint.
 - [`docs/FINAL-AUDIT.md`](docs/FINAL-AUDIT.md) — audit, migration evidence,
   controls, source status and verification record.
+
+## Recovery verification
+
+Never copy over the live database during recovery. Validate a candidate in an
+isolated temporary application copy:
+
+```powershell
+uv run --locked python scripts/verify-recovery.py data\migration-backups\my_last_ai_girlfriends.recovered.20261017T103434Z.sqlite3
+```
+
+The script checks integrity, schema migrations, existing row preservation,
+authenticated health, conversation loading, authenticated conversation/message
+flow, memory/schedule access and local offline execution. It never modifies the
+candidate and never prints credentials or conversation text.

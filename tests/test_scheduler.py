@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Barrier, Lock
 
-from my_last_ai_girlfriends.scheduler import SchedulerError, validate_schedule
+from my_last_ai_girlfriends.scheduler import SchedulerError, SchedulerWorker, next_run_at, validate_schedule
 from my_last_ai_girlfriends.service import MyLastAIGirlfriendsService
 from my_last_ai_girlfriends.storage import Database
 
@@ -15,11 +15,39 @@ from test_budget_service import FailingProvider, make_config
 
 
 class SchedulerTests(unittest.TestCase):
+    def test_scheduler_worker_starts_ticks_and_stops(self):
+        event = Barrier(2)
+        calls = []
+
+        def tick():
+            calls.append(True)
+            event.wait(timeout=2)
+
+        worker = SchedulerWorker(tick, interval_seconds=1)
+        worker.start()
+        event.wait(timeout=2)
+        self.assertTrue(worker.running)
+        worker.stop()
+        self.assertFalse(worker.running)
+        self.assertGreaterEqual(len(calls), 1)
+
+    def test_scheduler_worker_rejects_invalid_interval(self):
+        with self.assertRaises(SchedulerError):
+            SchedulerWorker(lambda: None, interval_seconds=0)
+
     def test_schedule_requires_timezone_and_normalizes_to_utc(self):
         with self.assertRaises(SchedulerError):
             validate_schedule("Reminder", "hello", "2030-01-01T12:00:00", 1000)
         spec = validate_schedule("Reminder", "hello", "2030-01-01T12:00:00+02:00", 1000)
         self.assertTrue(spec.run_at.endswith("Z"))
+
+    def test_recurring_schedule_uses_fixed_utc_intervals(self):
+        spec = validate_schedule("Daily", "hello", "2030-01-01T12:00:00+02:00", 1000, "daily")
+        self.assertEqual(spec.recurrence, "daily")
+        self.assertEqual(spec.run_at, "2030-01-01T10:00:00.000000Z")
+        self.assertEqual(next_run_at(spec.run_at, spec.recurrence), "2030-01-02T10:00:00.000000Z")
+        with self.assertRaises(SchedulerError):
+            validate_schedule("Bad", "hello", "2030-01-01T00:00:00Z", 1000, "monthly")
 
     def test_due_schedule_runs_once_and_persists_result(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -120,6 +148,41 @@ class SchedulerTests(unittest.TestCase):
             self.assertTrue(service.cancel_schedule(schedule["id"]))
             self.assertEqual(service.run_due_schedules("2025-01-01T00:00:00Z"), [])
             self.assertEqual(service.conversation(conversation)["messages"], [])
+            service.close()
+
+    def test_daily_schedule_survives_restart_and_advances_occurrence(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            service = MyLastAIGirlfriendsService(make_config(root))
+            conversation = service.create_conversation()
+            schedule = service.create_schedule(conversation, "Daily hello", "daily hello", "2020-01-01T00:00:00Z", "daily")
+            first = service.run_due_schedules("2020-01-01T00:00:01Z")
+            self.assertEqual(first[0]["status"], "SUCCEEDED")
+            after_first = service.db.get_schedule(schedule["id"])
+            self.assertEqual(after_first["status"], "SCHEDULED")
+            self.assertEqual(after_first["next_run_at"], "2020-01-02T00:00:00.000000Z")
+            service.close()
+
+            restarted = MyLastAIGirlfriendsService(make_config(root))
+            self.assertEqual(restarted.run_due_schedules("2020-01-01T23:59:59Z"), [])
+            second = restarted.run_due_schedules("2020-01-02T00:00:01Z")
+            self.assertEqual(second[0]["status"], "SUCCEEDED")
+            self.assertEqual(restarted.db.get_schedule(schedule["id"])["next_run_at"], "2020-01-03T00:00:00.000000Z")
+            self.assertEqual(restarted.db.connection.execute("SELECT COUNT(*) FROM schedule_runs").fetchone()[0], 2)
+            restarted.close()
+
+    def test_recurring_failure_advances_without_automatic_retry(self):
+        with tempfile.TemporaryDirectory() as raw:
+            provider = FailingProvider()
+            service = MyLastAIGirlfriendsService(make_config(Path(raw), mode="real", allow_remote=True), provider=provider)
+            service.set_remote_consent(True)
+            conversation = service.create_conversation()
+            schedule = service.create_schedule(conversation, "Hourly failure", "hourly failure", "2020-01-01T00:00:00Z", "hourly")
+            first = service.run_due_schedules("2020-01-01T00:00:01Z")
+            self.assertEqual(first[0]["status"], "FAILED")
+            self.assertEqual(service.db.get_schedule(schedule["id"])["next_run_at"], "2020-01-01T01:00:00.000000Z")
+            self.assertEqual(service.run_due_schedules("2020-01-01T00:30:00Z"), [])
+            self.assertEqual(len(provider.calls), 1)
             service.close()
 
 

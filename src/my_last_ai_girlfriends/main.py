@@ -10,12 +10,13 @@ import sys
 
 from .config import Config, ConfigError, diagnose_environment, generate_auth_token, load_environment
 from .http_api import MyLastAIGirlfriendsHTTPServer
+from .scheduler import SchedulerWorker
 from .service import MyLastAIGirlfriendsService
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="my-last-ai-girlfriends")
-    parser.add_argument("command", nargs="?", choices={"serve", "doctor", "generate-token"}, default="serve")
+    parser.add_argument("command", nargs="?", choices={"serve", "worker", "doctor", "generate-token"}, default="serve")
     args = parser.parse_args(argv)
     report = load_environment()
     if args.command == "doctor":
@@ -54,12 +55,18 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, RuntimeError, ValueError, sqlite3.Error) as exc:
         print(f"startup safe-stop: {type(exc).__name__}", file=sys.stderr)
         return 2
-    print(f"MY LAST AI GIRLFRIENDS listening on http://{config.host}:{config.port} ({config.mode} mode)")
+    worker = None
+    if args.command == "worker":
+        worker = SchedulerWorker(lambda: service.run_due_schedules(), config.scheduler_interval_seconds, lambda exc: service.db.add_audit("scheduler_worker_error", {"type": type(exc).__name__}))
+        worker.start()
+    print(f"MY LAST AI GIRLFRIENDS listening on http://{config.host}:{config.port} ({config.mode} mode{', scheduler worker' if worker else ''})")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        if worker:
+            worker.stop()
         server.server_close()
         service.close()
     return 0

@@ -39,7 +39,7 @@ class MigrationTests(unittest.TestCase):
             self.assertEqual(migrated.connection.execute("SELECT COUNT(*) FROM messages").fetchone()[0], 1)
             self.assertEqual(migrated.connection.execute("SELECT conversation_id FROM tasks WHERE id = 't1'").fetchone()[0], "c1")
             self.assertEqual(migrated.connection.execute("PRAGMA integrity_check").fetchone()[0], "ok")
-            self.assertEqual(migrated.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], 10)
+            self.assertEqual(migrated.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0], 11)
             self.assertIn("definition_json", {row[1] for row in migrated.connection.execute("PRAGMA table_info(skills)")})
             migrated.close()
 
