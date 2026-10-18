@@ -6,64 +6,47 @@
 
 **Feature branch:** `feat/mlag-real-ai-premium-ui`
 
-**Current published feature HEAD:** `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6` — verified on GitHub after adding the CI workflow.
+**Latest verified implementation commit:** `cc295be03b993b55abd5422c2e84abff4cd765a3` — this adds serialized locking around shared SQLite scheduler reads after GitHub CI exposed a concurrency race. A documentation-only checkpoint follows this code commit.
 
-**Remote main:** `c98a091330a05ef73823d9744bfd58d5c973059f`.
+**Remote `main`:** `c98a091330a05ef73823d9744bfd58d5c973059f`. The feature branch was 47 commits ahead and 0 behind at implementation commit `cc295be03b993b55abd5422c2e84abff4cd765a3`.
 
-**Branch comparison:** 45 commits ahead of `main`, 0 behind at this checkpoint.
+**Pull request:** [Draft PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1) remains open and unmerged. No main integration is claimed.
 
-**Pull request:** [Draft PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1) is open, draft, unmerged, and reported mergeable. No main integration is claimed.
+## Latest verification for implementation commit `cc295be03b993b55abd5422c2e84abff4cd765a3`
 
-## Current verification
+Both GitHub Actions runs passed:
+- [Push CI run 39111389515](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111389515)
+- [Pull-request CI run 39111392093](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111392093)
 
-A new GitHub Actions workflow was added at `.github/workflows/ci.yml`. The completed run on feature commit `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6` passed:
-
-- `uv lock --check`
-- `uv sync --locked`
-- Python 3.12.11 verification
-- `python -m compileall -q src tests`
-- `make check` — **76 tests passed, 0 failures, 0 skips**
-- `uv build` — source distribution and wheel built successfully
-
-Run: [My Last AI Girlfriends CI](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111020536).
-
-These results apply to the exact CI-tested feature commit above. Subsequent source changes require a fresh run.
+Both runs confirm Python 3.12.11, `uv lock --check`, `uv sync --locked`, compileall, `make check` (**76 tests passed, 0 failures, 0 skips**) and `uv build` (source distribution and wheel). The earlier PR run on `cf6ba6d` exposed `sqlite3.InterfaceError` in concurrent scheduler reads; commit `cc295be03b993b55abd5422c2e84abff4cd765a3` serializes `get_schedule`, `list_schedules`, `due_schedules` and `get_schedule_run` access with the database reentrant lock, and both new runs pass.
 
 ## Current database recovery status
 
-- Canonical database: `data/my_last_ai_girlfriends.sqlite3`; it reports `DatabaseError: file is not a database`. Its SHA-256 is `2e3c9e3a21b33a867a9958ebbec68e960cf8daae652073f91bca0b6cdc8810d5`.
+- Canonical database: `data/my_last_ai_girlfriends.sqlite3`; it reports `DatabaseError: file is not a database`. SHA-256: `2e3c9e3a21b33a867a9958ebbec68e960cf8daae652073f91bca0b6cdc8810d5`.
 - The invalid canonical file was preserved byte-for-byte at `data/migration-backups/canonical-invalid-preserved-20261018T000000Z.sqlite3`.
-- Recovery candidate: `data/migration-backups/my_last_ai_girlfriends.recovered.20261017T103434Z.sqlite3`; `PRAGMA integrity_check` returns `ok`. Its SHA-256 is `47ada56b639d5edf9194e79f19a3391b031c5ca20dbbfc56eafad1ebffaea073`.
-- An isolated copy initialized through schema version 10, passed integrity check, retained the six recorded row counts, and contains `skills.definition_json`.
-- **No live database replacement or migration has been performed.** A verified restoration and application-level recovery run remain open.
+- Recovery candidate `data/migration-backups/my_last_ai_girlfriends.recovered.20261017T103434Z.sqlite3` passes `PRAGMA integrity_check = ok`. SHA-256: `47ada56b639d5edf9194e79f19a3391b031c5ca20dbbfc56eafad1ebffaea073`.
+- An isolated copy initialized through schema version 10, retained all six recorded row counts, and contains `skills.definition_json`.
+- **No live database replacement or migration has been performed.** Verified, application-level restoration remains open.
 
 ## Current stage status
 
 | Stage | Current status | Remaining major work |
 |---|---|---|
-| 01–05 | Previously reported CLOSED — VERIFIED | Preserve the existing baseline; run regressions after changes. |
+| 01–05 | Previously reported CLOSED — VERIFIED | Preserve baseline; rerun regressions after changes. |
 | 06 | BLOCKED_EXTERNAL | Owner-supplied Docker build/smoke evidence exists; exact image/source commit provenance and cleanup verification remain pending. |
 | 07–10 | PARTIAL | Broader memory lifecycle, PDF/DOCX and grounded answers, search/claim verification, recurring/restart-safe scheduler. |
-| 11 | PARTIAL / BLOCKED_EXTERNAL | Browser-native voice path exists; full microphone/audio-provider integration and real device verification remain incomplete. |
-| 12–13 | PARTIAL | Broader controlled automation, execution verification, evaluation coverage and rollback criteria remain. |
+| 11 | PARTIAL / BLOCKED_EXTERNAL | Browser-native voice path exists; full microphone/audio-provider integration and device verification remain incomplete. |
+| 12–13 | PARTIAL | Broader approved automation, execution verification, evaluation coverage and rollback criteria remain. |
 | 14 | BLOCKED_EXTERNAL / CONTRACT PARTIAL | Native Android companion and toolchain/device verification remain. |
 | 15 | PARTIAL | Full encrypted PC–phone transport is not implemented. |
 | 16 | PARTIAL | Bounded read-only MCP transport exists; broad connector coverage and write scopes are not enabled. |
-| 17 | PARTIAL | Approved declarative skill executor is limited to one local text-file read; self-learning and arbitrary execution are disabled. |
-| 18 | PARTIAL | Local role/agent evidence exists; full provider-backed multi-step delegation remains. |
+| 17 | PARTIAL | Approved declarative skill execution is limited to one local text-file read; self-learning/arbitrary execution remain disabled. |
+| 18 | PARTIAL | Local role/agent evidence exists; provider-backed multi-step delegation remains. |
 | 19 | PARTIAL | Local approval/schedule path exists; external calendar/email actions remain disabled. |
 | 20 | PARTIAL | Optional loopback Ollama adapter exists; device mesh is not verified. |
-| 21 | PARTIAL | Readiness/integrity endpoints exist; final cross-feature hardening and release gates remain. |
+| 21 | PARTIAL | Readiness/integrity endpoints exist; final hardening and release gates remain. |
 
-## Current publication status
-
-- Feature branch is published at the checkpoint above.
-- CI passed for that checkpoint, including all 76 unit/integration tests and package build.
-- The pre-existing untracked owner file named `main` remains local and must be preserved.
-- Do not describe the project as fully complete or production-ready while the listed stage and database/release items remain open.
-
-The historical execution detail log follows. Older SHA, test-count, and publication statements within that log describe their original checkpoints and are superseded by this current checkpoint.
-
+The pre-existing local untracked file named `main` remains owner data and must not be staged or deleted. Do not describe the project as fully complete or production-ready while these stage/database/release items remain open.
 
 ## Historical execution details (earlier checkpoints; current checkpoint above takes precedence)
 

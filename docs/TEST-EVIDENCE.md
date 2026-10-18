@@ -1,5 +1,31 @@
 # MY LAST AI GIRLFRIENDS — Test Evidence
 
+## Current verified implementation checkpoint — 18 October 2026
+
+**Implementation commit:** `cc295be03b993b55abd5422c2e84abff4cd765a3`  
+**Push CI:** [39111389515](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111389515) — PASS  
+**Pull-request CI:** [39111392093](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111392093) — PASS
+
+The GitHub Actions logs on the exact implementation commit show:
+
+```text
+uv lock --check                         PASS
+uv sync --locked                        PASS
+Python version assertion (3.12.11)     PASS
+python -m compileall -q src tests       PASS
+make check                              PASS — Ran 76 tests, OK
+uv build                                PASS — sdist and wheel produced
+```
+
+A prior pull-request CI attempt on `cf6ba6d` exposed `sqlite3.InterfaceError: bad parameter or other API misuse` in concurrent scheduler read access. The implementation commit `cc295be03b993b55abd5422c2e84abff4cd765a3` serializes `get_schedule`, `list_schedules`, `due_schedules` and `get_schedule_run` with the database reentrant lock. Both subsequent push and PR runs passed. Keep this regression test enabled.
+
+The live canonical `data/my_last_ai_girlfriends.sqlite3` remains invalid (`file is not a database`) and unchanged. The invalid original was preserved byte-for-byte. The recovery candidate passes `PRAGMA integrity_check = ok`; an isolated copy initialized through schema version 10, preserved all six recorded row counts and contains `skills.definition_json`. No live replacement or migration was performed.
+
+Stage 06 Docker image build/container assertions are owner-supplied PASS; exact image/source-commit provenance is UNVERIFIED and cleanup remains PENDING. The current CI workflow does not include the Stage 06 Docker smoke, so these facts remain separate.
+
+Older entries below are chronological results from earlier test counts/commits and should not be mistaken for the current checkpoint.
+
+
 ## Current published feature checkpoint — 18 October 2026
 
 **Published branch:** `feat/mlag-real-ai-premium-ui`  
