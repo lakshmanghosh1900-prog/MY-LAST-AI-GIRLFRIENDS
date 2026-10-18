@@ -5,8 +5,7 @@ from __future__ import annotations
 
 def local_readiness(db) -> dict:
     try:
-        integrity = db.connection.execute("PRAGMA integrity_check").fetchone()[0]
-        schema_version = db.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
+        integrity, schema_version = db.readiness_snapshot()
         return {
             "database_integrity": integrity == "ok",
             "database_integrity_result": integrity,

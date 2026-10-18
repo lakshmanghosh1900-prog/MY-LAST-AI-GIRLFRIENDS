@@ -482,6 +482,14 @@ class Database:
         with self._lock:
             self.connection.close()
 
+    @_serialized_database_access
+    def readiness_snapshot(self) -> tuple[str, int | None]:
+        """Read the integrity and schema state under the shared-connection lock."""
+
+        integrity = self.connection.execute("PRAGMA integrity_check").fetchone()[0]
+        row = self.connection.execute("SELECT MAX(version) FROM schema_migrations").fetchone()
+        return str(integrity), (int(row[0]) if row and row[0] is not None else None)
+
     def new_id(self) -> str:
         return str(uuid.uuid4())
 
