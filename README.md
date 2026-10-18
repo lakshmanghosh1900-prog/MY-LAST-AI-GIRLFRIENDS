@@ -20,7 +20,7 @@ read-only in this release.
 - Recent conversation context, isolated per conversation and bounded by limits.
 - Explicit local consent for ordinary personal text in real-AI mode.
 - Protected/sensitive/file content blocked from remote processing by default.
-- Read-only approved workspace file preview.
+- Read-only approved workspace text, DOCX and bounded PDF extraction.
 - HTTPS public fetching with IP validation, redirects and byte/type limits.
 - Readable HTML extraction with scripts/styles/noscript removed.
 - Safe text rendering; fetched/model output is never injected as HTML.
@@ -132,7 +132,7 @@ Use the composer commands:
 /fetch https://example.com
 ```
 
-`/file` can only read supported text files below `workspace/`. `/fetch` accepts
+`/file` can only read supported text, DOCX and bounded PDF files below `workspace/`. `/fetch` accepts
 only HTTPS public destinations, validates every resolved address and redirect,
 caps response size, and extracts readable text from HTML. It does not render
 HTML, execute scripts or load embedded resources.
@@ -184,7 +184,7 @@ conversation data.
 | Local persistence | IMPLEMENTED AND TESTED |
 | Privacy and consent | IMPLEMENTED AND TESTED |
 | Budget tracking | IMPLEMENTED AND TESTED |
-| Document processing | LIMITED: approved local text indexing/search with bounded extractive citations; PDF/DOCX and provider-grounded answers not implemented |
+| Document processing | IMPLEMENTED AND TESTED: approved local text indexing/search plus bounded DOCX/PDF text extraction; provider-grounded answers remain disabled |
 | Research and citations | LIMITED: explicit public-URL runs with source hashes/citations and heuristic claim comparison; search and robust verification not implemented |
 | Voice | LIMITED: truthful browser-native speech recognition/synthesis controls; server audio and hardware/provider verification unavailable |
 | Long-term memory | LIMITED: explicit local recall and consented selected-memory context; automatic extraction/remote transfer disabled |

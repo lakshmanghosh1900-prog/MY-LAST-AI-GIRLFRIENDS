@@ -100,7 +100,7 @@ def chunk_text(text: str, max_chars: int = 2000) -> tuple[str, ...]:
 
 def read_and_prepare(file_tool: SafeFileTool, relative_path: str, max_chunk_chars: int = 2000) -> IndexedDocument:
     try:
-        result: FileResult = file_tool.read_text(relative_path)
+        result: FileResult = file_tool.read_document(relative_path)
     except ToolError as exc:
         raise DocumentError(exc.code, str(exc)) from exc
     chunks = chunk_text(result.text, max_chunk_chars)

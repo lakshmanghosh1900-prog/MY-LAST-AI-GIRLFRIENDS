@@ -5,6 +5,7 @@ import json
 import tempfile
 import threading
 import unittest
+import zipfile
 from pathlib import Path
 
 from my_last_ai_girlfriends.documents import DocumentError, chunk_text
@@ -16,6 +17,23 @@ from test_budget_service import make_config
 
 
 class DocumentTests(unittest.TestCase):
+    def test_docx_and_bounded_pdf_text_are_extractable(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            with zipfile.ZipFile(workspace / "note.docx", "w") as archive:
+                archive.writestr("word/document.xml", "<w:document xmlns:w='urn'><w:body><w:p><w:r><w:t>DOCX hello</w:t></w:r></w:p></w:body></w:document>")
+            (workspace / "note.pdf").write_bytes(b"%PDF-1.4\nBT\n( PDF hello ) Tj\nET\n%%EOF")
+            service = MyLastAIGirlfriendsService(make_config(root))
+            docx = service.index_document("note.docx")
+            pdf = service.index_document("note.pdf")
+            self.assertEqual(docx["path"], "note.docx")
+            self.assertEqual(pdf["path"], "note.pdf")
+            self.assertIn("DOCX hello", service.answer_documents("DOCX hello")["answer"])
+            self.assertIn("PDF hello", service.answer_documents("PDF hello")["answer"])
+            service.close()
+
     def test_chunking_is_bounded_and_deterministic(self):
         text = "first paragraph\n" + ("x" * 300) + "\nlast paragraph"
         chunks = chunk_text(text, 128)

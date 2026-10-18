@@ -106,7 +106,11 @@ Data classes:
 ## Web and file boundaries
 
 The file reader accepts only clean relative paths inside `workspace/`, supported
-text suffixes, regular files without NUL bytes and configured size limits.
+text/DOCX/PDF suffixes, regular files and configured size limits. DOCX is read
+from the bounded `word/document.xml` part without executing document content.
+PDF support is intentionally a bounded text-operator subset; unsupported PDF
+encodings return a truthful extraction error rather than pretending to parse a
+rendered page.
 
 The web reader accepts only HTTPS port 443, rejects credentials and fragments,
 resolves all addresses and blocks non-global IPs, pins the selected IP for the
@@ -163,7 +167,7 @@ was persisted.
 | Read-only file access | IMPLEMENTED AND TESTED |
 | HTML text extraction | IMPLEMENTED AND TESTED |
 | Privacy/consent/budget | IMPLEMENTED AND TESTED |
-| Document processing | LIMITED text preview only |
+| Document processing | IMPLEMENTED AND TESTED for text, DOCX and bounded PDF text extraction |
 | Research/citations | LIMITED public source URL only |
 | Voice | NOT IMPLEMENTED |
 | Long-term memory | NOT IMPLEMENTED |
