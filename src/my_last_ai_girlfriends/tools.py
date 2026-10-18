@@ -299,6 +299,7 @@ class SafeWebFetcher:
             resolved_ip = self._resolve_public(current.hostname or "")
             context = ssl.create_default_context()
             connection = _PinnedHTTPSConnection(current.hostname or "", resolved_ip, 443, self.timeout_seconds, context)
+            response = None
             try:
                 target = urlunsplit(("", "", current.path or "/", current.query, ""))
                 connection.request("GET", target, headers={"Host": current.hostname or "", "Accept": "text/plain, text/markdown, text/html, application/json", "Accept-Encoding": "identity", "User-Agent": "my-last-ai-girlfriends/0.2.0"})
@@ -331,5 +332,9 @@ class SafeWebFetcher:
             except (OSError, ssl.SSLError, http.client.HTTPException) as exc:
                 raise ToolError("FETCH_TRANSPORT", "The public fetch did not complete safely.") from exc
             finally:
-                connection.close()
+                try:
+                    if response is not None:
+                        response.close()
+                finally:
+                    connection.close()
         raise ToolError("REDIRECT_LIMIT", "The redirect limit was exceeded.")
