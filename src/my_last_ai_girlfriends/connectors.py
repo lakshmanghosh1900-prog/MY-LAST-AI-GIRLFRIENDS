@@ -15,6 +15,12 @@ class ConnectorError(RuntimeError):
         super().__init__(message)
         self.code = code
 
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Block redirects so a public MCP URL cannot redirect into a private endpoint."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
 
 def call_mcp(endpoint: str, method: str, params: dict, timeout_seconds: int = 10, max_bytes: int = 262_144) -> dict:
     try:
@@ -37,7 +43,8 @@ def call_mcp(endpoint: str, method: str, params: dict, timeout_seconds: int = 10
     body = json.dumps({"jsonrpc": "2.0", "id": request_id, "method": method, "params": params}, separators=(",", ":")).encode("utf-8")
     request = urllib.request.Request(endpoint, data=body, method="POST", headers={"Content-Type": "application/json", "Accept": "application/json", "User-Agent": "my-last-ai-girlfriends/0.2.0"})
     try:
-        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+        opener = urllib.request.build_opener(_NoRedirectHandler())
+        with opener.open(request, timeout=timeout_seconds) as response:
             raw = response.read(max_bytes + 1)
     except urllib.error.HTTPError as exc:
         raise ConnectorError("MCP_HTTP_ERROR", "The connector returned an HTTP error.") from exc
