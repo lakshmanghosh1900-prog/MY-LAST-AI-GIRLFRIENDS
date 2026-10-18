@@ -50,6 +50,22 @@ class ResearchTests(unittest.TestCase):
             self.assertEqual(insufficient["results"][0]["classification"], "INSUFFICIENT_EVIDENCE")
             service.close()
 
+    def test_research_preserves_source_ordinals_and_reports_conflicting_stances(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            service.web_tool.fetch = Mock(side_effect=[
+                FetchResult("https://example.com/a", "text/plain", "Bengali support is available.", 32),
+                FetchResult("https://example.com/b", "text/plain", "Bengali support is not available.", 36),
+            ])
+            run = service.run_research(["https://example.com/a", "https://example.com/b"])
+            self.assertEqual([citation["label"] for citation in run["citations"]], ["S1", "S2"])
+            evidence = service.analyze_research_evidence(run["id"], ["Bengali support is available"])
+            result = evidence["results"][0]
+            self.assertEqual(result["classification"], "CONFLICTING_EVIDENCE")
+            self.assertEqual([citation["stance"] for citation in result["citations"]], ["supporting", "conflicting"])
+            self.assertEqual([citation["label"] for citation in result["citations"]], ["S1", "S2"])
+            service.close()
+
     def test_authenticated_research_api_rejects_invalid_shape_and_returns_sources(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))

@@ -29,11 +29,28 @@ class ResearchSource:
 
 _SECRET_QUERY_KEYS = frozenset({"key", "api_key", "apikey", "token", "access_token", "password", "secret", "signature", "sig", "auth"})
 _WORD_RE = re.compile(r"[^\W_]+", re.UNICODE)
-_NEGATION_MARKERS = ("not", "no", "never", "cannot", "can't", "doesn't", "does not", "isn't", "is not")
+_NEGATION_TOKENS = frozenset({"not", "no", "never", "cannot", "isnt", "doesnt", "without"})
+_SENTENCE_RE = re.compile(r"[^.!?;\n]+")
 
 
 def _tokens(value: str) -> tuple[str, ...]:
     return tuple(token.casefold() for token in _WORD_RE.findall(value))
+
+
+def _claim_stance(claim_tokens: tuple[str, ...], content: str) -> str | None:
+    """Classify lexical support without treating an unrelated negation as a conflict."""
+
+    required = set(claim_tokens)
+    for sentence in _SENTENCE_RE.findall(content):
+        sentence_tokens = _tokens(sentence)
+        if not required.issubset(sentence_tokens):
+            continue
+        positions = [index for index, token in enumerate(sentence_tokens) if token in required]
+        window = sentence_tokens[max(0, min(positions) - 1) : max(positions) + 1]
+        if any(token in _NEGATION_TOKENS for token in window):
+            return "conflicting"
+        return "supporting"
+    return None
 
 
 def analyze_claims(claims: list[str], sources: list[dict]) -> dict:
@@ -46,25 +63,28 @@ def analyze_claims(claims: list[str], sources: list[dict]) -> dict:
         lower = claim.casefold()
         if any(marker in lower for marker in ("password", "api key", "secret", "token")):
             raise ResearchError("RESEARCH_CLAIM_PROHIBITED", "Secret-like claims are not accepted.")
-        claim_tokens = tuple(token for token in _tokens(claim) if len(token) > 2)
-        phrase = " ".join(claim_tokens)
+        claim_tokens = tuple(dict.fromkeys(token for token in _tokens(claim) if len(token) > 2))
         supporting = []
         conflicting = []
         for source in sources:
-            text = " ".join(_tokens(source.get("content", "")))
-            coverage = sum(token in text.split() for token in claim_tokens)
-            if not claim_tokens or coverage < len(set(claim_tokens)):
+            if not claim_tokens:
                 continue
+            stance = _claim_stance(claim_tokens, str(source.get("content", "")))
+            if stance is None:
+                continue
+            ordinal = int(source["ordinal"])
             citation = {
-                "label": f"S{int(source['ordinal']) + 1}",
+                "label": f"S{ordinal + 1}",
                 "source_id": source["id"],
+                "ordinal": ordinal,
+                "requested_url": source.get("requested_url"),
                 "url": source["final_url"],
                 "excerpt": source["excerpt"],
                 "content_sha256": source["content_sha256"],
+                "matched_terms": len(claim_tokens),
+                "stance": stance,
             }
-            raw_lower = source.get("content", "").casefold()
-            negated = any(f"{marker} {phrase}" in raw_lower for marker in _NEGATION_MARKERS)
-            (conflicting if negated else supporting).append(citation)
+            (conflicting if stance == "conflicting" else supporting).append(citation)
         if supporting and conflicting:
             classification = "CONFLICTING_EVIDENCE"
         elif supporting:

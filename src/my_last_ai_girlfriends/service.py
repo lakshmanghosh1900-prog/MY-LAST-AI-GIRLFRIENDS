@@ -284,8 +284,8 @@ class MyLastAIGirlfriendsService:
         result = self.db.get_research_run(run_id) or {"id": run_id, "status": status, "sources": []}
         result["failures"] = failures
         result["citations"] = [
-            {"label": f"S{index + 1}", "source_id": source["id"], "url": source["final_url"], "excerpt": source["excerpt"], "content_sha256": source["content_sha256"]}
-            for index, source in enumerate(result["sources"])
+            {"label": f"S{int(source['ordinal']) + 1}", "source_id": source["id"], "ordinal": source["ordinal"], "requested_url": source["requested_url"], "url": source["final_url"], "excerpt": source["excerpt"], "content_sha256": source["content_sha256"]}
+            for source in result["sources"]
         ]
         return result
 
@@ -294,8 +294,8 @@ class MyLastAIGirlfriendsService:
         if result is None:
             raise KeyError("research run not found")
         result["citations"] = [
-            {"label": f"S{index + 1}", "source_id": source["id"], "url": source["final_url"], "excerpt": source["excerpt"], "content_sha256": source["content_sha256"]}
-            for index, source in enumerate(result["sources"])
+            {"label": f"S{int(source['ordinal']) + 1}", "source_id": source["id"], "ordinal": source["ordinal"], "requested_url": source["requested_url"], "url": source["final_url"], "excerpt": source["excerpt"], "content_sha256": source["content_sha256"]}
+            for source in result["sources"]
         ]
         return result
 
