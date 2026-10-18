@@ -20,6 +20,21 @@ class ReleaseReadinessTests(unittest.TestCase):
 
         self.assertTrue(local_readiness(NoDirectConnectionAccess())["ready_for_local_tests"])
 
+    def test_readiness_requires_the_exact_current_schema_version(self):
+        class SnapshotOnly:
+            def __init__(self, schema_version):
+                self.schema_version = schema_version
+
+            def readiness_snapshot(self):
+                return "ok", self.schema_version
+
+        for schema_version, expected in ((10, False), (11, True)):
+            with self.subTest(schema_version=schema_version):
+                self.assertEqual(
+                    local_readiness(SnapshotOnly(schema_version))["ready_for_local_tests"],
+                    expected,
+                )
+
     def test_database_readiness_snapshot_reports_integrity_and_schema(self):
         with tempfile.TemporaryDirectory() as raw:
             db = Database(Path(raw) / "readiness.sqlite3")

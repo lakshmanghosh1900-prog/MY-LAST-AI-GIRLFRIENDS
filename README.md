@@ -21,7 +21,10 @@ read-only in this release.
 - Explicit local consent for ordinary personal text in real-AI mode.
 - Protected/sensitive/file content blocked from remote processing by default.
 - Read-only approved workspace text, DOCX and bounded PDF extraction.
+- Local grounded document evidence answers with bounded excerpts, exact
+  document/chunk/hash citations and explicit insufficient-evidence responses.
 - HTTPS public fetching with IP validation, redirects and byte/type limits.
+- Heuristic public-source claim comparison with supporting/conflicting citations.
 - Readable HTML extraction with scripts/styles/noscript removed.
 - Safe text rendering; fetched/model output is never injected as HTML.
 
@@ -184,14 +187,14 @@ conversation data.
 | Local persistence | IMPLEMENTED AND TESTED |
 | Privacy and consent | IMPLEMENTED AND TESTED |
 | Budget tracking | IMPLEMENTED AND TESTED |
-| Document processing | IMPLEMENTED AND TESTED: approved local text indexing/search plus bounded DOCX/PDF text extraction; provider-grounded answers remain disabled |
-| Research and citations | LIMITED: explicit public-URL runs with source hashes/citations and heuristic claim comparison; search and robust verification not implemented |
+| Document processing | IMPLEMENTED AND TESTED: approved local text indexing/search, bounded DOCX/PDF text extraction and local grounded evidence answers; provider-grounded answers remain disabled |
+| Research and citations | LIMITED: explicit public-URL runs with source hashes/citations, preserved source ordinals and heuristic supporting/conflicting claim comparison; search and semantic verification not implemented |
 | Voice | LIMITED: truthful browser-native speech recognition/synthesis controls; server audio and hardware/provider verification unavailable |
 | Long-term memory | LIMITED: explicit local recall and consented selected-memory context; automatic extraction/remote transfer disabled |
 | Android companion | BLOCKED EXTERNAL: dependency-free API contract/diagnostics exist; SDK/device verification unavailable |
-| Scheduling | LIMITED: authenticated durable one-shot local reminders; recurring/background execution not implemented |
+| Scheduling | LIMITED: authenticated durable one-shot/recurring local reminders with bounded worker; planner quality and operational soak remain open |
 | Device pairing | LIMITED: local hashed enrollment, one-time challenge verification and revocation; encrypted transport disabled |
-| MCP connectors | LIMITED: approved credential-free HTTPS read-only JSON-RPC transport; write/external scopes disabled |
+| MCP connectors | LIMITED: approved public credential-free HTTPS read-only JSON-RPC transport with bounded object responses; write/external scopes disabled |
 | Skills | LIMITED: approved one-step local text-file declarative skills; shell/code/network/provider/side-effect execution disabled |
 | Background agents | LIMITED: bounded local fixed-role orchestration; remote delegation disabled |
 | External actions/approval | LIMITED: single-use approved local schedule action; calendar/email side effects disabled |

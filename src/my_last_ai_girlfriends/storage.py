@@ -16,6 +16,9 @@ from typing import Iterator
 from urllib.parse import quote
 
 
+CURRENT_SCHEMA_VERSION = 11
+
+
 class StorageError(RuntimeError):
     """Raised when storage cannot be migrated or opened safely."""
 
@@ -222,10 +225,24 @@ class Database:
             isolation_level=None,
         )
 
+    def _execute_sql_script(self, script: str) -> None:
+        """Execute each complete statement without committing the surrounding transaction."""
+        statement = []
+        for character in script:
+            statement.append(character)
+            if character == ";" and sqlite3.complete_statement("".join(statement)):
+                sql = "".join(statement).strip()
+                if sql:
+                    self.connection.execute(sql)
+                statement.clear()
+        remainder = "".join(statement).strip()
+        if remainder:
+            self.connection.execute(remainder)
+
     @_serialized_database_access
     def initialize(self) -> None:
         with self.transaction():
-            self.connection.executescript(SCHEMA_SQL)
+            self._execute_sql_script(SCHEMA_SQL)
             columns = {row[1] for row in self.connection.execute("PRAGMA table_info(conversations)")}
             if "title" not in columns:
                 self.connection.execute("ALTER TABLE conversations ADD COLUMN title TEXT")
@@ -243,7 +260,7 @@ class Database:
             )
             applied = {row[0] for row in self.connection.execute("SELECT version FROM schema_migrations")}
             if 3 not in applied:
-                self.connection.executescript("""
+                self._execute_sql_script("""
                 CREATE TABLE IF NOT EXISTS memory_items (
                     id TEXT PRIMARY KEY,
                     scope TEXT NOT NULL CHECK(scope IN ('global', 'conversation')),
@@ -269,7 +286,7 @@ class Database:
                 )
                 applied.add(3)
             if 4 not in applied:
-                self.connection.executescript("""
+                self._execute_sql_script("""
                 CREATE TABLE IF NOT EXISTS documents (
                     id TEXT PRIMARY KEY,
                     path TEXT NOT NULL UNIQUE,
@@ -296,7 +313,7 @@ class Database:
                 )
                 applied.add(4)
             if 5 not in applied:
-                self.connection.executescript("""
+                self._execute_sql_script("""
                 CREATE TABLE IF NOT EXISTS research_runs (
                     id TEXT PRIMARY KEY,
                     status TEXT NOT NULL CHECK(status IN ('RUNNING', 'SUCCEEDED', 'PARTIAL', 'FAILED')),
@@ -325,7 +342,7 @@ class Database:
                 )
                 applied.add(5)
             if 6 not in applied:
-                self.connection.executescript("""
+                self._execute_sql_script("""
                 CREATE TABLE IF NOT EXISTS schedules (
                     id TEXT PRIMARY KEY,
                     conversation_id TEXT NOT NULL REFERENCES conversations(id),
@@ -354,7 +371,7 @@ class Database:
                 )
                 applied.add(6)
             if 7 not in applied:
-                self.connection.executescript("""
+                self._execute_sql_script("""
                 CREATE TABLE IF NOT EXISTS devices (
                     id TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
@@ -410,7 +427,7 @@ class Database:
                     (7, utc_now()),
                 )
             if 8 not in applied:
-                self.connection.executescript("""
+                self._execute_sql_script("""
                 CREATE TABLE IF NOT EXISTS device_pairing_challenges (
                     id TEXT PRIMARY KEY,
                     device_id TEXT NOT NULL REFERENCES devices(id),
@@ -427,7 +444,7 @@ class Database:
                     (8, utc_now()),
                 )
             if 9 not in applied:
-                self.connection.executescript("""
+                self._execute_sql_script("""
                 CREATE TABLE IF NOT EXISTS action_executions (
                     id TEXT PRIMARY KEY,
                     approval_id TEXT NOT NULL UNIQUE REFERENCES approvals(id),

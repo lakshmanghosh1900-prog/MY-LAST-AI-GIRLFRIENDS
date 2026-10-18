@@ -76,17 +76,20 @@ memory/document transfer.
 
 The latest published implementation commit is `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`. Both push and pull-request GitHub Actions pass 83 tests, locked dependency validation, compileall and `uv build`. Draft PR #1 is open and unmerged. Current status is:
 
-The current local continuation adds the Stage 08C bounded grounded-answer
-slice in commits `35e2589` and `300cc48`. Local verification is 87 tests with
-zero failures/skips, locked dependency validation, compileall and `uv build`.
-These commits are not yet published to the feature branch.
+The current local continuation adds Stage 08C, Stage 09B and Stage 16A in
+commits `35e2589`, `300cc48`, `3ef975d` and `b3af8ad`, followed by release and
+storage hardening. Local verification is 94 tests with zero failures/skips,
+locked dependency validation, compileall and `uv build`. These commits are not
+yet published to the feature branch. The invalid canonical database remains
+untouched; isolated recovery is WAL-aware, migrations are transaction-safe,
+readiness requires schema 11, and cancelled due schedules are skipped safely.
 
 | Stage | Current status | Implemented slice / remaining gate |
 |---|---|---|
 | 10 | `PARTIAL — 10B IMPLEMENTED` | Recurring hourly/daily/weekly UTC schedules, occurrence idempotency, restart advancement and bounded worker lifecycle are implemented/tested; planner quality and operational soak remain open. |
 | 14 | `BLOCKED_EXTERNAL / CONTRACT PARTIAL` | Capability inventory truthfully reports missing Android toolchain/device evidence. |
 | 15 | `PARTIAL — LOCAL GOVERNANCE` | Hashed device enrollment, one-time replay-resistant pairing, diagnostics, identity verification, last-seen tracking, revocation and authenticated routes; no encrypted PC–phone transport. |
-| 16 | `PARTIAL — READ-ONLY MCP` | Approved credential-free HTTPS JSON-RPC `tools/list`/`tools/call` transport under explicit read scopes; write/external scopes disabled. |
+| 16 | `PARTIAL — 16A HARDENED READ-ONLY MCP` | Public credential-free HTTPS JSON-RPC `tools/list`/`tools/call` transport validates endpoint class, bounds and object responses under explicit read scopes; write/external scopes disabled. |
 | 17 | `PARTIAL — DECLARATIVE EXECUTION` | Provenance, capability allowlisting, draft/review/approved/revoked lifecycle and one bounded local text-file skill; no shell/code/network/provider/side-effect execution or self-learning. |
 | 18 | `PARTIAL — BOUNDED LOCAL` | Fixed-role bounded orchestration, durable evidence and authenticated readback; provider-backed multi-step delegation remains open. |
 | 19 | `PARTIAL — LOCAL ACTIONS` | Hashed approval parameters/nonces/sessions, future-expiry validation and single-use local schedule execution; calendar/email side effects disabled. |

@@ -13,9 +13,13 @@ chronological notes is historical evidence.
 ## Local continuation checkpoint — 18 October 2026
 
 The unpublished local commits `35e2589` (`fix(storage): serialize local
-readiness checks`) and `300cc48` (`feat(stage-08): add grounded document
-evidence answers`) extend the published checkpoint without touching `main` or
-the protected database files. Local verification passed 87 tests with zero
+readiness checks`), `300cc48` (`feat(stage-08): add grounded document
+evidence answers`), `3ef975d` (`fix(research): preserve source conflict
+provenance`) and `b3af8ad` (`fix(connectors): harden bounded MCP transport`)
+extend the published checkpoint without touching `main` or the protected
+database files. The resumed hardening increment adds WAL-aware isolated
+recovery backup, atomic migration regression coverage, exact schema readiness,
+and cancellation-race handling. Local verification passed 94 tests with zero
 failures/skips, `uv lock --check`, `uv sync --locked`, compileall and `uv build`.
 
 Stage 08C is a local-only evidence contract: it returns bounded extractive
@@ -24,6 +28,10 @@ text, exact document/chunk/hash citations, `SUPPORTED_EVIDENCE` or
 answer. The authenticated `/v1/documents/answer` route and browser settings UI
 expose that contract. Readiness integrity/schema access now uses the shared
 SQLite serialization boundary.
+Stage 09B now preserves source ordinals and distinguishes supporting from
+conflicting heuristic evidence. Stage 16A hardens the read-only MCP boundary
+against obvious private endpoints, invalid JSON parameters and non-object
+responses.
 
 ## 1. Repository and Git state
 
@@ -82,14 +90,14 @@ slices; external calendar/email side effects remain disabled.
 | 06 | `BLOCKED_EXTERNAL` | Docker is unavailable in the current execution container; owner-supplied build/smoke assertions remain separate, and current source/image provenance plus cleanup are not independently reproduced. |
 | 07 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 07A explicit local memory management is implemented/tested; full Stage 07 is dependency-gated and automatic extraction, remote memory and complete retention/recovery acceptance remain open. |
 | 08 | `PARTIAL — 08C LOCAL GROUNDED ANSWERS IMPLEMENTED` | Local text/DOCX/PDF indexing, bounded extractive evidence, exact citations and explicit insufficient-evidence handling are implemented/tested; provider-backed answers, OCR/layout fidelity and complete document-security acceptance remain open. |
-| 09 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 09A explicit public-URL research and structured source citations are implemented/tested; search, claim verification and conflict handling remain open. |
+| 09 | `PARTIAL — 09B CONFLICT PROVENANCE IMPLEMENTED` | Explicit public-URL research preserves source ordinals and returns heuristic supporting/conflicting claim citations; search and semantic verification remain open. |
 | 10 | `PARTIAL — 10B IMPLEMENTED, CRITERIA REMAIN` | Recurring hourly/daily/weekly UTC schedules, occurrence idempotency, restart advancement, no automatic retry after failed recurring occurrences and a bounded worker lifecycle are implemented/tested; planner quality and operational soak remain open. |
 | 11 | `PARTIAL — BROWSER NATIVE` | Truthful browser speech-recognition/synthesis controls and unsupported states are implemented; real audio hardware/provider evidence is unavailable. |
 | 12 | `PARTIAL — READ-ONLY REGISTRY` | Static least-privilege registry, exact argument validation and bounded read-only handler execution are implemented; broader automation and approval gates remain open. |
 | 13 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Versioned deterministic local evaluation exists for truthful offline, policy and memory flows; full quality/latency/cost, voice/device/tool integration and rollback acceptance remain open. |
 | 14 | `BLOCKED_EXTERNAL / CONTRACT PARTIAL` | Android companion remains unavailable; truthful capability inventory reports the missing toolchain/device. |
 | 15 | `PARTIAL — LOCAL GOVERNANCE` | Hashed device enrollment, one-time replay-resistant pairing, diagnostics, identity verification, last-seen updates, revocation and authenticated routes exist; encrypted transport is not enabled. |
-| 16 | `PARTIAL — READ-ONLY MCP` | Approved credential-free HTTPS JSON-RPC `tools/list`/`tools/call` transport exists under explicit read scopes; write/external scopes are disabled. |
+| 16 | `PARTIAL — 16A HARDENED READ-ONLY MCP` | Approved public credential-free HTTPS JSON-RPC `tools/list`/`tools/call` transport validates endpoint class, bounds and object responses under explicit read scopes; write/external scopes are disabled. |
 | 17 | `PARTIAL — DECLARATIVE EXECUTION` | Versioned skills with provenance, capability allowlisting and approved one-step local text-file execution exist; shell/code/network/provider/side-effect execution and self-learning are disabled. |
 | 18 | `PARTIAL — BOUNDED LOCAL` | Fixed-role local orchestration, durable evidence and authenticated readback exist; provider-backed multi-step delegation remains open. |
 | 19 | `PARTIAL — LOCAL ACTIONS` | Hashed approvals and single-use local schedule execution exist; calendar/email side effects remain disabled. |
@@ -197,6 +205,22 @@ irrelevant or deleted documents return `INSUFFICIENT_EVIDENCE` with no
 citations. The authenticated API and browser settings panel expose the same
 status and disclaimer. No provider receives document content and no
 provider-grounded answer is claimed.
+
+### Stage 09B source conflict provenance
+
+Commit `3ef975d` preserves the requested source ordinal in returned citations,
+including gaps caused by failed fetches, and records requested/final URLs,
+matched-term counts and supporting/conflicting stance metadata. Sentence-bounded
+negation handling distinguishes a direct contradiction such as “not available”
+from unrelated text. The comparison remains lexical and heuristic; it does not
+claim semantic verification or truth.
+
+### Stage 16A hardened read-only MCP
+
+Commit `b3af8ad` rejects obvious private connector hosts and non-global literal
+addresses, bounds timeout/response size and JSON parameters, and requires
+object-shaped JSON-RPC results for the two enabled read methods. Write and
+external scopes remain disabled.
 
 ### Stage 12A safe implementation
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from .storage import CURRENT_SCHEMA_VERSION
+
 
 def local_readiness(db) -> dict:
     try:
@@ -11,7 +13,7 @@ def local_readiness(db) -> dict:
             "database_integrity_result": integrity,
             "schema_version": schema_version,
             "secret_free": True,
-            "ready_for_local_tests": integrity == "ok" and int(schema_version or 0) >= 10,
+            "ready_for_local_tests": integrity == "ok" and int(schema_version or 0) == CURRENT_SCHEMA_VERSION,
         }
     except Exception as exc:
         return {

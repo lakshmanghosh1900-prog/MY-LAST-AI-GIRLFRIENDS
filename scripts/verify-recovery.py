@@ -28,6 +28,28 @@ from my_last_ai_girlfriends.http_api import MyLastAIGirlfriendsHTTPServer  # noq
 from my_last_ai_girlfriends.service import MyLastAIGirlfriendsService  # noqa: E402
 
 
+def create_isolated_database(candidate: Path, isolated_path: Path) -> None:
+    """Back up a candidate through a read-only connection, including its WAL."""
+    with tempfile.TemporaryDirectory(prefix="mlag-recovery-source-") as raw:
+        staged_candidate = Path(raw) / candidate.name
+        shutil.copyfile(candidate, staged_candidate)
+        for suffix in ("-wal", "-shm", "-journal"):
+            sidecar = Path(f"{candidate}{suffix}")
+            if sidecar.exists():
+                shutil.copyfile(sidecar, Path(f"{staged_candidate}{suffix}"))
+
+        source = sqlite3.connect(f"{staged_candidate.resolve().as_uri()}?mode=ro", uri=True)
+        try:
+            destination = sqlite3.connect(isolated_path)
+            try:
+                source.backup(destination)
+                destination.commit()
+            finally:
+                destination.close()
+        finally:
+            source.close()
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("candidate", type=Path)
@@ -44,7 +66,7 @@ def main() -> int:
         data_dir.mkdir()
         workspace.mkdir()
         isolated_path = data_dir / "my_last_ai_girlfriends.sqlite3"
-        shutil.copy2(candidate, isolated_path)
+        create_isolated_database(candidate, isolated_path)
         token = generate_auth_token()
         env = {
             "MLAG_AUTH_TOKEN": token,

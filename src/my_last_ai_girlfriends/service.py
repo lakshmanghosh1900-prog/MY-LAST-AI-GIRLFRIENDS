@@ -331,6 +331,8 @@ class MyLastAIGirlfriendsService:
         results: list[dict] = []
         for schedule in self.db.due_schedules(current):
             run = self.db.create_schedule_run(schedule["id"])
+            if not run:
+                continue
             claimed = self.db.claim_schedule_run(run["id"])
             if claimed is None:
                 results.append(self.db.get_schedule_run(run["id"]) or run)

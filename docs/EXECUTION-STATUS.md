@@ -14,21 +14,31 @@
 
 ## Current local continuation checkpoint — 18 October 2026
 
-- Local commits `35e2589` and `300cc48` add the serialized readiness boundary and
-  Stage 08C bounded grounded document-answer contract. The branch is not yet
-  pushed with these commits.
-- `make check`: PASS — 87 tests, 0 failures, 0 skips; compileall also passed.
+- Local commits `35e2589`, `300cc48`, `3ef975d` and `b3af8ad` add the serialized
+  readiness boundary, Stage 08C grounded document answers, Stage 09B source
+  conflict provenance and Stage 16A MCP endpoint/response hardening. The branch
+  is not yet pushed with these commits.
+- `make check`: PASS — 94 tests, 0 failures, 0 skips; compileall also passed.
 - `uv lock --check`, `uv sync --locked` and `uv build`: PASS.
 - Stage 08C now returns `SUPPORTED_EVIDENCE` or `INSUFFICIENT_EVIDENCE`, bounded
   extractive text, exact path/chunk/hash citations, a lexical-evidence
   disclaimer and no provider invocation. The authenticated API and browser UI
   expose the same status/citations contract.
+- Stage 09B preserves requested source ordinals, requested/final URLs and
+  supporting/conflicting stance metadata; sentence-bounded negation handling is
+  tested. Stage 16A rejects obvious private connector endpoints, invalid JSON
+  parameters and non-object MCP results while retaining read-only scopes.
 - The local readiness route now reads integrity and schema through a serialized
   `Database.readiness_snapshot()` method. Budget direct connection calls remain
   inside the existing transaction boundary; no other production SQLite bypass
   was found in the audit.
 - The invalid canonical database, verified recovery candidate and untracked
   owner file `main` remain unchanged and uncommitted.
+- Recovery verification now stages candidate sidecars and uses a read-only
+  SQLite backup, so committed WAL rows are included without changing the
+  candidate. Schema migrations execute statement-by-statement inside the
+  existing transaction, readiness requires schema 11, and a cancelled schedule
+  is skipped safely if cancellation wins the due-run race.
 
 ## Latest published verification for implementation commit `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`
 
@@ -53,13 +63,13 @@ Both runs on the exact current commit confirm Python 3.12.11, `uv lock --check`,
 |---|---|---|
 | 01–05 | Previously reported CLOSED — VERIFIED | Preserve baseline; rerun regressions after changes. |
 | 06 | BLOCKED_EXTERNAL | Docker is unavailable in this execution container; owner-supplied build/smoke evidence remains separate, with current source provenance and cleanup still not independently reproduced. |
-| 07–09 | PARTIAL | Explicit memory and research slices remain bounded; Stage 08C now provides local bounded grounded answers with citations and insufficient-evidence handling, while provider-backed answers, search/claim verification and broader document security remain open. |
+| 07–09 | PARTIAL | Explicit memory and research slices remain bounded; Stage 08C local grounded answers and Stage 09B source conflict provenance are implemented/tested, while provider-backed answers, search/semantic verification and broader document security remain open. |
 | 10 | PARTIAL — 10B IMPLEMENTED | Recurring hourly/daily/weekly UTC schedules, restart-safe occurrence advancement, no automatic retry after failed occurrences, and a bounded worker start/stop lifecycle are implemented and tested; broader planner/operational soak remains open. |
 | 11 | PARTIAL / BLOCKED_EXTERNAL | Browser-native voice path exists; full microphone/audio-provider integration and device verification remain incomplete. |
 | 12–13 | PARTIAL | Broader approved automation, execution verification, evaluation coverage and rollback criteria remain. |
 | 14 | BLOCKED_EXTERNAL / CONTRACT PARTIAL | Native Android companion and toolchain/device verification remain. |
 | 15 | PARTIAL | Full encrypted PC–phone transport is not implemented. |
-| 16 | PARTIAL | Bounded read-only MCP transport exists; broad connector coverage and write scopes are not enabled. |
+| 16 | PARTIAL — 16A HARDENED READ-ONLY MCP | Bounded public credential-free HTTPS JSON-RPC transport validates endpoint class, parameters, timeouts and object responses; broad connector coverage and write scopes are not enabled. |
 | 17 | PARTIAL | Approved declarative skill execution is limited to one local text-file read; self-learning/arbitrary execution remain disabled. |
 | 18 | PARTIAL | Local role/agent evidence exists; provider-backed multi-step delegation remains. |
 | 19 | PARTIAL | Local approval/schedule path exists; external calendar/email actions remain disabled. |
@@ -134,14 +144,14 @@ for this filesystem condition. No database reset was performed.
 | 06 | BLOCKED_EXTERNAL | Owner-supplied Docker build and container-smoke checks pass; source-commit provenance is unverified, cleanup is PENDING, and PR/main integration remains open. |
 | 07 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 07A explicit local memory management is implemented and tested; Stage 06 is not closed, automatic extraction/remote memory/retrieval remain disabled, and full Stage 07 acceptance is open. |
 | 08 | PARTIAL — 08C LOCAL GROUNDED ANSWERS IMPLEMENTED | Local text/PDF/DOCX indexing, bounded extractive evidence, exact citations and explicit insufficient-evidence responses are implemented/tested; provider-backed answers, OCR/layout fidelity and full Stage 08 acceptance remain open. |
-| 09 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 09A explicit public-URL multi-source research and citations are implemented/tested; search-provider integration, claim verification and conflict analysis remain open. |
+| 09 | PARTIAL — 09B CONFLICT PROVENANCE IMPLEMENTED | Explicit public-URL multi-source research, preserved source ordinals and heuristic supporting/conflicting claim citations are implemented/tested; search-provider integration and semantic verification remain open. |
 | 10 | PARTIAL — 10B IMPLEMENTED, CRITERIA REMAIN | Recurring hourly/daily/weekly UTC schedules, restart advancement, occurrence idempotency, terminal failure advancement and a bounded worker lifecycle are implemented/tested; planner quality and operational soak remain open. |
 | 11 | PARTIAL — BROWSER NATIVE | Browser speech-recognition/synthesis controls and truthful unsupported states are implemented; real microphone/audio-provider evidence requires hardware/services not available here. |
 | 12 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Static least-privilege registry now exposes only the existing read-only file/web tools with schema validation; broader automation and human approvals remain disabled. |
 | 13 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Versioned deterministic local evaluation now covers truthful offline behavior, prohibited-input safe-stop and explicit memory; integrated quality benchmarks, live voice/tool/device flows and full Stage 13 acceptance remain open. |
 | 14 | BLOCKED_EXTERNAL / CONTRACT PARTIAL | Android companion implementation and device verification are unavailable; the release now exposes a truthful capability entry rather than claiming native support. |
 | 15 | PARTIAL — LOCAL GOVERNANCE | Device enrollment, one-time replay-resistant pairing, diagnostics, hashed identity verification, revocation, last-seen tracking and authenticated API routes are implemented; encrypted PC–phone transport is not enabled. |
-| 16 | PARTIAL — READ-ONLY MCP | Credential-free HTTPS JSON-RPC `tools/list`/`tools/call` transport is implemented for explicitly approved read scopes; write/external scopes are disabled. |
+| 16 | PARTIAL — 16A HARDENED READ-ONLY MCP | Public credential-free HTTPS JSON-RPC `tools/list`/`tools/call` transport validates endpoint class, bounds and object responses under explicit read scopes; write/external scopes are disabled. |
 | 17 | PARTIAL — DECLARATIVE EXECUTION | Versioned skill provenance, capability allowlisting, review lifecycle and approved one-step local text-file execution are implemented; shell/code/network/provider/side-effect execution and self-learning are disabled. |
 | 18 | PARTIAL — BOUNDED LOCAL | Fixed planner/researcher/executor/verifier/composer roles, depth limits, capability bounds, durable evidence and authenticated readback are implemented; provider-backed multi-step delegation remains open. |
 | 19 | PARTIAL — LOCAL ACTIONS | Single-use approved local schedule creation is implemented with hash/nonce/expiry checks; calendar/email side effects remain disabled. |
@@ -417,6 +427,19 @@ Evidence: 3 research tests plus the full 43-test suite passed. Full Stage 09
 remains open pending search adapters, claim extraction/verification and
 conflicting-source handling.
 
+## Stage 09B — Source conflict provenance
+
+**Status:** `PARTIAL — IMPLEMENTED, CRITERIA REMAIN`
+
+Claim comparison now evaluates each source within sentence boundaries, preserves
+requested source ordinals even when an earlier fetch fails, and returns
+requested/final URLs, content hashes, matched-term counts and supporting or
+conflicting stance metadata. Evidence remains heuristic and does not establish
+truth or invoke a provider.
+
+Evidence: the research suite passes 5 tests and the full local suite passes 90
+tests. Search adapters and semantic claim verification remain open.
+
 ## Stage 10A — Durable one-shot local scheduler
 
 **Status:** `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN`
@@ -539,8 +562,9 @@ database replacement or live migration was performed.
   last-seen updates and revocation. Encrypted transport and native phone pairing
   are not enabled.
 - **Stage 16:** approved connectors can execute bounded JSON-RPC `tools/list` or
-  `tools/call` requests only under explicit read scopes. Write/external scopes
-  remain disabled.
+  `tools/call` requests only under explicit read scopes. Public-host endpoint
+  validation, JSON parameter bounds, timeout/response-size bounds and object
+  result validation are enforced; write/external scopes remain disabled.
 - **Stage 17:** skills have provenance, capabilities and draft/review/approved/
   revoked states. Approved definitions can execute one bounded local text-file
   read; shell/arbitrary-code/network/provider/side-effect capabilities remain

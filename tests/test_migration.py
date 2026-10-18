@@ -43,6 +43,51 @@ class MigrationTests(unittest.TestCase):
             self.assertIn("definition_json", {row[1] for row in migrated.connection.execute("PRAGMA table_info(skills)")})
             migrated.close()
 
+    def test_failed_migration_rolls_back_ddl_and_state(self):
+        with tempfile.TemporaryDirectory() as raw:
+            path = Path(raw) / "migration.sqlite3"
+            connection = sqlite3.connect(path)
+            connection.execute(
+                "CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)"
+            )
+            connection.executemany(
+                "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)",
+                [(1, "before"), (2, "before")],
+            )
+            connection.commit()
+            connection.close()
+
+            database = Database(path)
+            state_inserts = 0
+
+            def deny_migration_state_insert(action, table, _column, _database, _source):
+                nonlocal state_inserts
+                if action == sqlite3.SQLITE_INSERT and table == "schema_migrations":
+                    state_inserts += 1
+                    if state_inserts == 3:
+                        return sqlite3.SQLITE_DENY
+                return sqlite3.SQLITE_OK
+
+            database.connection.set_authorizer(deny_migration_state_insert)
+            try:
+                with self.assertRaises(sqlite3.DatabaseError):
+                    database.initialize()
+                self.assertEqual(state_inserts, 3)
+                self.assertIsNone(
+                    database.connection.execute(
+                        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'memory_items'"
+                    ).fetchone(),
+                    "migration 3 DDL must roll back",
+                )
+                self.assertEqual(
+                    database.connection.execute(
+                        "SELECT MAX(version) FROM schema_migrations"
+                    ).fetchone()[0],
+                    2,
+                )
+            finally:
+                database.close()
+
     def test_legacy_and_canonical_conflict_stops(self):
         with tempfile.TemporaryDirectory() as raw:
             data = Path(raw)

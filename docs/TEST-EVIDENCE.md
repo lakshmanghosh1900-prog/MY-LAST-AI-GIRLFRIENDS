@@ -2,13 +2,14 @@
 
 ## Current local continuation checkpoint — 18 October 2026
 
-Commits `35e2589` and `300cc48` were verified locally before publication:
+The local continuation through `b3af8ad` and the recovery-hardening increment
+were verified locally:
 
 ```text
 uv lock --check                         PASS
 uv sync --locked                        PASS
 python -m compileall -q src tests       PASS
-make check                              PASS — Ran 87 tests, OK
+make check                              PASS — Ran 94 tests, OK
 uv build                                PASS — sdist and wheel produced
 ```
 
@@ -16,8 +17,10 @@ The focused Stage 08C tests cover bounded local extractive evidence, stable
 document path/ordinal/hash citations, explicit insufficient evidence after
 irrelevant or deleted documents, authenticated API output and browser UI
 exposure. The SQLite readiness regression verifies that integrity/schema reads
-use the serialized Database boundary. No live database file was opened or
-modified by these tests.
+use the serialized Database boundary. Recovery verification now uses a staged,
+read-only SQLite backup so committed WAL rows are included without modifying
+the candidate; migration rollback and scheduler cancellation-race regressions
+are also covered. No live database file was opened or modified by these tests.
 
 ## Previously verified docs-only checkpoint — 18 October 2026
 

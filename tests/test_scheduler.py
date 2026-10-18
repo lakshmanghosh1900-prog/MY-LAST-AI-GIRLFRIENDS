@@ -150,6 +150,37 @@ class SchedulerTests(unittest.TestCase):
             self.assertEqual(service.conversation(conversation)["messages"], [])
             service.close()
 
+    def test_cancelled_between_due_lookup_and_run_creation_is_skipped(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            conversation = service.create_conversation()
+            first = service.create_schedule(conversation, "First", "first scheduled prompt", "2020-01-01T00:00:00Z")
+            second = service.create_schedule(conversation, "Second", "second scheduled prompt", "2020-01-01T00:00:00Z")
+            original_create = service.db.create_schedule_run
+            create_calls: list[str] = []
+
+            def cancel_before_create(schedule_id: str) -> dict:
+                create_calls.append(schedule_id)
+                if len(create_calls) == 1:
+                    self.assertTrue(service.db.cancel_schedule(schedule_id))
+                return original_create(schedule_id)
+
+            service.db.create_schedule_run = cancel_before_create
+            try:
+                results = service.run_due_schedules("2025-01-01T00:00:00Z")
+            finally:
+                service.db.create_schedule_run = original_create
+
+            self.assertEqual(len(create_calls), 2)
+            self.assertEqual(len(results), 1)
+            self.assertEqual(results[0]["status"], "SUCCEEDED")
+            cancelled_id = create_calls[0]
+            self.assertEqual(service.db.get_schedule(cancelled_id)["status"], "CANCELLED")
+            cancelled_prompt = first["prompt"] if cancelled_id == first["id"] else second["prompt"]
+            messages = service.conversation(conversation)["messages"]
+            self.assertFalse(any(item["content"] == cancelled_prompt for item in messages))
+            service.close()
+
     def test_daily_schedule_survives_restart_and_advances_occurrence(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
