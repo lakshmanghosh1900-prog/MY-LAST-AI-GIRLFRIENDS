@@ -1147,8 +1147,22 @@ class Database:
 
     @_serialized_database_access
     def transition_connector(self, connector_id: str, status: str) -> bool:
+        allowed_from = {
+            "APPROVED": {"DRAFT"},
+            "REVOKED": {"DRAFT", "APPROVED"},
+        }
+        now = utc_now()
         with self.transaction():
-            cursor = self.connection.execute("UPDATE connectors SET status = ?, updated_at = ? WHERE id = ?", (status, utc_now(), connector_id))
+            row = self.connection.execute(
+                "SELECT status FROM connectors WHERE id = ?",
+                (connector_id,),
+            ).fetchone()
+            if not row or row["status"] not in allowed_from.get(status, set()):
+                return False
+            cursor = self.connection.execute(
+                "UPDATE connectors SET status = ?, updated_at = ? WHERE id = ? AND status = ?",
+                (status, now, connector_id, row["status"]),
+            )
         return cursor.rowcount == 1
 
     @_serialized_database_access

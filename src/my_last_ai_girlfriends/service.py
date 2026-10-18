@@ -416,11 +416,18 @@ class MyLastAIGirlfriendsService:
         return self.db.list_connectors()
 
     def transition_connector(self, connector_id: str, status: str) -> bool:
-        if status not in {"DRAFT", "APPROVED", "REVOKED"}:
-            raise GovernanceError("CONNECTOR_STATUS_INVALID", "Connector status is invalid.")
-        if self.db.get_connector(connector_id) is None:
+        if status not in {"APPROVED", "REVOKED"}:
+            raise GovernanceError("CONNECTOR_STATUS_INVALID", "Connector status must be APPROVED or REVOKED; DRAFT is initial only.")
+        connector = self.db.get_connector(connector_id)
+        if connector is None:
             raise KeyError("connector not found")
-        return self.db.transition_connector(connector_id, status)
+        if status == "APPROVED" and connector["status"] != "DRAFT":
+            raise GovernanceError("CONNECTOR_TRANSITION_INVALID", "Only DRAFT connectors can be approved; revoked connectors cannot be reactivated.")
+        if status == "REVOKED" and connector["status"] not in {"DRAFT", "APPROVED"}:
+            raise GovernanceError("CONNECTOR_TRANSITION_INVALID", "This connector state cannot be revoked.")
+        if not self.db.transition_connector(connector_id, status):
+            raise GovernanceError("CONNECTOR_TRANSITION_CONFLICT", "Connector state changed before the transition could be committed.")
+        return True
 
     def invoke_connector(self, connector_id: str, method: str, params: dict) -> dict:
         connector = self.db.get_connector(connector_id)

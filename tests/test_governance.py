@@ -34,6 +34,9 @@ class GovernanceTests(unittest.TestCase):
             self.assertEqual(connector["status"], "DRAFT")
             self.assertTrue(service.transition_connector(connector["id"], "APPROVED"))
             self.assertTrue(service.transition_connector(connector["id"], "REVOKED"))
+            with self.assertRaisesRegex(GovernanceError, "revoked connectors cannot be reactivated"):
+                service.transition_connector(connector["id"], "APPROVED")
+            self.assertEqual(service.db.get_connector(connector["id"])["status"], "REVOKED")
             with self.assertRaisesRegex(GovernanceError, "credential-free HTTPS"):
                 service.register_connector("unsafe", "http://example.com/mcp", "read:calendar")
             with self.assertRaisesRegex(GovernanceError, "port 443"):
