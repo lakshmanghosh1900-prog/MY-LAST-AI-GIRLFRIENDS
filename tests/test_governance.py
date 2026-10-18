@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from my_last_ai_girlfriends.governance import GovernanceError
@@ -107,6 +108,39 @@ class GovernanceTests(unittest.TestCase):
             self.assertEqual(runs[0]["status"], "SUCCEEDED")
             self.assertEqual(service.run_due_schedules("2025-01-01T00:00:00Z"), [])
             self.assertTrue(any(item["content"] == "scheduled" for item in service.conversation(conversation)["messages"]))
+            service.close()
+
+    def test_storage_rechecks_expiry_as_instant_inside_approval_transaction(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            conversation = service.create_conversation()
+            expires_at = (datetime.now(timezone.utc) + timedelta(days=2)).isoformat().replace("+00:00", "Z")
+            approval = service.create_approval(
+                "local.schedule.create",
+                {"conversation_id": conversation, "title": "expired", "prompt": "must not run", "run_at": "2030-01-01T00:00:00Z"},
+                expires_at,
+            )
+            service.transition_approval(approval["id"], "APPROVED", "owner-session")
+
+            # Represent an expired instant in a +14:00 timezone. Its local
+            # timestamp sorts after UTC's timestamp even though the instant is past.
+            expired_local = (datetime.now(timezone.utc) - timedelta(minutes=1)).astimezone(
+                timezone(timedelta(hours=14))
+            ).isoformat(timespec="microseconds")
+            with service.db.transaction():
+                service.db.connection.execute(
+                    "UPDATE approvals SET expires_at = ? WHERE id = ?",
+                    (expired_local, approval["id"]),
+                )
+
+            with self.assertRaisesRegex(ValueError, "not executable"):
+                service.db.execute_local_schedule_approval(
+                    approval["id"], conversation, "expired", "must not run", "2030-01-01T00:00:00.000000Z"
+                )
+            schedules = service.db.connection.execute(
+                "SELECT COUNT(*) FROM schedules WHERE conversation_id = ?", (conversation,)
+            ).fetchone()[0]
+            self.assertEqual(schedules, 0)
             service.close()
 
     def test_bounded_agent_pipeline_does_not_expand_capabilities(self):

@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Iterator
 from urllib.parse import quote
 
+from .governance import GovernanceError, parse_approval_expiry
+
 
 CURRENT_SCHEMA_VERSION = 11
 
@@ -1205,7 +1207,13 @@ class Database:
         execution_id = self.new_id()
         with self.transaction():
             approval = self.connection.execute("SELECT status, expires_at, action_type FROM approvals WHERE id = ?", (approval_id,)).fetchone()
-            if not approval or approval["status"] != "APPROVED" or approval["action_type"] != "local.schedule.create" or approval["expires_at"] <= now:
+            if not approval or approval["status"] != "APPROVED" or approval["action_type"] != "local.schedule.create":
+                raise ValueError("approval is not executable")
+            try:
+                approval_expiry = parse_approval_expiry(approval["expires_at"])
+            except GovernanceError as exc:
+                raise ValueError("approval expiry is invalid") from exc
+            if approval_expiry <= datetime.now(timezone.utc):
                 raise ValueError("approval is not executable")
             self.connection.execute(
                 "INSERT INTO schedules(id, conversation_id, title, prompt, run_at, recurrence, next_run_at, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'once', ?, 'SCHEDULED', ?, ?)",
