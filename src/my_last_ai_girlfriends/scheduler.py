@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from datetime import datetime, timedelta, timezone
 from threading import Event, Thread
 from typing import Callable
@@ -84,9 +85,13 @@ class SchedulerWorker:
         while not self._stop.is_set():
             try:
                 self._tick()
-            except Exception as exc:  # worker remains alive; occurrence errors are durable elsewhere
+            except Exception as exc:  # occurrence failures are durable elsewhere
                 if self._on_error:
-                    self._on_error(exc)
+                    try:
+                        self._on_error(exc)
+                    except Exception:
+                        # An error reporter must not terminate the scheduler loop.
+                        pass
             self._stop.wait(self._interval_seconds)
 
     def start(self) -> None:
@@ -97,7 +102,21 @@ class SchedulerWorker:
         self._thread.start()
 
     def stop(self, timeout: float = 5.0) -> None:
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, (int, float))
+            or timeout < 0
+            or (isinstance(timeout, float) and not math.isfinite(timeout))
+        ):
+            raise SchedulerError("SCHEDULER_STOP_TIMEOUT_INVALID", "stop timeout must be a finite non-negative number.")
+
         self._stop.set()
-        if self._thread is not None:
-            self._thread.join(timeout=timeout)
-        self._thread = None
+        thread = self._thread
+        if thread is None:
+            return
+        thread.join(timeout=timeout)
+        if thread.is_alive():
+            # Keep the reference so start() cannot spawn a duplicate worker.
+            raise SchedulerError("SCHEDULER_STOP_TIMEOUT", "scheduler worker did not stop before timeout.")
+        if self._thread is thread:
+            self._thread = None

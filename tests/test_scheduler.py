@@ -5,7 +5,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from threading import Barrier, Lock
+from threading import Barrier, Event, Lock
 
 from my_last_ai_girlfriends.scheduler import SchedulerError, SchedulerWorker, next_run_at, validate_schedule
 from my_last_ai_girlfriends.service import MyLastAIGirlfriendsService
@@ -30,6 +30,56 @@ class SchedulerTests(unittest.TestCase):
         worker.stop()
         self.assertFalse(worker.running)
         self.assertGreaterEqual(len(calls), 1)
+
+    def test_worker_stop_timeout_keeps_live_thread_reference(self):
+        started = Event()
+        release = Event()
+        finished = Event()
+
+        def tick():
+            started.set()
+            release.wait(timeout=2)
+            finished.set()
+
+        worker = SchedulerWorker(tick, interval_seconds=1)
+        worker.start()
+        self.assertTrue(started.wait(timeout=1))
+        with self.assertRaisesRegex(SchedulerError, "before timeout"):
+            worker.stop(timeout=0.01)
+        self.assertTrue(worker.running)
+
+        release.set()
+        self.assertTrue(finished.wait(timeout=1))
+        worker.stop(timeout=1)
+        self.assertFalse(worker.running)
+
+    def test_error_reporter_failure_does_not_kill_scheduler_loop(self):
+        second_tick = Event()
+        calls = []
+
+        def tick():
+            calls.append("tick")
+            if len(calls) >= 2:
+                second_tick.set()
+            raise RuntimeError("expected tick failure")
+
+        def broken_reporter(_exc):
+            raise RuntimeError("reporter failed")
+
+        worker = SchedulerWorker(tick, interval_seconds=1, on_error=broken_reporter)
+        worker.start()
+        try:
+            self.assertTrue(second_tick.wait(timeout=3))
+            self.assertTrue(worker.running)
+        finally:
+            worker.stop(timeout=1)
+
+    def test_worker_stop_rejects_invalid_timeout(self):
+        worker = SchedulerWorker(lambda: None)
+        for timeout in (-1, float("nan"), float("inf"), True):
+            with self.subTest(timeout=timeout):
+                with self.assertRaisesRegex(SchedulerError, "finite non-negative"):
+                    worker.stop(timeout=timeout)
 
     def test_scheduler_worker_rejects_invalid_interval(self):
         with self.assertRaises(SchedulerError):
