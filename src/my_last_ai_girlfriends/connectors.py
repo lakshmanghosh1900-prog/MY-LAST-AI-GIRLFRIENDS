@@ -45,6 +45,8 @@ def call_mcp(endpoint: str, method: str, params: dict, timeout_seconds: int = 10
     try:
         opener = urllib.request.build_opener(_NoRedirectHandler())
         with opener.open(request, timeout=timeout_seconds) as response:
+            if getattr(response, "status", None) != 200:
+                raise ConnectorError("MCP_HTTP_ERROR", "The connector returned a non-success HTTP status.")
             raw = response.read(max_bytes + 1)
     except urllib.error.HTTPError as exc:
         raise ConnectorError("MCP_HTTP_ERROR", "The connector returned an HTTP error.") from exc

@@ -15,9 +15,8 @@ from test_budget_service import make_config
 
 
 class Response:
-    status = 200
-
-    def __init__(self, payload):
+    def __init__(self, payload, status=200):
+        self.status = status
         self.payload = json.dumps(payload).encode()
 
     def __enter__(self): return self
@@ -44,6 +43,21 @@ class ConnectorTests(unittest.TestCase):
             result = call_mcp("https://example.com/mcp", "tools/list", {})
         self.assertTrue(any(isinstance(handler, _NoRedirectHandler) for handler in build_opener.call_args.args))
         self.assertEqual(result["result"], {"tools": []})
+
+    def test_mcp_transport_rejects_non_success_response_before_parsing(self):
+        def opener(request, timeout):
+            payload = json.loads(request.data.decode())
+            return Response(
+                {"jsonrpc": "2.0", "id": payload["id"], "result": {"tools": []}},
+                status=302,
+            )
+
+        with patch(
+            "my_last_ai_girlfriends.connectors.urllib.request.build_opener",
+            return_value=TestOpener(opener),
+        ):
+            with self.assertRaisesRegex(ConnectorError, "non-success HTTP status"):
+                call_mcp("https://example.com/mcp", "tools/list", {})
 
     def test_redirect_handler_blocks_redirects(self):
         handler = _NoRedirectHandler()
