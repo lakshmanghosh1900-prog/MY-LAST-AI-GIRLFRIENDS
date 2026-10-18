@@ -1,5 +1,10 @@
 FROM python:3.12.11-slim
 
+ARG VCS_REF=unknown
+LABEL org.opencontainers.image.source="https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.title="My Companion"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src \
