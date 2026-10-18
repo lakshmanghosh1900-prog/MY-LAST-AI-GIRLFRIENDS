@@ -18,7 +18,18 @@ class EvaluationTests(unittest.TestCase):
             report = run_local_evaluation(service)
             self.assertEqual(report.version, EVALUATION_VERSION)
             self.assertTrue(report.passed)
-            self.assertEqual(len(report.cases), 3)
+            self.assertEqual(len(report.cases), 6)
+            self.assertEqual(
+                {case.name for case in report.cases},
+                {
+                    "offline_truthful_label",
+                    "prohibited_input_safe_stop",
+                    "explicit_memory_created",
+                    "memory_recall",
+                    "conversation_memory_scope",
+                    "conversation_isolation",
+                },
+            )
             after = {table: service.db.connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in before}
             self.assertEqual(after, before)
             service.close()
