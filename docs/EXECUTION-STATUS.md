@@ -6,13 +6,13 @@
 
 **Feature branch:** `feat/mlag-real-ai-premium-ui`
 
-**Latest verified implementation commit:** `cc295be03b993b55abd5422c2e84abff4cd765a3` — this adds serialized locking around shared SQLite scheduler reads after GitHub CI exposed a concurrency race. A documentation-only checkpoint follows this code commit.
+**Latest local implementation commit:** `dbc46fa` — this adds recurring UTC schedules, restart-safe occurrence advancement, a bounded scheduler worker lifecycle, isolated recovery verification tooling and the migration 11 scheduler schema. It is not yet published.
 
-**Remote `main`:** `c98a091330a05ef73823d9744bfd58d5c973059f`. The feature branch was 47 commits ahead and 0 behind at implementation commit `cc295be03b993b55abd5422c2e84abff4cd765a3`.
+**Remote feature tip before this continuation:** `98cfca5b34d101d51867987f83cd8e8510aa7ce4`. The local feature branch is now one commit ahead and has not been pushed yet.
 
 **Pull request:** [Draft PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1) remains open and unmerged. No main integration is claimed.
 
-## Latest verification for implementation commit `cc295be03b993b55abd5422c2e84abff4cd765a3`
+## Latest published verification for implementation commit `cc295be03b993b55abd5422c2e84abff4cd765a3`
 
 Both GitHub Actions runs passed:
 - [Push CI run 39111389515](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111389515)
@@ -25,16 +25,18 @@ Both runs confirm Python 3.12.11, `uv lock --check`, `uv sync --locked`, compile
 - Canonical database: `data/my_last_ai_girlfriends.sqlite3`; it reports `DatabaseError: file is not a database`. SHA-256: `2e3c9e3a21b33a867a9958ebbec68e960cf8daae652073f91bca0b6cdc8810d5`.
 - The invalid canonical file was preserved byte-for-byte at `data/migration-backups/canonical-invalid-preserved-20261018T000000Z.sqlite3`.
 - Recovery candidate `data/migration-backups/my_last_ai_girlfriends.recovered.20261017T103434Z.sqlite3` passes `PRAGMA integrity_check = ok`. SHA-256: `47ada56b639d5edf9194e79f19a3391b031c5ca20dbbfc56eafad1ebffaea073`.
-- An isolated copy initialized through schema version 10, retained all six recorded row counts, and contains `skills.definition_json`.
-- **No live database replacement or migration has been performed.** Verified, application-level restoration remains open.
+- An isolated copy initialized through schema version 11, retained all six recorded pre-smoke row counts, and contains `skills.definition_json` plus recurring-schedule columns.
+- An isolated application smoke using the candidate passed schema version 11, integrity, authenticated health, conversation listing/creation, offline message execution, memory access, schedule access, budget readback and audit persistence. The repeatable command is `uv run --locked python scripts/verify-recovery.py data/migration-backups/my_last_ai_girlfriends.recovered.20261017T103434Z.sqlite3`.
+- **No live database replacement or migration has been performed.** The invalid canonical file remains byte-for-byte preserved.
 
 ## Current stage status
 
 | Stage | Current status | Remaining major work |
 |---|---|---|
 | 01–05 | Previously reported CLOSED — VERIFIED | Preserve baseline; rerun regressions after changes. |
-| 06 | BLOCKED_EXTERNAL | Owner-supplied Docker build/smoke evidence exists; exact image/source commit provenance and cleanup verification remain pending. |
-| 07–10 | PARTIAL | Broader memory lifecycle, PDF/DOCX and grounded answers, search/claim verification, recurring/restart-safe scheduler. |
+| 06 | BLOCKED_EXTERNAL | Docker is unavailable in this execution container; owner-supplied build/smoke evidence remains separate, with current source provenance and cleanup still not independently reproduced. |
+| 07–09 | PARTIAL | Broader memory lifecycle, PDF/DOCX and grounded answers, search/claim verification remain open. |
+| 10 | PARTIAL — 10B IMPLEMENTED | Recurring hourly/daily/weekly UTC schedules, restart-safe occurrence advancement, no automatic retry after failed occurrences, and a bounded worker start/stop lifecycle are implemented and tested; broader planner/operational soak remains open. |
 | 11 | PARTIAL / BLOCKED_EXTERNAL | Browser-native voice path exists; full microphone/audio-provider integration and device verification remain incomplete. |
 | 12–13 | PARTIAL | Broader approved automation, execution verification, evaluation coverage and rollback criteria remain. |
 | 14 | BLOCKED_EXTERNAL / CONTRACT PARTIAL | Native Android companion and toolchain/device verification remain. |
@@ -115,7 +117,7 @@ for this filesystem condition. No database reset was performed.
 | 07 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 07A explicit local memory management is implemented and tested; Stage 06 is not closed, automatic extraction/remote memory/retrieval remain disabled, and full Stage 07 acceptance is open. |
 | 08 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 08A local text indexing/search is implemented and tested; PDF/DOCX extraction, grounded provider answers, citations and full Stage 08 acceptance remain open. |
 | 09 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 09A explicit public-URL multi-source research and citations are implemented/tested; search-provider integration, claim verification and conflict analysis remain open. |
-| 10 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 10A durable one-shot schedules, cancellation and idempotent due-run execution are implemented/tested; recurring plans, worker lifecycle, retry policy and full scheduler acceptance remain open. |
+| 10 | PARTIAL — 10B IMPLEMENTED, CRITERIA REMAIN | Recurring hourly/daily/weekly UTC schedules, restart advancement, occurrence idempotency, terminal failure advancement and a bounded worker lifecycle are implemented/tested; planner quality and operational soak remain open. |
 | 11 | PARTIAL — BROWSER NATIVE | Browser speech-recognition/synthesis controls and truthful unsupported states are implemented; real microphone/audio-provider evidence requires hardware/services not available here. |
 | 12 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Static least-privilege registry now exposes only the existing read-only file/web tools with schema validation; broader automation and human approvals remain disabled. |
 | 13 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Versioned deterministic local evaluation now covers truthful offline behavior, prohibited-input safe-stop and explicit memory; integrated quality benchmarks, live voice/tool/device flows and full Stage 13 acceptance remain open. |
@@ -416,6 +418,26 @@ Implemented as a deterministic local reminder slice:
 Evidence: 3 scheduler tests plus the full 47-test suite passed. Full Stage 10
 remains open pending worker restart recovery, recurring/DST policy and complete
 planner/scheduler operational acceptance.
+
+## Stage 10B — Recurring and restart-safe local scheduler
+
+**Status:** `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN`
+
+The continuation adds:
+
+- schema migration 11 with `recurrence` and durable `next_run_at` fields;
+- `once`, `hourly`, `daily` and `weekly` recurrence modes;
+- fixed UTC interval semantics, explicitly avoiding silent DST shifts;
+- occurrence-specific idempotency keys so concurrent workers execute one
+  occurrence only once;
+- restart tests proving the next occurrence is loaded from SQLite;
+- terminal failure behavior that advances recurring schedules without automatic
+  retries;
+- a bounded `my-last-ai-girlfriends worker` lifecycle with explicit start/stop.
+
+Evidence: scheduler suite now passes 11 tests and the full suite passes 81 tests.
+The full stage remains partial because long-running operational soak, planner
+quality and broader deployment supervision are not claimed.
 
 ## Stage 11 — Voice AI
 

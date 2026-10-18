@@ -467,6 +467,46 @@ BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No
 
 Remote feature SHA: owner-verified `fdf5fc4`; local continuation commits
 `ec2a046`, `d6f8b1b`, `fb6a82a`, `b8aa7cd`, `2719ddd`, `3684e32`, `13494fc`, `b8f1a6a`
+
+## Current continuation — commit `dbc46fa`
+
+```text
+uv lock --check
+PASS
+
+uv sync --locked
+PASS
+
+uv run --locked python -m compileall -q src tests
+PASS
+
+make check
+PASS — 81 tests, 81 passed, 0 failed, 0 skipped
+
+uv build
+PASS — source distribution and wheel
+
+uv run --locked python scripts/verify-recovery.py data/migration-backups/my_last_ai_girlfriends.recovered.20261017T103434Z.sqlite3
+PASS — candidate SHA-256 47ada56b639d5edf9194e79f19a3391b031c5ca20dbbfc56eafad1ebffaea073
+PASS — isolated integrity ok, schema version 11
+PASS — authenticated health 200 / READY / database ready
+PASS — authenticated conversation listing and creation
+PASS — authenticated offline message task SUCCEEDED, ai_generated=false
+PASS — memory, schedule, budget and audit stores opened in the isolated copy
+```
+
+The recovery verifier copies the candidate to a temporary directory and never
+modifies the invalid canonical file or the candidate. The isolated smoke added
+one temporary conversation/message/task to the copy; the candidate's original
+pre-smoke counts remained unchanged.
+
+Recurring scheduler tests cover fixed-UTC hourly/daily/weekly recurrence,
+occurrence-specific idempotency, restart advancement, terminal failure without
+automatic retry, concurrent due execution and worker start/stop lifecycle.
+
+Stage 06 remains `BLOCKED_EXTERNAL` for independent verification in this
+container: `docker` is unavailable. No current Docker build, image provenance
+or cleanup pass is claimed here.
 and later changes are not remote. The local commits `2200953` and
 `94a990c` remain preserved.
 

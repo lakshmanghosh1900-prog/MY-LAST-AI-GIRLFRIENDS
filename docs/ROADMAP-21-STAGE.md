@@ -73,10 +73,11 @@ explicit local memory management, bounded text-document indexing/search and
 explicit public-URL research with source provenance; they do not close their
 full stages or authorize remote memory/document transfer.
 
-The latest verified implementation commit is `cc295be03b993b55abd5422c2e84abff4cd765a3`. Push and pull-request GitHub Actions both pass 76 tests (0 failures, 0 skips), locked dependency validation, compileall and `uv build`. The feature branch was 47 commits ahead of remote `main` at this implementation commit. Draft PR #1 is open and unmerged. Current status is:
+The latest published implementation commit is `98cfca5b34d101d51867987f83cd8e8510aa7ce4`, with the local continuation at `dbc46fa`. Published push and pull-request GitHub Actions pass 76 tests; the local continuation passes 81 tests plus locked dependency validation, compileall and `uv build`. Draft PR #1 is open and unmerged. Current status is:
 
 | Stage | Current status | Implemented slice / remaining gate |
 |---|---|---|
+| 10 | `PARTIAL — 10B IMPLEMENTED` | Recurring hourly/daily/weekly UTC schedules, occurrence idempotency, restart advancement and bounded worker lifecycle are implemented/tested; planner quality and operational soak remain open. |
 | 14 | `BLOCKED_EXTERNAL / CONTRACT PARTIAL` | Capability inventory truthfully reports missing Android toolchain/device evidence. |
 | 15 | `PARTIAL — LOCAL GOVERNANCE` | Hashed device enrollment, one-time replay-resistant pairing, diagnostics, identity verification, last-seen tracking, revocation and authenticated routes; no encrypted PC–phone transport. |
 | 16 | `PARTIAL — READ-ONLY MCP` | Approved credential-free HTTPS JSON-RPC `tools/list`/`tools/call` transport under explicit read scopes; write/external scopes disabled. |
@@ -86,7 +87,7 @@ The latest verified implementation commit is `cc295be03b993b55abd5422c2e84abff4c
 | 20 | `PARTIAL — LOCAL PROVIDER` | Device/local-brain inventory and optional loopback Ollama adapter; no local service/device mesh verified. |
 | 21 | `PARTIAL — LOCAL GATE` | Integrity/schema/secret-free readiness endpoints; Docker cleanup, provenance, PR and `main` integration remain open. |
 
-The current deterministic suite is 76 passing tests, confirmed by both push and pull-request GitHub Actions at implementation commit `cc295be03b993b55abd5422c2e84abff4cd765a3`. The canonical SQLite path
+The published deterministic suite is 76 passing tests, confirmed by both push and pull-request GitHub Actions. The local continuation at `dbc46fa` passes 81 tests. The canonical SQLite path
 is `data/my_last_ai_girlfriends.sqlite3`; it is preserved and not migrated
 because its header is invalid. The verified recovery candidate remains in
 `data/migration-backups/`, and migrations through version 10 have only been
@@ -96,14 +97,15 @@ replacement has been performed.
 
 ## Current delivery checkpoint — 18 October 2026
 
-- Published feature HEAD: `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6`.
-- Exact CI run: [39111020536](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111020536) — PASS; 76 tests, dependency lock/sync, compileall and package build pass.
+- Published feature HEAD: `98cfca5b34d101d51867987f83cd8e8510aa7ce4`.
+- Local continuation: `dbc46fa` — recurring scheduler and isolated recovery verifier; not yet pushed.
+- Published CI evidence: push/PR checks recorded above — PASS; 76 tests, dependency lock/sync, compileall and package build pass.
 - Draft PR #1 remains open and unmerged; `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
 - Database restoration, Stage 06 Docker cleanup/provenance, full Stage 11 voice, Stage 14 native Android, full PC–phone transport, broad MCP/skill/agent execution, external actions, device mesh and final hardening remain incomplete.
 - Stage status labels in this roadmap refer to engineering scope; the current release and database blockers are not waived by a green unit-test/packaging workflow.
 
 
-## Current delivery checkpoint — 18 October 2026
+## Published delivery checkpoint — 18 October 2026
 
 - Latest verified implementation commit: `cc295be03b993b55abd5422c2e84abff4cd765a3`.
 - Push CI: [39111389515](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111389515) — PASS.
@@ -111,4 +113,14 @@ replacement has been performed.
 - Verified: 76 tests, lock validation/sync, compileall and package source/wheel build.
 - A concurrent SQLite scheduler-read race exposed on an earlier PR run is fixed in the tested implementation commit by serializing read methods on the shared connection.
 - Draft PR #1 remains open/unmerged; remote `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
+
+## Local continuation checkpoint — 18 October 2026
+
+- Local implementation commit: `dbc46fa`.
+- `make check`: PASS — 81 tests, 0 failures, 0 skips.
+- `uv lock --check`, `uv sync --locked`, compileall and `uv build`: PASS.
+- Recovery candidate verifier: PASS in an isolated temporary application copy;
+  live canonical replacement was not performed.
+- Docker: BLOCKED_EXTERNAL because the executable is unavailable in this
+  execution container; no current image/cleanup provenance is claimed.
 - Database restoration, Stage 06 Docker cleanup/provenance, full voice, native Android, full PC–phone transport, broad MCP/skill/agent execution, external actions, device mesh and final hardening remain incomplete.

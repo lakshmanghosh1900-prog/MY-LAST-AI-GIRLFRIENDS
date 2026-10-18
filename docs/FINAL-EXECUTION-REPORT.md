@@ -16,13 +16,15 @@ failed push is historical evidence.
 | Repository | `https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS.git` |
 | Workspace | `C:\\Users\\User\\Desktop\\MY LAST AI GIRLFRIENDS` |
 | Working branch | `feat/mlag-real-ai-premium-ui` |
-| Latest verified implementation commit | `cc295be03b993b55abd5422c2e84abff4cd765a3` |
+| Latest published implementation commit | `98cfca5b34d101d51867987f83cd8e8510aa7ce4` |
+| Latest local implementation commit | `dbc46fa` |
 | Remote `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | Branch comparison at implementation commit | 47 commits ahead of `main`, 0 behind |
 | Pull request | [Draft PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1), open and unmerged |
 | Push CI | [Run 39111389515](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111389515) — PASS |
 | Pull-request CI | [Run 39111392093](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111392093) — PASS |
-| Verification | Python 3.12.11, lock check/sync, compileall, 76 tests passed, source/wheel package build passed |
+| Published verification | Python 3.12.11, lock check/sync, compileall, 76 tests passed, source/wheel package build passed |
+| Local continuation verification | Python 3.12.11, lock check/sync, compileall, 81 tests passed, source/wheel package build passed |
 | Local Windows checkout at last owner report | `b9e6ef4`; fetch and fast-forward before continuing local development |
 | Owner local untracked file | `main`; preserved and must not be staged/deleted |
 | Main integration | Not merged; no production-release claim |
@@ -60,11 +62,11 @@ slices; external calendar/email side effects remain disabled.
 | 03 | `CLOSED — VERIFIED` | Gemini adapter tests plus three repeated live application requests succeeded with `ai_generated=true`; no fallback. |
 | 04 | `CLOSED — VERIFIED` | Bounded same-conversation context, isolation, role ordering, exact-once current prompt and privacy filtering pass. |
 | 05 | `CLOSED — VERIFIED` | Responsive branded UI, session/history controls, safe DOM text rendering, file boundaries and readable HTML extraction pass. |
-| 06 | `BLOCKED_EXTERNAL` | Owner-supplied Docker build and container-smoke assertions pass; source-commit provenance is unverified, cleanup is pending, and no release/main integration is claimed. |
+| 06 | `BLOCKED_EXTERNAL` | Docker is unavailable in the current execution container; owner-supplied build/smoke assertions remain separate, and current source/image provenance plus cleanup are not independently reproduced. |
 | 07 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 07A explicit local memory management is implemented/tested; full Stage 07 is dependency-gated and automatic extraction, remote memory and complete retention/recovery acceptance remain open. |
 | 08 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 08A local text indexing/search is implemented/tested; PDF/DOCX extraction, grounded provider answers, citations and complete document-security acceptance remain open. |
 | 09 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 09A explicit public-URL research and structured source citations are implemented/tested; search, claim verification and conflict handling remain open. |
-| 10 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 10A durable one-shot local scheduling, cancellation and idempotent due runs are implemented/tested; worker recovery, recurring rules and full scheduler acceptance remain open. |
+| 10 | `PARTIAL — 10B IMPLEMENTED, CRITERIA REMAIN` | Recurring hourly/daily/weekly UTC schedules, occurrence idempotency, restart advancement, no automatic retry after failed recurring occurrences and a bounded worker lifecycle are implemented/tested; planner quality and operational soak remain open. |
 | 11 | `PARTIAL — BROWSER NATIVE` | Truthful browser speech-recognition/synthesis controls and unsupported states are implemented; real audio hardware/provider evidence is unavailable. |
 | 12 | `PARTIAL — READ-ONLY REGISTRY` | Static least-privilege registry, exact argument validation and bounded read-only handler execution are implemented; broader automation and approval gates remain open. |
 | 13 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Versioned deterministic local evaluation exists for truthful offline, policy and memory flows; full quality/latency/cost, voice/device/tool integration and rollback acceptance remain open. |
@@ -153,6 +155,14 @@ Implemented durable one-shot local schedules with UTC timestamp normalization,
 separate run records, cancellation, deterministic idempotency and authenticated
 API routes. The implementation intentionally excludes recurring scheduling,
 background workers, automatic retries and external side effects.
+
+### Stage 10B continuation
+
+Commit `dbc46fa` adds recurring `hourly`, `daily` and `weekly` schedules using
+fixed UTC intervals, occurrence-specific idempotency keys, durable `next_run_at`
+advancement, restart recovery from SQLite, and a bounded `worker` CLI lifecycle.
+Failed recurring occurrences are terminal and advance without automatic retry.
+This remains local-only and does not add external side effects.
 
 ### Stage 12A safe implementation
 
@@ -324,9 +334,12 @@ budget events and 114 audit events. The invalid original is separately preserved
 byte-for-byte at
 `data/migration-backups/canonical-invalid-preserved-20261018T000000Z.sqlite3`.
 
-An isolated copy of the candidate initialized through migration 10 with integrity
-`ok`, schema version `10`, unchanged existing counts and governance/action tables.
-No migration or replacement was performed against the canonical live path.
+An isolated copy of the candidate initialized through migration 11 with integrity
+`ok`, unchanged existing counts before smoke, governance/action tables and the
+new recurring-schedule columns. The repeatable recovery verifier then passed
+authenticated health, conversation loading/creation, offline message execution,
+memory/schedule access, budget readback and audit persistence. No migration or
+replacement was performed against the canonical live path.
 
 ## Stages 14–21 current local slices
 
@@ -352,8 +365,19 @@ No migration or replacement was performed against the canonical live path.
   `/v1/capabilities`; Docker cleanup, provenance, PR and `main` integration
   remain open.
 
-After these additions, `make check` passed 76 tests with zero failures or skips.
-These are partial slices, not completed stages.
+After the recurring scheduler continuation, `make check` passed 81 tests with
+zero failures or skips. These are partial slices, not completed stages.
+
+## Latest local continuation — Stage 10B and recovery verifier
+
+Local commit `dbc46fa` adds migration 11, recurring UTC schedules, occurrence
+idempotency, restart advancement, terminal recurring failure advancement, a
+bounded scheduler worker lifecycle and `scripts/verify-recovery.py`. The targeted
+scheduler suite passed 11 tests; the full suite passed 81 tests.
+
+Docker was not independently reproduced in this container because the Docker
+executable is unavailable. The existing owner-supplied Docker evidence remains
+labelled separately; current source/image provenance and cleanup are not claimed.
 
 ## Draft PR #1 status
 
