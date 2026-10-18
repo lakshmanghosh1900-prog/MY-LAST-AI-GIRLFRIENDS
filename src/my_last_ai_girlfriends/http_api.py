@@ -51,10 +51,17 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
-        self.send_header("X-Content-Type-Options", "nosniff")
+        self._security_headers()
         self.send_header("X-Request-ID", request_id or self._request_id())
         self.end_headers()
         self.wfile.write(data)
+
+    def _security_headers(self) -> None:
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+        self.send_header("Permissions-Policy", "camera=(), microphone=(self), geolocation=()")
 
     def _error(self, status: int, code: str, message: str, request_id: str) -> None:
         self._send(status, {"error": {"code": code, "message": message}}, request_id)
@@ -115,8 +122,8 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(data)))
-            self.send_header("Content-Security-Policy", "default-src 'self'; connect-src 'self'; img-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'")
-            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Content-Security-Policy", "default-src 'self'; connect-src 'self'; img-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'")
+            self._security_headers()
             self.end_headers()
             self.wfile.write(data)
             return

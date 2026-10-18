@@ -55,6 +55,42 @@ class HttpApiTests(unittest.TestCase):
         self.assertFalse(manager.verify_bearer(None))
         self.assertFalse(manager.verify_bearer("Bearer " + "x" * 600))
 
+    def test_ui_and_api_emit_browser_security_headers(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            server = MyLastAIGirlfriendsHTTPServer(("127.0.0.1", 0), service)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            port = server.server_address[1]
+            connection = http.client.HTTPConnection("127.0.0.1", port, timeout=3)
+            try:
+                connection.request("GET", "/")
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                csp = response.getheader("Content-Security-Policy", "")
+                self.assertIn("object-src 'none'", csp)
+                self.assertIn("base-uri 'none'", csp)
+                self.assertIn("frame-ancestors 'none'", csp)
+                self.assertEqual(response.getheader("X-Frame-Options"), "DENY")
+                self.assertEqual(response.getheader("Referrer-Policy"), "no-referrer")
+                self.assertEqual(response.getheader("Cross-Origin-Resource-Policy"), "same-origin")
+                self.assertEqual(response.getheader("Permissions-Policy"), "camera=(), microphone=(self), geolocation=()")
+                response.read()
+
+                token = "T" * 48
+                connection.request("GET", "/v1/conversations", headers={"Authorization": f"Bearer {token}"})
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(response.getheader("X-Frame-Options"), "DENY")
+                self.assertEqual(response.getheader("Referrer-Policy"), "no-referrer")
+                self.assertEqual(response.getheader("X-Content-Type-Options"), "nosniff")
+                response.read()
+            finally:
+                connection.close()
+                server.shutdown()
+                server.server_close()
+                service.close()
+
     def test_remote_consent_is_explicit_and_readable(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))
