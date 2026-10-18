@@ -9,6 +9,7 @@ import sqlite3
 import threading
 import uuid
 from contextlib import contextmanager
+from functools import wraps
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
@@ -168,6 +169,24 @@ CREATE INDEX IF NOT EXISTS idx_budget_bucket ON budget_events(bucket_month);
 """
 
 
+def _serialized_database_access(method):
+    """Serialize each Database method that touches its shared SQLite connection.
+
+    A single connection is intentionally reused across the threaded HTTP server
+    and scheduler worker. The reentrant lock must cover a whole public method,
+    not just transaction blocks, so query cursors cannot overlap calls on the
+    same sqlite3 connection. Nested Database methods and transactions remain
+    safe because the lock is reentrant.
+    """
+
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+
+    return wrapped
+
+
 class Database:
     def __init__(self, path: Path | str):
         self.path = Path(path)
@@ -203,6 +222,7 @@ class Database:
             isolation_level=None,
         )
 
+    @_serialized_database_access
     def initialize(self) -> None:
         with self.transaction():
             self.connection.executescript(SCHEMA_SQL)
@@ -457,6 +477,7 @@ class Database:
             else:
                 self.connection.commit()
 
+    @_serialized_database_access
     def close(self) -> None:
         with self._lock:
             self.connection.close()
@@ -464,6 +485,7 @@ class Database:
     def new_id(self) -> str:
         return str(uuid.uuid4())
 
+    @_serialized_database_access
     def create_conversation(self) -> str:
         conversation_id = self.new_id()
         now = utc_now()
@@ -474,10 +496,12 @@ class Database:
             )
         return conversation_id
 
+    @_serialized_database_access
     def conversation_exists(self, conversation_id: str) -> bool:
         row = self.connection.execute("SELECT 1 FROM conversations WHERE id = ?", (conversation_id,)).fetchone()
         return row is not None
 
+    @_serialized_database_access
     def list_conversations(self, limit: int = 50) -> list[dict]:
         rows = self.connection.execute(
             "SELECT id, title, created_at, updated_at FROM conversations ORDER BY updated_at DESC, id DESC LIMIT ?",
@@ -485,6 +509,7 @@ class Database:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    @_serialized_database_access
     def add_message(self, conversation_id: str, role: str, content: str) -> str:
         message_id = self.new_id()
         now = utc_now()
@@ -502,6 +527,7 @@ class Database:
                 self.connection.execute("UPDATE conversations SET updated_at = ? WHERE id = ?", (now, conversation_id))
         return message_id
 
+    @_serialized_database_access
     def get_messages(self, conversation_id: str) -> list[dict[str, str]]:
         rows = self.connection.execute(
             "SELECT id, role, content, created_at FROM messages WHERE conversation_id = ? ORDER BY created_at, id",
@@ -509,6 +535,7 @@ class Database:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    @_serialized_database_access
     def get_recent_messages(self, conversation_id: str, limit: int, exclude_id: str | None = None) -> list[dict[str, str]]:
         if exclude_id:
             rows = self.connection.execute(
@@ -522,6 +549,7 @@ class Database:
             ).fetchall()
         return [dict(row) for row in reversed(rows)]
 
+    @_serialized_database_access
     def create_task(self, conversation_id: str) -> str:
         task_id = self.new_id()
         now = utc_now()
@@ -532,6 +560,7 @@ class Database:
             )
         return task_id
 
+    @_serialized_database_access
     def update_task(self, task_id: str, status: str, reason: str | None = None) -> None:
         with self.transaction():
             self.connection.execute(
@@ -539,10 +568,12 @@ class Database:
                 (status, reason, utc_now(), task_id),
             )
 
+    @_serialized_database_access
     def get_task(self, task_id: str) -> dict | None:
         row = self.connection.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
         return dict(row) if row else None
 
+    @_serialized_database_access
     def add_policy_decision(self, task_id: str, decision: str, code: str, reason: str, policy_version: str) -> None:
         with self.transaction():
             self.connection.execute(
@@ -550,6 +581,7 @@ class Database:
                 (self.new_id(), task_id, decision, code, reason, policy_version, utc_now()),
             )
 
+    @_serialized_database_access
     def add_provider_call(self, task_id: str, provider: str, model: str, status: str, input_tokens: int = 0, output_tokens: int = 0,
                           estimated_usd_micros: int = 0, actual_usd_micros: int | None = None,
                           provider_request_id: str | None = None, error_code: str | None = None) -> None:
@@ -564,6 +596,7 @@ class Database:
                  estimated_usd_micros, actual_usd_micros, provider_request_id, error_code, utc_now()),
             )
 
+    @_serialized_database_access
     def add_audit(self, event: str, metadata: dict, task_id: str | None = None) -> None:
         with self.transaction():
             self.connection.execute(
@@ -571,10 +604,12 @@ class Database:
                 (self.new_id(), task_id, event, json.dumps(metadata, sort_keys=True, separators=(",", ":")), utc_now()),
             )
 
+    @_serialized_database_access
     def get_setting(self, key: str, default: str = "") -> str:
         row = self.connection.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
         return str(row["value"]) if row else default
 
+    @_serialized_database_access
     def set_setting(self, key: str, value: str) -> None:
         with self.transaction():
             self.connection.execute(
@@ -582,6 +617,7 @@ class Database:
                 (key, value, utc_now()),
             )
 
+    @_serialized_database_access
     def create_memory(
         self,
         scope: str,
@@ -605,6 +641,7 @@ class Database:
             )
         return self.get_memory(memory_id) or {}
 
+    @_serialized_database_access
     def get_memory(self, memory_id: str) -> dict | None:
         row = self.connection.execute(
             """SELECT id, scope, conversation_id, content, data_class, source_type,
@@ -614,6 +651,7 @@ class Database:
         ).fetchone()
         return dict(row) if row else None
 
+    @_serialized_database_access
     def list_memories(self, conversation_id: str | None = None, limit: int = 100) -> list[dict]:
         now = utc_now()
         if conversation_id is None:
@@ -639,6 +677,7 @@ class Database:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    @_serialized_database_access
     def delete_memory(self, memory_id: str) -> bool:
         with self.transaction():
             cursor = self.connection.execute(
@@ -647,6 +686,7 @@ class Database:
             )
         return cursor.rowcount == 1
 
+    @_serialized_database_access
     def upsert_document(
         self,
         path: str,
@@ -678,6 +718,7 @@ class Database:
                 )
         return self.get_document(document_id) or {}
 
+    @_serialized_database_access
     def get_document(self, document_id: str) -> dict | None:
         row = self.connection.execute(
             """SELECT id, path, content_sha256, byte_count, suffix, indexed_at, updated_at
@@ -695,6 +736,7 @@ class Database:
         ]
         return result
 
+    @_serialized_database_access
     def list_documents(self, limit: int = 100) -> list[dict]:
         rows = self.connection.execute(
             """SELECT id, path, content_sha256, byte_count, suffix, indexed_at, updated_at,
@@ -704,6 +746,7 @@ class Database:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    @_serialized_database_access
     def search_documents(self, query: str, limit: int = 20) -> list[dict]:
         rows = self.connection.execute(
             """SELECT d.id, d.path, d.content_sha256, c.ordinal, c.content
@@ -714,6 +757,7 @@ class Database:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    @_serialized_database_access
     def list_document_chunks_for_answer(self, limit: int = 200) -> list[dict]:
         rows = self.connection.execute(
             """SELECT d.id AS document_id, d.path, d.content_sha256, c.ordinal, c.content
@@ -724,6 +768,7 @@ class Database:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    @_serialized_database_access
     def delete_document(self, document_id: str) -> bool:
         with self.transaction():
             cursor = self.connection.execute(
@@ -732,6 +777,7 @@ class Database:
             )
         return cursor.rowcount == 1
 
+    @_serialized_database_access
     def create_research_run(self) -> str:
         run_id = self.new_id()
         with self.transaction():
@@ -741,6 +787,7 @@ class Database:
             )
         return run_id
 
+    @_serialized_database_access
     def add_research_source(self, run_id: str, ordinal: int, source: dict, content: str) -> None:
         with self.transaction():
             self.connection.execute(
@@ -753,6 +800,7 @@ class Database:
                  content, source["excerpt"], utc_now()),
             )
 
+    @_serialized_database_access
     def finish_research_run(self, run_id: str, status: str) -> None:
         with self.transaction():
             self.connection.execute(
@@ -760,6 +808,7 @@ class Database:
                 (status, utc_now(), run_id),
             )
 
+    @_serialized_database_access
     def get_research_run(self, run_id: str) -> dict | None:
         row = self.connection.execute(
             "SELECT id, status, created_at, completed_at FROM research_runs WHERE id = ?",
@@ -778,6 +827,7 @@ class Database:
         ]
         return result
 
+    @_serialized_database_access
     def get_research_sources_with_content(self, run_id: str) -> list[dict]:
         rows = self.connection.execute(
             """SELECT id, ordinal, requested_url, final_url, content_type, byte_count,
@@ -787,6 +837,7 @@ class Database:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    @_serialized_database_access
     def create_schedule(self, conversation_id: str, title: str, prompt: str, run_at: str, recurrence: str = "once") -> dict:
         schedule_id = self.new_id()
         now = utc_now()
@@ -797,6 +848,7 @@ class Database:
             )
         return self.get_schedule(schedule_id) or {}
 
+    @_serialized_database_access
     def get_schedule(self, schedule_id: str) -> dict | None:
         # All use of this shared connection, including read-only queries, must
         # be serialized with transactions running on worker/API threads.
@@ -804,6 +856,7 @@ class Database:
             row = self.connection.execute("SELECT * FROM schedules WHERE id = ?", (schedule_id,)).fetchone()
             return dict(row) if row else None
 
+    @_serialized_database_access
     def list_schedules(self, conversation_id: str | None = None) -> list[dict]:
         with self._lock:
             if conversation_id:
@@ -812,6 +865,7 @@ class Database:
                 rows = self.connection.execute("SELECT * FROM schedules ORDER BY next_run_at, id").fetchall()
             return [dict(row) for row in rows]
 
+    @_serialized_database_access
     def cancel_schedule(self, schedule_id: str) -> bool:
         with self.transaction():
             cursor = self.connection.execute(
@@ -820,6 +874,7 @@ class Database:
             )
         return cursor.rowcount == 1
 
+    @_serialized_database_access
     def due_schedules(self, now: str) -> list[dict]:
         # This connection is shared across threads; even reads must use the
         # same reentrant lock as transaction blocks to avoid concurrent
@@ -831,6 +886,7 @@ class Database:
             ).fetchall()
             return [dict(row) for row in rows]
 
+    @_serialized_database_access
     def create_schedule_run(self, schedule_id: str) -> dict:
         run_id = self.new_id()
         now = utc_now()
@@ -848,6 +904,7 @@ class Database:
             )
         return self.get_schedule_run(run_id) or {}
 
+    @_serialized_database_access
     def claim_schedule_run(self, run_id: str) -> dict | None:
         """Atomically claim a pending schedule run for execution.
 
@@ -866,11 +923,13 @@ class Database:
             row = self.connection.execute("SELECT * FROM schedule_runs WHERE id = ?", (run_id,)).fetchone()
             return dict(row) if row else None
 
+    @_serialized_database_access
     def get_schedule_run(self, run_id: str) -> dict | None:
         with self._lock:
             row = self.connection.execute("SELECT * FROM schedule_runs WHERE id = ?", (run_id,)).fetchone()
             return dict(row) if row else None
 
+    @_serialized_database_access
     def update_schedule_run(self, run_id: str, status: str, task_id: str | None = None, reason: str | None = None) -> None:
         with self.transaction():
             self.connection.execute(
@@ -878,6 +937,7 @@ class Database:
                 (status, task_id, status, utc_now(), reason, run_id),
             )
 
+    @_serialized_database_access
     def complete_schedule(self, schedule_id: str, occurrence_status: str = "SUCCEEDED") -> None:
         with self.transaction():
             schedule = self.connection.execute("SELECT recurrence, next_run_at FROM schedules WHERE id = ?", (schedule_id,)).fetchone()
@@ -894,6 +954,7 @@ class Database:
                 (next_value, utc_now(), schedule_id),
             )
 
+    @_serialized_database_access
     def enroll_device(self, name: str, identity_hash: str) -> dict:
         device_id = self.new_id()
         now = utc_now()
@@ -904,18 +965,22 @@ class Database:
             )
         return self.get_device(device_id) or {}
 
+    @_serialized_database_access
     def get_device(self, device_id: str) -> dict | None:
         row = self.connection.execute("SELECT id, name, status, created_at, updated_at, last_seen_at FROM devices WHERE id = ?", (device_id,)).fetchone()
         return dict(row) if row else None
 
+    @_serialized_database_access
     def list_devices(self) -> list[dict]:
         return [dict(row) for row in self.connection.execute("SELECT id, name, status, created_at, updated_at, last_seen_at FROM devices ORDER BY created_at, id").fetchall()]
 
+    @_serialized_database_access
     def revoke_device(self, device_id: str) -> bool:
         with self.transaction():
             cursor = self.connection.execute("UPDATE devices SET status = 'REVOKED', updated_at = ? WHERE id = ? AND status = 'ENROLLED'", (utc_now(), device_id))
         return cursor.rowcount == 1
 
+    @_serialized_database_access
     def verify_device_identity(self, device_id: str, identity_hash: str) -> bool:
         row = self.connection.execute("SELECT status, identity_hash FROM devices WHERE id = ?", (device_id,)).fetchone()
         if not row or row["status"] != "ENROLLED":
@@ -926,6 +991,7 @@ class Database:
             self.connection.execute("UPDATE devices SET last_seen_at = ?, updated_at = ? WHERE id = ?", (utc_now(), utc_now(), device_id))
         return True
 
+    @_serialized_database_access
     def create_pairing_challenge(self, device_id: str, challenge_hash: str, expires_at: str) -> dict:
         challenge_id = self.new_id()
         now = utc_now()
@@ -940,6 +1006,7 @@ class Database:
         ).fetchone()
         return dict(row) if row else {}
 
+    @_serialized_database_access
     def verify_and_consume_pairing_challenge(
         self, device_id: str, challenge_id: str, challenge_hash: str, identity_hash: str
     ) -> bool:
@@ -973,6 +1040,7 @@ class Database:
             )
         return True
 
+    @_serialized_database_access
     def add_connector(self, name: str, endpoint: str, scope: str) -> dict:
         connector_id = self.new_id()
         now = utc_now()
@@ -980,18 +1048,22 @@ class Database:
             self.connection.execute("INSERT INTO connectors(id, name, endpoint, scope, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'DRAFT', ?, ?)", (connector_id, name, endpoint, scope, now, now))
         return self.get_connector(connector_id) or {}
 
+    @_serialized_database_access
     def get_connector(self, connector_id: str) -> dict | None:
         row = self.connection.execute("SELECT * FROM connectors WHERE id = ?", (connector_id,)).fetchone()
         return dict(row) if row else None
 
+    @_serialized_database_access
     def list_connectors(self) -> list[dict]:
         return [dict(row) for row in self.connection.execute("SELECT * FROM connectors ORDER BY created_at, id").fetchall()]
 
+    @_serialized_database_access
     def transition_connector(self, connector_id: str, status: str) -> bool:
         with self.transaction():
             cursor = self.connection.execute("UPDATE connectors SET status = ?, updated_at = ? WHERE id = ?", (status, utc_now(), connector_id))
         return cursor.rowcount == 1
 
+    @_serialized_database_access
     def add_skill(
         self,
         name: str,
@@ -1008,32 +1080,39 @@ class Database:
             )
         return self.get_skill(skill_id) or {}
 
+    @_serialized_database_access
     def get_skill(self, skill_id: str) -> dict | None:
         row = self.connection.execute("SELECT * FROM skills WHERE id = ?", (skill_id,)).fetchone()
         return dict(row) if row else None
 
+    @_serialized_database_access
     def list_skills(self) -> list[dict]:
         return [dict(row) for row in self.connection.execute("SELECT * FROM skills ORDER BY created_at, id").fetchall()]
 
+    @_serialized_database_access
     def transition_skill(self, skill_id: str, status: str) -> bool:
         with self.transaction():
             cursor = self.connection.execute("UPDATE skills SET status = ?, updated_at = ? WHERE id = ?", (status, utc_now(), skill_id))
         return cursor.rowcount == 1
 
+    @_serialized_database_access
     def create_approval(self, action_type: str, parameters_hash: str, nonce_hash: str, expires_at: str) -> dict:
         approval_id = self.new_id(); now = utc_now()
         with self.transaction():
             self.connection.execute("INSERT INTO approvals(id, action_type, parameters_hash, nonce_hash, status, expires_at, created_at, updated_at) VALUES (?, ?, ?, ?, 'PENDING', ?, ?, ?)", (approval_id, action_type, parameters_hash, nonce_hash, expires_at, now, now))
         return self.get_approval(approval_id) or {}
 
+    @_serialized_database_access
     def get_approval(self, approval_id: str) -> dict | None:
         row = self.connection.execute("SELECT id, action_type, parameters_hash, status, expires_at, created_at, updated_at FROM approvals WHERE id = ?", (approval_id,)).fetchone()
         return dict(row) if row else None
 
+    @_serialized_database_access
     def get_approval_with_secrets(self, approval_id: str) -> dict | None:
         row = self.connection.execute("SELECT * FROM approvals WHERE id = ?", (approval_id,)).fetchone()
         return dict(row) if row else None
 
+    @_serialized_database_access
     def execute_local_schedule_approval(self, approval_id: str, conversation_id: str, title: str, prompt: str, run_at: str) -> dict:
         now = utc_now()
         schedule_id = self.new_id()
@@ -1058,14 +1137,17 @@ class Database:
             )
         return self.get_schedule(schedule_id) or {}
 
+    @_serialized_database_access
     def list_approvals(self) -> list[dict]:
         return [dict(row) for row in self.connection.execute("SELECT id, action_type, parameters_hash, status, expires_at, created_at, updated_at FROM approvals ORDER BY created_at, id").fetchall()]
 
+    @_serialized_database_access
     def transition_approval(self, approval_id: str, status: str, approver_session_hash: str | None = None) -> bool:
         with self.transaction():
             cursor = self.connection.execute("UPDATE approvals SET status = ?, approver_session_hash = COALESCE(?, approver_session_hash), updated_at = ? WHERE id = ?", (status, approver_session_hash, utc_now(), approval_id))
         return cursor.rowcount == 1
 
+    @_serialized_database_access
     def create_agent_run(self, run_id: str, prompt_hash: str, status: str, depth: int, roles_json: str, evidence_json: str) -> dict:
         now = utc_now()
         with self.transaction():
@@ -1073,9 +1155,11 @@ class Database:
         row = self.connection.execute("SELECT * FROM agent_runs WHERE id = ?", (run_id,)).fetchone()
         return dict(row) if row else {}
 
+    @_serialized_database_access
     def list_agent_runs(self) -> list[dict]:
         return [dict(row) for row in self.connection.execute("SELECT * FROM agent_runs ORDER BY created_at, id").fetchall()]
 
+    @_serialized_database_access
     def month_usage(self, bucket_month: str) -> int:
         row = self.connection.execute(
             "SELECT COALESCE(SUM(amount_usd_micros), 0) AS total FROM budget_events WHERE bucket_month = ?",
