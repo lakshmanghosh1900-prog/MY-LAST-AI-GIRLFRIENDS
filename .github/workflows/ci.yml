@@ -1,0 +1,51 @@
+name: My Last AI Girlfriends CI
+
+on:
+  push:
+    branches:
+      - main
+      - feat/mlag-real-ai-premium-ui
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mlag-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Locked Python checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.5.31"
+
+      - name: Validate dependency lock
+        run: uv lock --check
+
+      - name: Install locked project
+        run: uv sync --locked
+
+      - name: Compile source and tests
+        run: uv run --locked python -m compileall -q src tests
+
+      - name: Run project checks
+        run: make check
+
+      - name: Build distributable package
+        run: uv build
