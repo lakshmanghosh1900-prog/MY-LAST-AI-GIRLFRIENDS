@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import json
+import socket
 import tempfile
 import unittest
-import urllib.request
 from pathlib import Path
 from unittest.mock import patch
 
-from my_last_ai_girlfriends.connectors import ConnectorError, _NoRedirectHandler, call_mcp
+from my_last_ai_girlfriends.connectors import ConnectorError, call_mcp, _resolve_public
 from my_last_ai_girlfriends.governance import GovernanceError
 from my_last_ai_girlfriends.service import MyLastAIGirlfriendsService
 
@@ -18,59 +18,73 @@ class Response:
     def __init__(self, payload, status=200):
         self.status = status
         self.payload = json.dumps(payload).encode()
+        self.closed = False
+        self.read_called = False
 
-    def __enter__(self): return self
-    def __exit__(self, *_args): return False
-    def read(self, _limit=-1): return self.payload
+    def read(self, limit=-1):
+        self.read_called = True
+        return self.payload if limit < 0 else self.payload[:limit]
 
-class TestOpener:
-    def __init__(self, open_fn):
-        self.open_fn = open_fn
+    def close(self):
+        self.closed = True
 
-    def open(self, request, timeout):
-        return self.open_fn(request, timeout)
+
+class FakeConnection:
+    def __init__(self, status=200, result=None):
+        self.status = status
+        self.result = {"tools": []} if result is None else result
+        self.request_args = None
+        self.response = None
+        self.closed = False
+
+    def request(self, method, target, body, headers):
+        payload = json.loads(body.decode("utf-8"))
+        self.request_args = (method, target, payload, headers)
+        self.response = Response(
+            {"jsonrpc": "2.0", "id": payload["id"], "result": self.result},
+            status=self.status,
+        )
+
+    def getresponse(self):
+        return self.response
+
+    def close(self):
+        self.closed = True
 
 
 class ConnectorTests(unittest.TestCase):
     def test_mcp_transport_validates_json_rpc_and_returns_result(self):
-        def opener(request, timeout):
-            payload = json.loads(request.data.decode())
-            self.assertEqual(payload["method"], "tools/list")
-            self.assertEqual(timeout, 10)
-            return Response({"jsonrpc": "2.0", "id": payload["id"], "result": {"tools": []}})
-
-        with patch("my_last_ai_girlfriends.connectors.urllib.request.build_opener", return_value=TestOpener(opener)) as build_opener:
+        connection = FakeConnection()
+        with patch("my_last_ai_girlfriends.connectors._resolve_public", return_value="93.184.216.34") as resolver, patch(
+            "my_last_ai_girlfriends.connectors._PinnedHTTPSConnection", return_value=connection
+        ) as factory:
             result = call_mcp("https://example.com/mcp", "tools/list", {})
-        self.assertTrue(any(isinstance(handler, _NoRedirectHandler) for handler in build_opener.call_args.args))
+
+        resolver.assert_called_once_with("example.com")
+        factory.assert_called_once_with("example.com", "93.184.216.34", 10)
         self.assertEqual(result["result"], {"tools": []})
+        self.assertEqual(connection.request_args[0], "POST")
+        self.assertEqual(connection.request_args[1], "/mcp")
+        self.assertEqual(connection.request_args[2]["method"], "tools/list")
+        self.assertEqual(connection.request_args[3]["Host"], "example.com")
+        self.assertTrue(connection.closed)
+        self.assertTrue(connection.response.closed)
 
     def test_mcp_transport_rejects_non_success_response_before_parsing(self):
-        def opener(request, timeout):
-            payload = json.loads(request.data.decode())
-            return Response(
-                {"jsonrpc": "2.0", "id": payload["id"], "result": {"tools": []}},
-                status=302,
-            )
-
-        with patch(
-            "my_last_ai_girlfriends.connectors.urllib.request.build_opener",
-            return_value=TestOpener(opener),
+        connection = FakeConnection(status=302)
+        with patch("my_last_ai_girlfriends.connectors._resolve_public", return_value="93.184.216.34"), patch(
+            "my_last_ai_girlfriends.connectors._PinnedHTTPSConnection", return_value=connection
         ):
             with self.assertRaisesRegex(ConnectorError, "non-success HTTP status"):
                 call_mcp("https://example.com/mcp", "tools/list", {})
+        self.assertFalse(connection.response.read_called)
+        self.assertTrue(connection.closed)
 
-    def test_redirect_handler_blocks_redirects(self):
-        handler = _NoRedirectHandler()
-        original = urllib.request.Request("https://example.com/mcp")
-        redirected = handler.redirect_request(
-            original,
-            None,
-            302,
-            "Found",
-            {},
-            "https://127.0.0.1/admin",
-        )
-        self.assertIsNone(redirected)
+    def test_connector_dns_resolution_rejects_private_destinations(self):
+        private_info = (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443))
+        with patch("my_last_ai_girlfriends.connectors.socket.getaddrinfo", return_value=[private_info]):
+            with self.assertRaisesRegex(ConnectorError, "non-public address"):
+                _resolve_public("mcp.example.com")
 
     def test_service_requires_approved_read_scope(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -79,7 +93,10 @@ class ConnectorTests(unittest.TestCase):
             with self.assertRaisesRegex(Exception, "approved"):
                 service.invoke_connector(connector["id"], "tools/list", {})
             service.transition_connector(connector["id"], "APPROVED")
-            with patch("my_last_ai_girlfriends.connectors.urllib.request.build_opener", return_value=TestOpener(lambda *_args, **_kwargs: Response({"jsonrpc": "2.0", "id": json.loads(_args[0].data.decode())["id"], "result": {"tools": []}}))):
+            connection = FakeConnection()
+            with patch("my_last_ai_girlfriends.connectors._resolve_public", return_value="93.184.216.34"), patch(
+                "my_last_ai_girlfriends.connectors._PinnedHTTPSConnection", return_value=connection
+            ):
                 result = service.invoke_connector(connector["id"], "tools/list", {})
             self.assertEqual(result["result"]["result"], {"tools": []})
             service.close()
@@ -94,7 +111,10 @@ class ConnectorTests(unittest.TestCase):
         with self.assertRaisesRegex(ConnectorError, "JSON data"):
             call_mcp("https://example.com/mcp", "tools/list", {"value": {1, 2}})
 
-        with patch("my_last_ai_girlfriends.connectors.urllib.request.build_opener", return_value=TestOpener(lambda *_args, **_kwargs: Response({"jsonrpc": "2.0", "id": json.loads(_args[0].data.decode())["id"], "result": []}))):
+        connection = FakeConnection(result=[])
+        with patch("my_last_ai_girlfriends.connectors._resolve_public", return_value="93.184.216.34"), patch(
+            "my_last_ai_girlfriends.connectors._PinnedHTTPSConnection", return_value=connection
+        ):
             with self.assertRaisesRegex(ConnectorError, "no result"):
                 call_mcp("https://example.com/mcp", "tools/list", {})
 
