@@ -784,15 +784,19 @@ class Database:
         return self.get_schedule(schedule_id) or {}
 
     def get_schedule(self, schedule_id: str) -> dict | None:
-        row = self.connection.execute("SELECT * FROM schedules WHERE id = ?", (schedule_id,)).fetchone()
-        return dict(row) if row else None
+        # All use of this shared connection, including read-only queries, must
+        # be serialized with transactions running on worker/API threads.
+        with self._lock:
+            row = self.connection.execute("SELECT * FROM schedules WHERE id = ?", (schedule_id,)).fetchone()
+            return dict(row) if row else None
 
     def list_schedules(self, conversation_id: str | None = None) -> list[dict]:
-        if conversation_id:
-            rows = self.connection.execute("SELECT * FROM schedules WHERE conversation_id = ? ORDER BY run_at, id", (conversation_id,)).fetchall()
-        else:
-            rows = self.connection.execute("SELECT * FROM schedules ORDER BY run_at, id").fetchall()
-        return [dict(row) for row in rows]
+        with self._lock:
+            if conversation_id:
+                rows = self.connection.execute("SELECT * FROM schedules WHERE conversation_id = ? ORDER BY run_at, id", (conversation_id,)).fetchall()
+            else:
+                rows = self.connection.execute("SELECT * FROM schedules ORDER BY run_at, id").fetchall()
+            return [dict(row) for row in rows]
 
     def cancel_schedule(self, schedule_id: str) -> bool:
         with self.transaction():
@@ -803,11 +807,15 @@ class Database:
         return cursor.rowcount == 1
 
     def due_schedules(self, now: str) -> list[dict]:
-        rows = self.connection.execute(
-            "SELECT * FROM schedules WHERE status = 'SCHEDULED' AND run_at <= ? ORDER BY run_at, id",
-            (now,),
-        ).fetchall()
-        return [dict(row) for row in rows]
+        # This connection is shared across threads; even reads must use the
+        # same reentrant lock as transaction blocks to avoid concurrent
+        # sqlite3 connection calls during scheduler/API activity.
+        with self._lock:
+            rows = self.connection.execute(
+                "SELECT * FROM schedules WHERE status = 'SCHEDULED' AND run_at <= ? ORDER BY run_at, id",
+                (now,),
+            ).fetchall()
+            return [dict(row) for row in rows]
 
     def create_schedule_run(self, schedule_id: str) -> dict:
         run_id = self.new_id()
@@ -842,8 +850,9 @@ class Database:
             return dict(row) if row else None
 
     def get_schedule_run(self, run_id: str) -> dict | None:
-        row = self.connection.execute("SELECT * FROM schedule_runs WHERE id = ?", (run_id,)).fetchone()
-        return dict(row) if row else None
+        with self._lock:
+            row = self.connection.execute("SELECT * FROM schedule_runs WHERE id = ?", (run_id,)).fetchone()
+            return dict(row) if row else None
 
     def update_schedule_run(self, run_id: str, status: str, task_id: str | None = None, reason: str | None = None) -> None:
         with self.transaction():
