@@ -78,11 +78,13 @@ The latest published implementation commit is `1ca32e2bbf5df79194e2f5a9c82d3097d
 
 The current local continuation adds Stage 08C, Stage 09B and Stage 16A in
 commits `35e2589`, `300cc48`, `3ef975d` and `b3af8ad`, followed by release and
-storage hardening. Local verification is 94 tests with zero failures/skips,
+storage hardening. Local verification is 97 tests with zero failures/skips,
 locked dependency validation, compileall and `uv build`. These commits are not
 yet published to the feature branch. The invalid canonical database remains
 untouched; isolated recovery is WAL-aware, migrations are transaction-safe,
-readiness requires schema 11, and cancelled due schedules are skipped safely.
+readiness requires schema 11, migration installation is inter-process locked
+and no-clobber, cancelled due schedules are skipped safely, and approved local
+schedules execute once with a persisted next-run timestamp.
 
 | Stage | Current status | Implemented slice / remaining gate |
 |---|---|---|

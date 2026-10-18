@@ -1,11 +1,36 @@
 from __future__ import annotations
 
+import multiprocessing
+import os
 import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from my_last_ai_girlfriends.storage import Database, StorageError, migrate_legacy_database
+
+
+def _create_minimal_legacy_database(path: Path) -> None:
+    connection = sqlite3.connect(path)
+    try:
+        connection.execute("CREATE TABLE marker(value TEXT NOT NULL)")
+        connection.execute("INSERT INTO marker(value) VALUES ('legacy')")
+        connection.commit()
+    finally:
+        connection.close()
+
+
+def _concurrent_migration_worker(data_dir: str, ready, start, results) -> None:
+    ready.put(os.getpid())
+    if not start.wait(30):
+        results.put(("error", "start barrier timeout"))
+        return
+    try:
+        result = migrate_legacy_database(Path(data_dir))
+        results.put(("ok", result.name if result else None))
+    except Exception as exc:  # pragma: no cover - assertion data is sent to parent
+        results.put(("error", type(exc).__name__, str(exc)))
 
 
 class MigrationTests(unittest.TestCase):
@@ -95,6 +120,94 @@ class MigrationTests(unittest.TestCase):
             sqlite3.connect(data / "my_last_ai_girlfriends.sqlite3").close()
             with self.assertRaises(StorageError):
                 migrate_legacy_database(data)
+
+    def test_canonical_appearing_during_install_is_not_clobbered(self):
+        with tempfile.TemporaryDirectory() as raw:
+            data = Path(raw)
+            legacy = data / "jarvis.sqlite3"
+            canonical = data / "my_last_ai_girlfriends.sqlite3"
+            _create_minimal_legacy_database(legacy)
+            real_link = os.link
+
+            def create_canonical_before_link(source, destination):
+                self.assertEqual(Path(destination), canonical)
+                canonical.write_bytes(b"canonical-created-during-install")
+                return real_link(source, destination)
+
+            with patch(
+                "my_last_ai_girlfriends.storage.os.link",
+                side_effect=create_canonical_before_link,
+            ), self.assertRaisesRegex(StorageError, "appeared"):
+                migrate_legacy_database(data)
+
+            self.assertEqual(canonical.read_bytes(), b"canonical-created-during-install")
+            self.assertTrue(legacy.exists())
+            self.assertEqual(
+                len(list(data.glob("my_last_ai_girlfriends-migration.*.tmp"))),
+                1,
+            )
+
+    def test_unsupported_hard_link_preserves_source_and_temporary(self):
+        with tempfile.TemporaryDirectory() as raw:
+            data = Path(raw)
+            legacy = data / "jarvis.sqlite3"
+            canonical = data / "my_last_ai_girlfriends.sqlite3"
+            _create_minimal_legacy_database(legacy)
+
+            with patch(
+                "my_last_ai_girlfriends.storage.os.link",
+                side_effect=OSError("hard links unavailable"),
+            ), self.assertRaisesRegex(StorageError, "hard-link"):
+                migrate_legacy_database(data)
+
+            self.assertTrue(legacy.exists())
+            self.assertFalse(canonical.exists())
+            self.assertEqual(
+                len(list(data.glob("my_last_ai_girlfriends-migration.*.tmp"))),
+                1,
+            )
+            self.assertEqual(
+                len(list((data / "migration-backups").glob("legacy-source.*.sqlite3"))),
+                1,
+            )
+
+    def test_concurrent_spawned_migrations_are_serialized(self):
+        with tempfile.TemporaryDirectory() as raw:
+            data = Path(raw)
+            _create_minimal_legacy_database(data / "jarvis.sqlite3")
+            context = multiprocessing.get_context("spawn")
+            ready = context.Queue()
+            start = context.Event()
+            results = context.Queue()
+            processes = [
+                context.Process(
+                    target=_concurrent_migration_worker,
+                    args=(str(data), ready, start, results),
+                )
+                for _ in range(2)
+            ]
+            try:
+                for process in processes:
+                    process.start()
+                for _ in processes:
+                    ready.get(timeout=30)
+                start.set()
+                outcomes = [results.get(timeout=30) for _ in processes]
+            finally:
+                start.set()
+                for process in processes:
+                    process.join(timeout=30)
+                for process in processes:
+                    if process.is_alive():
+                        process.terminate()
+                        process.join(timeout=30)
+
+            self.assertEqual(
+                sorted(outcomes, key=repr),
+                sorted([("ok", None), ("ok", "my_last_ai_girlfriends.sqlite3")], key=repr),
+            )
+            self.assertTrue((data / "my_last_ai_girlfriends.sqlite3").exists())
+            self.assertFalse((data / "jarvis.sqlite3").exists())
 
 
 if __name__ == "__main__":

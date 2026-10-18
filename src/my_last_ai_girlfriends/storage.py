@@ -37,6 +37,28 @@ def _unique_path(directory: Path, prefix: str, suffix: str = ".sqlite3") -> Path
     return path
 
 
+@contextmanager
+def _migration_mutex(data_dir: Path) -> Iterator[None]:
+    """Hold a private SQLite write transaction for one migration attempt."""
+
+    mutex_path = data_dir / ".my_last_ai_girlfriends-migration-lock.sqlite3"
+    connection: sqlite3.Connection | None = None
+    try:
+        connection = sqlite3.connect(mutex_path, timeout=30.0, isolation_level=None)
+        connection.execute("BEGIN IMMEDIATE")
+    except sqlite3.Error as exc:
+        if connection is not None:
+            connection.close()
+        raise StorageError("could not acquire the migration mutex") from exc
+    try:
+        yield
+    finally:
+        try:
+            connection.rollback()
+        finally:
+            connection.close()
+
+
 def migrate_legacy_database(data_dir: Path) -> Path | None:
     """Migrate a legacy database once and preserve its source in a backup.
 
@@ -49,49 +71,59 @@ def migrate_legacy_database(data_dir: Path) -> Path | None:
     """
 
     data_dir.mkdir(parents=True, exist_ok=True)
-    legacy = data_dir / "jarvis.sqlite3"
-    canonical = data_dir / "my_last_ai_girlfriends.sqlite3"
-    if not legacy.exists():
-        return None
-    if canonical.exists():
-        raise StorageError("legacy and canonical databases both exist; resolve the conflict without automatic merging")
-    backup_dir = data_dir / "migration-backups"
-    backup_dir.mkdir(exist_ok=True)
-    backup = _unique_path(backup_dir, "legacy-source")
-    source = sqlite3.connect(legacy)
-    try:
-        source.execute("PRAGMA wal_checkpoint(FULL)")
-        integrity = source.execute("PRAGMA integrity_check").fetchone()[0]
-        if integrity != "ok":
-            raise StorageError(f"legacy database integrity check failed: {integrity}")
-        backup_connection = sqlite3.connect(backup)
+    with _migration_mutex(data_dir):
+        legacy = data_dir / "jarvis.sqlite3"
+        canonical = data_dir / "my_last_ai_girlfriends.sqlite3"
+        if not legacy.exists():
+            return None
+        if canonical.exists():
+            raise StorageError("legacy and canonical databases both exist; resolve the conflict without automatic merging")
+        backup_dir = data_dir / "migration-backups"
+        backup_dir.mkdir(exist_ok=True)
+        backup = _unique_path(backup_dir, "legacy-source")
+        source = sqlite3.connect(legacy)
         try:
-            source.backup(backup_connection)
+            source.execute("PRAGMA wal_checkpoint(FULL)")
+            integrity = source.execute("PRAGMA integrity_check").fetchone()[0]
+            if integrity != "ok":
+                raise StorageError(f"legacy database integrity check failed: {integrity}")
+            backup_connection = sqlite3.connect(backup)
+            try:
+                source.backup(backup_connection)
+            finally:
+                backup_connection.close()
         finally:
-            backup_connection.close()
-    finally:
-        source.close()
-    temporary_canonical = _unique_path(data_dir, "my_last_ai_girlfriends-migration", ".tmp")
-    shutil.copy2(backup, temporary_canonical)
-    check = sqlite3.connect(temporary_canonical)
-    try:
-        integrity = check.execute("PRAGMA integrity_check").fetchone()[0]
-    finally:
-        check.close()
-    if integrity != "ok":
-        temporary_canonical.unlink(missing_ok=True)
-        raise StorageError(f"migrated database integrity check failed: {integrity}")
-    os.replace(temporary_canonical, canonical)
-    preserved_source = _unique_path(backup_dir, "legacy-preserved")
-    try:
-        shutil.move(str(legacy), preserved_source)
-        for suffix in ("-wal", "-shm"):
-            sidecar = Path(f"{legacy}{suffix}")
-            if sidecar.exists():
-                shutil.move(str(sidecar), Path(f"{preserved_source}{suffix}"))
-    except OSError as exc:
-        raise StorageError("canonical database installed but legacy source could not be moved into the backup folder") from exc
-    return canonical
+            source.close()
+        temporary_canonical = _unique_path(data_dir, "my_last_ai_girlfriends-migration", ".tmp")
+        shutil.copy2(backup, temporary_canonical)
+        check = sqlite3.connect(temporary_canonical)
+        try:
+            integrity = check.execute("PRAGMA integrity_check").fetchone()[0]
+        finally:
+            check.close()
+        if integrity != "ok":
+            temporary_canonical.unlink(missing_ok=True)
+            raise StorageError(f"migrated database integrity check failed: {integrity}")
+        try:
+            os.link(temporary_canonical, canonical)
+        except FileExistsError as exc:
+            raise StorageError("canonical database appeared during migration; refusing to replace it") from exc
+        except (OSError, NotImplementedError, AttributeError) as exc:
+            raise StorageError("hard-link installation of the migrated database is unsupported") from exc
+        try:
+            temporary_canonical.unlink()
+        except OSError as exc:
+            raise StorageError("canonical database installed but migration temporary could not be removed") from exc
+        preserved_source = _unique_path(backup_dir, "legacy-preserved")
+        try:
+            shutil.move(str(legacy), preserved_source)
+            for suffix in ("-wal", "-shm"):
+                sidecar = Path(f"{legacy}{suffix}")
+                if sidecar.exists():
+                    shutil.move(str(sidecar), Path(f"{preserved_source}{suffix}"))
+        except OSError as exc:
+            raise StorageError("canonical database installed but legacy source could not be moved into the backup folder") from exc
+        return canonical
 
 
 SCHEMA_SQL = """
@@ -1152,8 +1184,8 @@ class Database:
             if not approval or approval["status"] != "APPROVED" or approval["action_type"] != "local.schedule.create" or approval["expires_at"] <= now:
                 raise ValueError("approval is not executable")
             self.connection.execute(
-                "INSERT INTO schedules(id, conversation_id, title, prompt, run_at, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'SCHEDULED', ?, ?)",
-                (schedule_id, conversation_id, title, prompt, run_at, now, now),
+                "INSERT INTO schedules(id, conversation_id, title, prompt, run_at, recurrence, next_run_at, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'once', ?, 'SCHEDULED', ?, ?)",
+                (schedule_id, conversation_id, title, prompt, run_at, run_at, now, now),
             )
             updated = self.connection.execute(
                 "UPDATE approvals SET status = 'CONSUMED', updated_at = ? WHERE id = ? AND status = 'APPROVED'",

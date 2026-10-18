@@ -67,14 +67,21 @@ class GovernanceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))
             conversation = service.create_conversation()
-            parameters = {"conversation_id": conversation, "title": "approved reminder", "prompt": "scheduled", "run_at": "2030-01-01T00:00:00Z"}
+            parameters = {"conversation_id": conversation, "title": "approved reminder", "prompt": "scheduled", "run_at": "2020-01-01T00:00:00Z"}
             approval = service.create_approval("local.schedule.create", parameters, "2030-01-02T00:00:00Z")
             service.transition_approval(approval["id"], "APPROVED", "owner-session")
             result = service.execute_approved_action(approval["id"], parameters, approval["nonce"])
             self.assertEqual(result["status"], "EXECUTED")
+            self.assertEqual(result["schedule"]["recurrence"], "once")
+            self.assertEqual(result["schedule"]["next_run_at"], "2020-01-01T00:00:00.000000Z")
             with self.assertRaisesRegex(GovernanceError, "approved"):
                 service.execute_approved_action(approval["id"], parameters, approval["nonce"])
             self.assertEqual(service.list_schedules(conversation)[0]["id"], result["schedule"]["id"])
+            runs = service.run_due_schedules("2025-01-01T00:00:00Z")
+            self.assertEqual(len(runs), 1)
+            self.assertEqual(runs[0]["status"], "SUCCEEDED")
+            self.assertEqual(service.run_due_schedules("2025-01-01T00:00:00Z"), [])
+            self.assertTrue(any(item["content"] == "scheduled" for item in service.conversation(conversation)["messages"]))
             service.close()
 
     def test_bounded_agent_pipeline_does_not_expand_capabilities(self):

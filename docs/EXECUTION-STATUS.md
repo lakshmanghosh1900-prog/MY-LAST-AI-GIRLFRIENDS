@@ -18,7 +18,7 @@
   readiness boundary, Stage 08C grounded document answers, Stage 09B source
   conflict provenance and Stage 16A MCP endpoint/response hardening. The branch
   is not yet pushed with these commits.
-- `make check`: PASS — 94 tests, 0 failures, 0 skips; compileall also passed.
+- `make check`: PASS — 97 tests, 0 failures, 0 skips; compileall also passed.
 - `uv lock --check`, `uv sync --locked` and `uv build`: PASS.
 - Stage 08C now returns `SUPPORTED_EVIDENCE` or `INSUFFICIENT_EVIDENCE`, bounded
   extractive text, exact path/chunk/hash citations, a lexical-evidence
@@ -39,6 +39,10 @@
   candidate. Schema migrations execute statement-by-statement inside the
   existing transaction, readiness requires schema 11, and a cancelled schedule
   is skipped safely if cancellation wins the due-run race.
+- Legacy migration now uses a separate SQLite mutex and no-clobber hard-link
+  installation; race, unsupported-filesystem and concurrent-process regressions
+  are covered. Approved local schedules now persist `next_run_at` and execute
+  exactly once through the existing scheduler path.
 
 ## Latest published verification for implementation commit `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`
 
