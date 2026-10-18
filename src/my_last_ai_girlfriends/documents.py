@@ -34,7 +34,13 @@ def lexical_tokens(value: str) -> tuple[str, ...]:
 
 
 def answer_from_document_chunks(query: str, chunks: list[dict], limit: int = 6, max_chars: int = 2400) -> dict:
-    """Build bounded, extractive local evidence without invoking a provider."""
+    """Build bounded, extractive local evidence without invoking a provider.
+
+    The response is deliberately an evidence contract rather than a generated
+    answer: callers can distinguish supported evidence from an explicit
+    insufficient-evidence result, and every returned excerpt carries its
+    document hash and chunk ordinal.
+    """
 
     query_tokens = lexical_tokens(query)
     if not query_tokens:
@@ -72,9 +78,18 @@ def answer_from_document_chunks(query: str, chunks: list[dict], limit: int = 6, 
         })
         if remaining <= 0:
             break
+    evidence_status = "SUPPORTED_EVIDENCE" if selected else "INSUFFICIENT_EVIDENCE"
     if not selected:
-        lines.append("No matching indexed evidence was found.")
-    return {"answer": "\n".join(lines)[:max_chars], "citations": citations, "local_only": True, "ai_generated": False}
+        lines.append("Insufficient local evidence was found; no answer was generated.")
+    return {
+        "answer": "\n".join(lines)[:max_chars],
+        "citations": citations,
+        "evidence_status": evidence_status,
+        "heuristic": True,
+        "disclaimer": "Lexical local evidence only; no provider-generated claim is made.",
+        "local_only": True,
+        "ai_generated": False,
+    }
 
 
 def chunk_text(text: str, max_chars: int = 2000) -> tuple[str, ...]:

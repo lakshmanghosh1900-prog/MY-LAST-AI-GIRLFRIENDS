@@ -19,6 +19,9 @@ class UiContractTests(unittest.TestCase):
         self.assertIn("SpeechRecognition", html)
         self.assertIn("speechSynthesis", html)
         self.assertIn("Voice input unavailable", html)
+        self.assertIn("Grounded local answer", html)
+        self.assertIn("/v1/documents/answer", html)
+        self.assertIn("evidence_status", html)
 
 
 if __name__ == "__main__":

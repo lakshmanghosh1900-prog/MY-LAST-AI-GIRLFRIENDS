@@ -148,5 +148,63 @@
      initVoice(); connect();
   })();
   </script>
+  <script>
+  (() => {
+    const settings = document.getElementById('settings');
+    if (!settings) return;
+    const panel = document.createElement('div');
+    panel.style.cssText = 'margin-top:16px;padding-top:12px;border-top:1px solid var(--line)';
+    const heading = document.createElement('h3');
+    heading.textContent = 'Grounded local answer';
+    const label = document.createElement('label');
+    label.textContent = 'Search indexed documents only. Answers show exact local evidence or an explicit insufficient-evidence state.';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:6px;margin-top:8px';
+    const input = document.createElement('input');
+    input.id = 'documentAnswerQuery';
+    input.type = 'search';
+    input.maxLength = 200;
+    input.placeholder = 'Ask about indexed documents';
+    input.setAttribute('aria-label', 'Grounded document answer query');
+    input.style.cssText = 'flex:1;min-width:0;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--text)';
+    const button = document.createElement('button');
+    button.className = 'ghost';
+    button.type = 'button';
+    button.textContent = 'Answer';
+    const result = document.createElement('pre');
+    result.setAttribute('aria-live', 'polite');
+    result.style.cssText = 'white-space:pre-wrap;color:var(--muted);font:inherit;font-size:.72rem;margin:8px 0 0';
+    row.append(input, button);
+    panel.append(heading, label, row, result);
+    settings.appendChild(panel);
+    const answer = async () => {
+      const query = input.value.trim();
+      if (!query) return;
+      button.disabled = true;
+      result.textContent = 'Checking local evidence…';
+      try {
+        const response = await fetch('/v1/documents/answer', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sessionStorage.getItem('mlag-token') || ''}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({query})
+        });
+        let body = {};
+        try { body = await response.json(); } catch (_) {}
+        if (!response.ok) throw new Error(body.error?.message || 'The local evidence request did not complete.');
+        const citations = (body.citations || []).map(item => `${item.path} [chunk ${item.ordinal}] · sha256 ${item.content_sha256}`);
+        result.textContent = `${body.answer}\n\nEvidence status: ${body.evidence_status}\n${citations.length ? `Citations:\n${citations.join('\n')}` : 'Citations: none'}`;
+      } catch (error) {
+        result.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    };
+    button.onclick = answer;
+    input.onkeydown = event => { if (event.key === 'Enter') { event.preventDefault(); answer(); } };
+  })();
+  </script>
 </body>
 </html>
