@@ -10,6 +10,21 @@ production-ready. The latest feature implementation and regression fixes are
 published on the existing feature branch; the failed push in older
 chronological notes is historical evidence.
 
+## Local continuation checkpoint — 18 October 2026
+
+The unpublished local commits `35e2589` (`fix(storage): serialize local
+readiness checks`) and `300cc48` (`feat(stage-08): add grounded document
+evidence answers`) extend the published checkpoint without touching `main` or
+the protected database files. Local verification passed 87 tests with zero
+failures/skips, `uv lock --check`, `uv sync --locked`, compileall and `uv build`.
+
+Stage 08C is a local-only evidence contract: it returns bounded extractive
+text, exact document/chunk/hash citations, `SUPPORTED_EVIDENCE` or
+`INSUFFICIENT_EVIDENCE`, and a disclaimer rather than inventing a provider
+answer. The authenticated `/v1/documents/answer` route and browser settings UI
+expose that contract. Readiness integrity/schema access now uses the shared
+SQLite serialization boundary.
+
 ## 1. Repository and Git state
 
 | Field | Observed value |
@@ -66,7 +81,7 @@ slices; external calendar/email side effects remain disabled.
 | 05 | `CLOSED — VERIFIED` | Responsive branded UI, session/history controls, safe DOM text rendering, file boundaries and readable HTML extraction pass. |
 | 06 | `BLOCKED_EXTERNAL` | Docker is unavailable in the current execution container; owner-supplied build/smoke assertions remain separate, and current source/image provenance plus cleanup are not independently reproduced. |
 | 07 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 07A explicit local memory management is implemented/tested; full Stage 07 is dependency-gated and automatic extraction, remote memory and complete retention/recovery acceptance remain open. |
-| 08 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 08A local text indexing/search plus bounded DOCX/PDF text extraction are implemented/tested; grounded provider answers, OCR/layout fidelity and complete document-security acceptance remain open. |
+| 08 | `PARTIAL — 08C LOCAL GROUNDED ANSWERS IMPLEMENTED` | Local text/DOCX/PDF indexing, bounded extractive evidence, exact citations and explicit insufficient-evidence handling are implemented/tested; provider-backed answers, OCR/layout fidelity and complete document-security acceptance remain open. |
 | 09 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 09A explicit public-URL research and structured source citations are implemented/tested; search, claim verification and conflict handling remain open. |
 | 10 | `PARTIAL — 10B IMPLEMENTED, CRITERIA REMAIN` | Recurring hourly/daily/weekly UTC schedules, occurrence idempotency, restart advancement, no automatic retry after failed recurring occurrences and a bounded worker lifecycle are implemented/tested; planner quality and operational soak remain open. |
 | 11 | `PARTIAL — BROWSER NATIVE` | Truthful browser speech-recognition/synthesis controls and unsupported states are implemented; real audio hardware/provider evidence is unavailable. |
@@ -172,6 +187,16 @@ Commit `883613d` adds bounded DOCX extraction from `word/document.xml` and a
 bounded PDF text-operator subset using the standard library. Archive size/member
 limits, unsupported-PDF behavior, indexing and local citation tests are covered.
 Full PDF rendering/OCR and provider-grounded document answers remain disabled.
+
+### Stage 08C local grounded answers
+
+Commits `35e2589` and `300cc48` add a serialized readiness read boundary and a
+local-only document evidence contract. Matching chunks return bounded
+extractive text with document path, chunk ordinal and content hash citations;
+irrelevant or deleted documents return `INSUFFICIENT_EVIDENCE` with no
+citations. The authenticated API and browser settings panel expose the same
+status and disclaimer. No provider receives document content and no
+provider-grounded answer is claimed.
 
 ### Stage 12A safe implementation
 

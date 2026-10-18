@@ -12,6 +12,24 @@
 
 **Pull request:** [Draft PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1) remains open and unmerged. No main integration is claimed.
 
+## Current local continuation checkpoint — 18 October 2026
+
+- Local commits `35e2589` and `300cc48` add the serialized readiness boundary and
+  Stage 08C bounded grounded document-answer contract. The branch is not yet
+  pushed with these commits.
+- `make check`: PASS — 87 tests, 0 failures, 0 skips; compileall also passed.
+- `uv lock --check`, `uv sync --locked` and `uv build`: PASS.
+- Stage 08C now returns `SUPPORTED_EVIDENCE` or `INSUFFICIENT_EVIDENCE`, bounded
+  extractive text, exact path/chunk/hash citations, a lexical-evidence
+  disclaimer and no provider invocation. The authenticated API and browser UI
+  expose the same status/citations contract.
+- The local readiness route now reads integrity and schema through a serialized
+  `Database.readiness_snapshot()` method. Budget direct connection calls remain
+  inside the existing transaction boundary; no other production SQLite bypass
+  was found in the audit.
+- The invalid canonical database, verified recovery candidate and untracked
+  owner file `main` remain unchanged and uncommitted.
+
 ## Latest published verification for implementation commit `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`
 
 Both GitHub Actions runs passed:
@@ -35,7 +53,7 @@ Both runs on the exact current commit confirm Python 3.12.11, `uv lock --check`,
 |---|---|---|
 | 01–05 | Previously reported CLOSED — VERIFIED | Preserve baseline; rerun regressions after changes. |
 | 06 | BLOCKED_EXTERNAL | Docker is unavailable in this execution container; owner-supplied build/smoke evidence remains separate, with current source provenance and cleanup still not independently reproduced. |
-| 07–09 | PARTIAL | Explicit memory and research slices remain bounded; DOCX/PDF text extraction is now implemented/tested, while grounded answers, search/claim verification and broader document security remain open. |
+| 07–09 | PARTIAL | Explicit memory and research slices remain bounded; Stage 08C now provides local bounded grounded answers with citations and insufficient-evidence handling, while provider-backed answers, search/claim verification and broader document security remain open. |
 | 10 | PARTIAL — 10B IMPLEMENTED | Recurring hourly/daily/weekly UTC schedules, restart-safe occurrence advancement, no automatic retry after failed occurrences, and a bounded worker start/stop lifecycle are implemented and tested; broader planner/operational soak remains open. |
 | 11 | PARTIAL / BLOCKED_EXTERNAL | Browser-native voice path exists; full microphone/audio-provider integration and device verification remain incomplete. |
 | 12–13 | PARTIAL | Broader approved automation, execution verification, evaluation coverage and rollback criteria remain. |
@@ -115,7 +133,7 @@ for this filesystem condition. No database reset was performed.
 | 05 | CLOSED — VERIFIED | Branded responsive UI, history/session controls, keyboard behavior, safe text rendering, bounded file tool and readable HTML extraction are implemented and covered by contract/security tests. |
 | 06 | BLOCKED_EXTERNAL | Owner-supplied Docker build and container-smoke checks pass; source-commit provenance is unverified, cleanup is PENDING, and PR/main integration remains open. |
 | 07 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 07A explicit local memory management is implemented and tested; Stage 06 is not closed, automatic extraction/remote memory/retrieval remain disabled, and full Stage 07 acceptance is open. |
-| 08 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 08A local text indexing/search is implemented and tested; PDF/DOCX extraction, grounded provider answers, citations and full Stage 08 acceptance remain open. |
+| 08 | PARTIAL — 08C LOCAL GROUNDED ANSWERS IMPLEMENTED | Local text/PDF/DOCX indexing, bounded extractive evidence, exact citations and explicit insufficient-evidence responses are implemented/tested; provider-backed answers, OCR/layout fidelity and full Stage 08 acceptance remain open. |
 | 09 | PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN | Stage 09A explicit public-URL multi-source research and citations are implemented/tested; search-provider integration, claim verification and conflict analysis remain open. |
 | 10 | PARTIAL — 10B IMPLEMENTED, CRITERIA REMAIN | Recurring hourly/daily/weekly UTC schedules, restart advancement, occurrence idempotency, terminal failure advancement and a bounded worker lifecycle are implemented/tested; planner quality and operational soak remain open. |
 | 11 | PARTIAL — BROWSER NATIVE | Browser speech-recognition/synthesis controls and truthful unsupported states are implemented; real microphone/audio-provider evidence requires hardware/services not available here. |

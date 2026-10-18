@@ -1,5 +1,24 @@
 # MY LAST AI GIRLFRIENDS — Test Evidence
 
+## Current local continuation checkpoint — 18 October 2026
+
+Commits `35e2589` and `300cc48` were verified locally before publication:
+
+```text
+uv lock --check                         PASS
+uv sync --locked                        PASS
+python -m compileall -q src tests       PASS
+make check                              PASS — Ran 87 tests, OK
+uv build                                PASS — sdist and wheel produced
+```
+
+The focused Stage 08C tests cover bounded local extractive evidence, stable
+document path/ordinal/hash citations, explicit insufficient evidence after
+irrelevant or deleted documents, authenticated API output and browser UI
+exposure. The SQLite readiness regression verifies that integrity/schema reads
+use the serialized Database boundary. No live database file was opened or
+modified by these tests.
+
 ## Previously verified docs-only checkpoint — 18 October 2026
 
 **Branch HEAD:** `c80b743f2d89b701d4aae8de60bb25ccd28cee08` (documentation-only checkpoint after implementation commit `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`)  
@@ -171,6 +190,23 @@ indexing, content hashing, migration version 4, idempotent re-indexing,
 authenticated search, deletion/tombstoning, traversal rejection and empty
 query rejection. This is local text indexing only; no PDF/DOCX extraction,
 provider grounding or citation claim is made.
+
+## Stage 08C local grounded-answer evidence
+
+```text
+uv run --locked python -m unittest discover -s tests -p 'test_document*.py' -v
+PASS — 8 tests
+
+uv run --locked python -m unittest discover -s tests -p 'test_release.py' -v
+PASS — 2 tests
+```
+
+The local answer contract is bounded and extractive. Supported responses carry
+the indexed document path, chunk ordinal, content hash and matched-term count;
+irrelevant or deleted documents return `INSUFFICIENT_EVIDENCE` with no
+citations. The authenticated `/v1/documents/answer` route and browser UI expose
+the status and citations without using `innerHTML`. Document content remains
+local and no provider-grounded answer is claimed.
 
 ## Stage 09A research evidence
 

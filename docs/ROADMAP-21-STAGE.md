@@ -68,12 +68,18 @@ stage is declared complete.
 
 The dependency table above preserves the approved roadmap's initial statuses.
 The current implementation status is maintained in `docs/EXECUTION-STATUS.md`.
-The safe Stage 07A, Stage 08A and Stage 09A slices now implemented are
-explicit local memory management, bounded text-document indexing/search and
-explicit public-URL research with source provenance; they do not close their
-full stages or authorize remote memory/document transfer.
+The safe Stage 07A, Stage 08A/08B/08C and Stage 09A slices now implemented are
+explicit local memory management, bounded document indexing/extraction with
+local grounded evidence answers, and explicit public-URL research with source
+provenance; they do not close their full stages or authorize remote
+memory/document transfer.
 
 The latest published implementation commit is `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`. Both push and pull-request GitHub Actions pass 83 tests, locked dependency validation, compileall and `uv build`. Draft PR #1 is open and unmerged. Current status is:
+
+The current local continuation adds the Stage 08C bounded grounded-answer
+slice in commits `35e2589` and `300cc48`. Local verification is 87 tests with
+zero failures/skips, locked dependency validation, compileall and `uv build`.
+These commits are not yet published to the feature branch.
 
 | Stage | Current status | Implemented slice / remaining gate |
 |---|---|---|
