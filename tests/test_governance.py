@@ -89,6 +89,43 @@ class GovernanceTests(unittest.TestCase):
                 service.execute_approved_action(approval["id"], parameters, approval["nonce"])
             service.close()
 
+    def test_expired_approval_cannot_be_approved(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            expires_at = (datetime.now(timezone.utc) + timedelta(days=2)).isoformat().replace("+00:00", "Z")
+            approval = service.create_approval("local.schedule.create", {}, expires_at)
+            expired_local = (datetime.now(timezone.utc) - timedelta(minutes=1)).astimezone(
+                timezone(timedelta(hours=14))
+            ).isoformat(timespec="microseconds")
+            with service.db.transaction():
+                service.db.connection.execute(
+                    "UPDATE approvals SET expires_at = ? WHERE id = ?",
+                    (expired_local, approval["id"]),
+                )
+            with self.assertRaisesRegex(GovernanceError, "Expired approvals cannot be approved"):
+                service.transition_approval(approval["id"], "APPROVED", "owner-session")
+            self.assertEqual(service.db.get_approval(approval["id"])["status"], "PENDING")
+            service.close()
+
+    def test_revoked_or_consumed_approval_cannot_be_reapproved(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            expires_at = (datetime.now(timezone.utc) + timedelta(days=2)).isoformat().replace("+00:00", "Z")
+            revoked = service.create_approval("local.schedule.create", {}, expires_at)
+            self.assertTrue(service.transition_approval(revoked["id"], "REVOKED"))
+            with self.assertRaisesRegex(GovernanceError, "cannot transition"):
+                service.transition_approval(revoked["id"], "APPROVED")
+
+            conversation = service.create_conversation()
+            params = {"conversation_id": conversation, "title": "once", "prompt": "once", "run_at": "2030-01-01T00:00:00Z"}
+            consumed = service.create_approval("local.schedule.create", params, expires_at)
+            service.transition_approval(consumed["id"], "APPROVED", "owner-session")
+            service.execute_approved_action(consumed["id"], params, consumed["nonce"])
+            with self.assertRaisesRegex(GovernanceError, "cannot transition"):
+                service.transition_approval(consumed["id"], "APPROVED")
+            self.assertEqual(service.db.get_approval(consumed["id"])["status"], "CONSUMED")
+            service.close()
+
     def test_approved_local_schedule_action_is_single_use(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))

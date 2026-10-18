@@ -571,11 +571,22 @@ class MyLastAIGirlfriendsService:
     def transition_approval(self, approval_id: str, status: str, approver_session: str | None = None) -> bool:
         if status not in {"APPROVED", "REVOKED", "CONSUMED"}:
             raise GovernanceError("APPROVAL_STATUS_INVALID", "Approval transition is invalid.")
-        if self.db.get_approval(approval_id) is None:
+        approval = self.db.get_approval(approval_id)
+        if approval is None:
             raise KeyError("approval not found")
         if status == "CONSUMED":
             raise GovernanceError("EXTERNAL_ACTION_DISABLED", "External action execution is disabled in this release.")
-        return self.db.transition_approval(approval_id, status, secret_hash(approver_session) if approver_session else None)
+        changed = self.db.transition_approval(
+            approval_id,
+            status,
+            secret_hash(approver_session) if approver_session else None,
+        )
+        if not changed:
+            raise GovernanceError(
+                "APPROVAL_TRANSITION_INVALID",
+                f"Approval in state {approval['status']} cannot transition to {status}.",
+            )
+        return True
 
     def list_approvals(self) -> list[dict]:
         return self.db.list_approvals()

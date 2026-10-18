@@ -1237,8 +1237,26 @@ class Database:
 
     @_serialized_database_access
     def transition_approval(self, approval_id: str, status: str, approver_session_hash: str | None = None) -> bool:
+        allowed_from = {
+            "APPROVED": {"PENDING"},
+            "REVOKED": {"PENDING", "APPROVED"},
+        }
+        now = utc_now()
         with self.transaction():
-            cursor = self.connection.execute("UPDATE approvals SET status = ?, approver_session_hash = COALESCE(?, approver_session_hash), updated_at = ? WHERE id = ?", (status, approver_session_hash, utc_now(), approval_id))
+            row = self.connection.execute(
+                "SELECT status, expires_at FROM approvals WHERE id = ?",
+                (approval_id,),
+            ).fetchone()
+            if not row or row["status"] not in allowed_from.get(status, set()):
+                return False
+            if status == "APPROVED":
+                expiry = parse_approval_expiry(row["expires_at"])
+                if expiry <= datetime.now(timezone.utc):
+                    raise GovernanceError("APPROVAL_EXPIRED", "Expired approvals cannot be approved.")
+            cursor = self.connection.execute(
+                "UPDATE approvals SET status = ?, approver_session_hash = COALESCE(?, approver_session_hash), updated_at = ? WHERE id = ? AND status = ?",
+                (status, approver_session_hash, now, approval_id, row["status"]),
+            )
         return cursor.rowcount == 1
 
     @_serialized_database_access
