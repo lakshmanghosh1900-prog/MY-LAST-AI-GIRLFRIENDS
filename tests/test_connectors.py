@@ -98,6 +98,10 @@ class ConnectorTests(unittest.TestCase):
             with self.assertRaisesRegex(ConnectorError, "no result"):
                 call_mcp("https://example.com/mcp", "tools/list", {})
 
+    def test_connector_endpoints_reject_query_parameters(self):
+        with self.assertRaisesRegex(ConnectorError, "query parameters"):
+            call_mcp("https://example.com/mcp?access_token=secret", "tools/list", {})
+
     def test_service_rejects_private_connector_endpoint(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))
