@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -435,8 +436,16 @@ class MyLastAIGirlfriendsService:
             raise KeyError("connector not found")
         if connector["status"] != "APPROVED":
             raise GovernanceError("CONNECTOR_NOT_APPROVED", "Only approved connectors can be invoked.")
-        scope = connector["scope"].strip().lower()
-        if not (scope == "read:*" or scope == f"read:{method.lower()}"):
+        scope = connector["scope"].strip()
+        normalized_method = method.lower()
+        if normalized_method == "tools/call":
+            tool_name = params.get("name") if isinstance(params, dict) else None
+            if not isinstance(tool_name, str) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,128}", tool_name):
+                raise GovernanceError("CONNECTOR_TOOL_NAME_INVALID", "MCP tool calls require a valid explicit tool name.")
+            scoped_tool = scope.split(":", 2)[2] if scope.lower().startswith("read:tool:") else None
+            if scoped_tool != tool_name:
+                raise GovernanceError("CONNECTOR_SCOPE_DENIED", "The connector must be explicitly scoped to this exact tool name.")
+        elif not (scope.lower() == "read:*" or scope.lower() == f"read:{normalized_method}"):
             raise GovernanceError("CONNECTOR_SCOPE_DENIED", "The connector scope does not permit this read operation.")
         result = call_mcp(connector["endpoint"], method, params, self.config.fetch_timeout_seconds)
         self.db.add_audit("connector_invoked", {"connector_id": connector_id, "method": method, "parameters_hash": secret_hash(canonical_json(params))})

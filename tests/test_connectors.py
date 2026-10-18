@@ -101,6 +101,37 @@ class ConnectorTests(unittest.TestCase):
             self.assertEqual(result["result"]["result"], {"tools": []})
             service.close()
 
+    def test_tool_call_requires_exact_per_tool_scope(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            broad = service.register_connector("broad", "https://example.com/mcp", "read:tools/call")
+            service.transition_connector(broad["id"], "APPROVED")
+            with patch("my_last_ai_girlfriends.service.call_mcp") as invoke:
+                with self.assertRaisesRegex(GovernanceError, "exact tool name"):
+                    service.invoke_connector(broad["id"], "tools/call", {"name": "filesystem.delete"})
+                invoke.assert_not_called()
+
+            wildcard = service.register_connector("wildcard", "https://example.com/mcp", "read:*")
+            service.transition_connector(wildcard["id"], "APPROVED")
+            with patch("my_last_ai_girlfriends.service.call_mcp") as invoke:
+                with self.assertRaisesRegex(GovernanceError, "exact tool name"):
+                    service.invoke_connector(wildcard["id"], "tools/call", {"name": "calendar.write"})
+                invoke.assert_not_called()
+
+            scoped = service.register_connector("scoped", "https://example.com/mcp", "read:tool:calendar.get")
+            service.transition_connector(scoped["id"], "APPROVED")
+            with patch(
+                "my_last_ai_girlfriends.service.call_mcp",
+                return_value={"method": "tools/call", "result": {"content": []}},
+            ) as invoke:
+                service.invoke_connector(scoped["id"], "tools/call", {"name": "calendar.get", "arguments": {}})
+                invoke.assert_called_once()
+            with patch("my_last_ai_girlfriends.service.call_mcp") as invoke:
+                with self.assertRaisesRegex(GovernanceError, "exact tool name"):
+                    service.invoke_connector(scoped["id"], "tools/call", {"name": "calendar.delete", "arguments": {}})
+                invoke.assert_not_called()
+            service.close()
+
     def test_unsupported_mcp_method_is_rejected(self):
         with self.assertRaisesRegex(ConnectorError, "tools/list"):
             call_mcp("https://example.com/mcp", "resources/read", {})
