@@ -17,14 +17,14 @@ failed push is historical evidence.
 | Workspace | `C:\\Users\\User\\Desktop\\MY LAST AI GIRLFRIENDS` |
 | Working branch | `feat/mlag-real-ai-premium-ui` |
 | Latest published implementation commit | `98cfca5b34d101d51867987f83cd8e8510aa7ce4` |
-| Latest local implementation commit | `dbc46fa` |
+| Latest local implementation commit | `883613d` |
 | Remote `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | Branch comparison at implementation commit | 47 commits ahead of `main`, 0 behind |
 | Pull request | [Draft PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1), open and unmerged |
 | Push CI | [Run 39111389515](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111389515) — PASS |
 | Pull-request CI | [Run 39111392093](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111392093) — PASS |
 | Published verification | Python 3.12.11, lock check/sync, compileall, 76 tests passed, source/wheel package build passed |
-| Local continuation verification | Python 3.12.11, lock check/sync, compileall, 81 tests passed, source/wheel package build passed |
+| Local continuation verification | Python 3.12.11, lock check/sync, compileall, 82 tests passed, source/wheel package build passed |
 | Local Windows checkout at last owner report | `b9e6ef4`; fetch and fast-forward before continuing local development |
 | Owner local untracked file | `main`; preserved and must not be staged/deleted |
 | Main integration | Not merged; no production-release claim |
@@ -64,7 +64,7 @@ slices; external calendar/email side effects remain disabled.
 | 05 | `CLOSED — VERIFIED` | Responsive branded UI, session/history controls, safe DOM text rendering, file boundaries and readable HTML extraction pass. |
 | 06 | `BLOCKED_EXTERNAL` | Docker is unavailable in the current execution container; owner-supplied build/smoke assertions remain separate, and current source/image provenance plus cleanup are not independently reproduced. |
 | 07 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 07A explicit local memory management is implemented/tested; full Stage 07 is dependency-gated and automatic extraction, remote memory and complete retention/recovery acceptance remain open. |
-| 08 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 08A local text indexing/search is implemented/tested; PDF/DOCX extraction, grounded provider answers, citations and complete document-security acceptance remain open. |
+| 08 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 08A local text indexing/search plus bounded DOCX/PDF text extraction are implemented/tested; grounded provider answers, OCR/layout fidelity and complete document-security acceptance remain open. |
 | 09 | `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN` | Stage 09A explicit public-URL research and structured source citations are implemented/tested; search, claim verification and conflict handling remain open. |
 | 10 | `PARTIAL — 10B IMPLEMENTED, CRITERIA REMAIN` | Recurring hourly/daily/weekly UTC schedules, occurrence idempotency, restart advancement, no automatic retry after failed recurring occurrences and a bounded worker lifecycle are implemented/tested; planner quality and operational soak remain open. |
 | 11 | `PARTIAL — BROWSER NATIVE` | Truthful browser speech-recognition/synthesis controls and unsupported states are implemented; real audio hardware/provider evidence is unavailable. |
@@ -163,6 +163,13 @@ fixed UTC intervals, occurrence-specific idempotency keys, durable `next_run_at`
 advancement, restart recovery from SQLite, and a bounded `worker` CLI lifecycle.
 Failed recurring occurrences are terminal and advance without automatic retry.
 This remains local-only and does not add external side effects.
+
+### Stage 08B continuation
+
+Commit `883613d` adds bounded DOCX extraction from `word/document.xml` and a
+bounded PDF text-operator subset using the standard library. Archive size/member
+limits, unsupported-PDF behavior, indexing and local citation tests are covered.
+Full PDF rendering/OCR and provider-grounded document answers remain disabled.
 
 ### Stage 12A safe implementation
 
@@ -365,15 +372,15 @@ replacement was performed against the canonical live path.
   `/v1/capabilities`; Docker cleanup, provenance, PR and `main` integration
   remain open.
 
-After the recurring scheduler continuation, `make check` passed 81 tests with
+After the recurring scheduler and document extraction continuations, `make check` passed 82 tests with
 zero failures or skips. These are partial slices, not completed stages.
 
 ## Latest local continuation — Stage 10B and recovery verifier
 
-Local commit `dbc46fa` adds migration 11, recurring UTC schedules, occurrence
+Local commits `dbc46fa` and `883613d` add migration 11, recurring UTC schedules, occurrence
 idempotency, restart advancement, terminal recurring failure advancement, a
 bounded scheduler worker lifecycle and `scripts/verify-recovery.py`. The targeted
-scheduler suite passed 11 tests; the full suite passed 81 tests.
+scheduler suite passed 11 tests; the full suite passed 82 tests.
 
 Docker was not independently reproduced in this container because the Docker
 executable is unavailable. The existing owner-supplied Docker evidence remains

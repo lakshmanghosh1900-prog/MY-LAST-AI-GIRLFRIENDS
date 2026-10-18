@@ -468,7 +468,7 @@ BLOCKED_EXTERNAL — fatal: could not read Username for 'https://github.com': No
 Remote feature SHA: owner-verified `fdf5fc4`; local continuation commits
 `ec2a046`, `d6f8b1b`, `fb6a82a`, `b8aa7cd`, `2719ddd`, `3684e32`, `13494fc`, `b8f1a6a`
 
-## Current continuation — commit `dbc46fa`
+## Current continuation — commits `dbc46fa` and `883613d`
 
 ```text
 uv lock --check
@@ -481,7 +481,7 @@ uv run --locked python -m compileall -q src tests
 PASS
 
 make check
-PASS — 81 tests, 81 passed, 0 failed, 0 skipped
+PASS — 82 tests, 82 passed, 0 failed, 0 skipped
 
 uv build
 PASS — source distribution and wheel
@@ -503,6 +503,9 @@ pre-smoke counts remained unchanged.
 Recurring scheduler tests cover fixed-UTC hourly/daily/weekly recurrence,
 occurrence-specific idempotency, restart advancement, terminal failure without
 automatic retry, concurrent due execution and worker start/stop lifecycle.
+
+Document tests additionally cover bounded DOCX `word/document.xml` extraction
+and the supported PDF text-operator subset, with local indexing and citations.
 
 Stage 06 remains `BLOCKED_EXTERNAL` for independent verification in this
 container: `docker` is unavailable. No current Docker build, image provenance

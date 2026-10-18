@@ -6,7 +6,7 @@
 
 **Feature branch:** `feat/mlag-real-ai-premium-ui`
 
-**Latest local implementation commit:** `dbc46fa` — this adds recurring UTC schedules, restart-safe occurrence advancement, a bounded scheduler worker lifecycle, isolated recovery verification tooling and the migration 11 scheduler schema. It is not yet published.
+**Latest local implementation commit:** `883613d` — this adds bounded DOCX/PDF text extraction on top of the recurring scheduler and isolated recovery verifier. It is not yet published.
 
 **Remote feature tip before this continuation:** `98cfca5b34d101d51867987f83cd8e8510aa7ce4`. The local feature branch is now one commit ahead and has not been pushed yet.
 
@@ -35,7 +35,7 @@ Both runs confirm Python 3.12.11, `uv lock --check`, `uv sync --locked`, compile
 |---|---|---|
 | 01–05 | Previously reported CLOSED — VERIFIED | Preserve baseline; rerun regressions after changes. |
 | 06 | BLOCKED_EXTERNAL | Docker is unavailable in this execution container; owner-supplied build/smoke evidence remains separate, with current source provenance and cleanup still not independently reproduced. |
-| 07–09 | PARTIAL | Broader memory lifecycle, PDF/DOCX and grounded answers, search/claim verification remain open. |
+| 07–09 | PARTIAL | Explicit memory and research slices remain bounded; DOCX/PDF text extraction is now implemented/tested, while grounded answers, search/claim verification and broader document security remain open. |
 | 10 | PARTIAL — 10B IMPLEMENTED | Recurring hourly/daily/weekly UTC schedules, restart-safe occurrence advancement, no automatic retry after failed occurrences, and a bounded worker start/stop lifecycle are implemented and tested; broader planner/operational soak remains open. |
 | 11 | PARTIAL / BLOCKED_EXTERNAL | Browser-native voice path exists; full microphone/audio-provider integration and device verification remain incomplete. |
 | 12–13 | PARTIAL | Broader approved automation, execution verification, evaluation coverage and rollback criteria remain. |
@@ -435,9 +435,23 @@ The continuation adds:
   retries;
 - a bounded `my-last-ai-girlfriends worker` lifecycle with explicit start/stop.
 
-Evidence: scheduler suite now passes 11 tests and the full suite passes 81 tests.
+Evidence: scheduler suite now passes 11 tests and the full suite passes 82 tests.
 The full stage remains partial because long-running operational soak, planner
 quality and broader deployment supervision are not claimed.
+
+## Stage 08B — Bounded DOCX/PDF text extraction
+
+**Status:** `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN`
+
+The continuation extends the existing approved-root document indexer with:
+
+- bounded DOCX extraction from `word/document.xml` using the standard library;
+- archive member/count/expanded-size limits without executing document parts;
+- a bounded PDF text-operator subset with truthful unsupported-encoding errors;
+- document indexing, local extractive answers and citation tests for both formats.
+
+Provider-grounded answers, full PDF rendering/layout support, OCR and broader
+document-security acceptance remain out of scope.
 
 ## Stage 11 — Voice AI
 
