@@ -15,10 +15,10 @@ from my_last_ai_girlfriends.providers import GeminiProvider, OllamaProvider, Pro
 
 
 class _Response:
-    status = 200
-
-    def __init__(self, payload: dict):
+    def __init__(self, payload: dict, status: int = 200):
+        self.status = status
         self.payload = json.dumps(payload).encode("utf-8")
+        self.read_count = 0
 
     def __enter__(self):
         return self
@@ -27,7 +27,8 @@ class _Response:
         return False
 
     def read(self, _limit: int = -1):
-        return self.payload
+        self.read_count += 1
+        return self.payload if _limit < 0 else self.payload[:_limit]
 
 
 class ConfigurationAndProviderTests(unittest.TestCase):
@@ -129,6 +130,32 @@ class ConfigurationAndProviderTests(unittest.TestCase):
                     "https://attacker.test/collect",
                 )
                 self.assertIsNone(redirected)
+
+    def test_providers_reject_non_success_responses_before_reading_body(self):
+        gemini = GeminiProvider("https://example.test/v1beta/openai/", "secret-key", "gemini-3.8-flash", 0.75, 3.75)
+        gemini_response = _Response({"choices": [{"message": {"content": "redirect body"}}]}, status=302)
+        with patch("my_last_ai_girlfriends.providers._open_without_redirects", return_value=gemini_response):
+            with self.assertRaises(ProviderError) as caught:
+                gemini.complete([{"role": "user", "content": "private prompt"}], 128, 7)
+        self.assertEqual(caught.exception.code, "PROVIDER_HTTP_ERROR")
+        self.assertEqual(gemini_response.read_count, 0)
+
+        ollama = OllamaProvider("http://127.0.0.1:11434", "llama3.2")
+        ollama_response = _Response({"message": {"content": "redirect body"}}, status=302)
+        with patch("my_last_ai_girlfriends.providers._open_without_redirects", return_value=ollama_response):
+            with self.assertRaises(ProviderError) as caught:
+                ollama.complete([{"role": "user", "content": "private prompt"}], 128, 7)
+        self.assertEqual(caught.exception.code, "LOCAL_PROVIDER_HTTP_ERROR")
+        self.assertEqual(ollama_response.read_count, 0)
+        self.assertFalse(ollama.status()["connected"])
+
+    def test_ollama_rejects_oversized_response(self):
+        provider = OllamaProvider("http://127.0.0.1:11434", "llama3.2")
+        response = _Response({"message": {"content": "small"}, "padding": "x" * 2_100_000})
+        with patch("my_last_ai_girlfriends.providers._open_without_redirects", return_value=response):
+            with self.assertRaisesRegex(ProviderError, "response exceeded"):
+                provider.complete([{"role": "user", "content": "hello"}], 128, 3)
+        self.assertFalse(provider.status()["connected"])
 
     def test_gemini_request_uses_bearer_and_real_response(self):
         provider = GeminiProvider("https://example.test/v1beta/openai/", "secret-key", "gemini-3.8-flash", 0.75, 3.75)

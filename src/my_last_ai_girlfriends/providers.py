@@ -142,7 +142,20 @@ class OllamaProvider(Provider):
         started = time.monotonic()
         try:
             with _open_without_redirects(request, timeout_seconds) as response:
+                status = getattr(response, "status", 200)
+                if status != 200:
+                    raise ProviderError(
+                        "LOCAL_PROVIDER_HTTP_ERROR",
+                        "The local provider returned a non-success HTTP status.",
+                        usage_unknown=True,
+                    )
                 raw = response.read(2_000_000)
+                if len(raw) >= 2_000_000:
+                    raise ProviderError(
+                        "PROVIDER_RESPONSE_TOO_LARGE",
+                        "The local provider response exceeded the configured limit.",
+                        usage_unknown=True,
+                    )
         except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, socket.timeout, OSError) as exc:
             raise ProviderError("LOCAL_PROVIDER_UNAVAILABLE", "The local Ollama provider did not return a completed response.", usage_unknown=True) from exc
         try:
@@ -201,12 +214,12 @@ class GeminiProvider(Provider):
         started = time.monotonic()
         try:
             with _open_without_redirects(request, timeout_seconds) as response:
-                raw = response.read(2_000_000)
                 status = getattr(response, "status", 200)
+                if status != 200:
+                    raise ProviderError("PROVIDER_HTTP_ERROR", "The provider returned a non-success HTTP status.", usage_unknown=True)
+                raw = response.read(2_000_000)
                 if len(raw) >= 2_000_000:
-                    raise ProviderError("PROVIDER_RESPONSE_TOO_LARGE", "The provider response exceeded the configured limit.")
-                if status >= 400:
-                    raise ProviderError("PROVIDER_HTTP_ERROR", "The provider returned an HTTP error.", usage_unknown=True)
+                    raise ProviderError("PROVIDER_RESPONSE_TOO_LARGE", "The provider response exceeded the configured limit.", usage_unknown=True)
         except urllib.error.HTTPError as exc:
             if exc.code in {401, 403}:
                 raise ProviderError("PROVIDER_AUTHENTICATION", "Gemini authentication was rejected.") from exc
