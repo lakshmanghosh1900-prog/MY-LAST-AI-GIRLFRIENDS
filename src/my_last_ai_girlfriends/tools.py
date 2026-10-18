@@ -257,7 +257,10 @@ class SafeWebFetcher:
     def _parse_url(self, url: str) -> SplitResult:
         if not isinstance(url, str) or len(url) > 2048:
             raise ToolError("URL_INVALID", "The URL is missing or too long.")
-        parts = urlsplit(url)
+        try:
+            parts = urlsplit(url)
+        except ValueError as exc:
+            raise ToolError("URL_INVALID", "The URL syntax is invalid.") from exc
         if parts.scheme != "https" or parts.hostname is None or parts.username or parts.password or parts.fragment:
             raise ToolError("URL_INVALID", "Only credential-free HTTPS URLs without fragments are allowed.")
         try:

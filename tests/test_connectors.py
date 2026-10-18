@@ -153,6 +153,10 @@ class ConnectorTests(unittest.TestCase):
         with self.assertRaisesRegex(ConnectorError, "query parameters"):
             call_mcp("https://example.com/mcp?access_token=secret", "tools/list", {})
 
+    def test_connector_validation_rejects_malformed_url_syntax(self):
+        with self.assertRaisesRegex(ConnectorError, "syntax"):
+            call_mcp("https://[::1", "tools/list", {})
+
     def test_service_rejects_private_connector_endpoint(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))

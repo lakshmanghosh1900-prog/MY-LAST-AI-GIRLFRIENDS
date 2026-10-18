@@ -100,8 +100,13 @@ def validate_skill_definition(definition: dict, capabilities: list[str]) -> dict
 
 
 def validate_connector_endpoint(endpoint: str) -> str:
-    parsed = urlsplit(endpoint.strip()) if isinstance(endpoint, str) else None
-    if not parsed or parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password or parsed.fragment:
+    if not isinstance(endpoint, str) or not endpoint.strip():
+        raise GovernanceError("CONNECTOR_ENDPOINT_INVALID", "Connector endpoints must be credential-free HTTPS URLs.")
+    try:
+        parsed = urlsplit(endpoint.strip())
+    except ValueError as exc:
+        raise GovernanceError("CONNECTOR_ENDPOINT_INVALID", "Connector endpoint URL syntax is invalid.") from exc
+    if parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password or parsed.fragment:
         raise GovernanceError("CONNECTOR_ENDPOINT_INVALID", "Connector endpoints must be credential-free HTTPS URLs.")
     if parsed.query:
         raise GovernanceError(
