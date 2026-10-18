@@ -1,7 +1,35 @@
 # MY LAST AI GIRLFRIENDS — Test Evidence
 
-This file records commands that were actually executed. Historical evidence in
-`docs/FINAL-AUDIT.md` is kept separate from current execution evidence.
+## Current published feature checkpoint — 18 October 2026
+
+**Published branch:** `feat/mlag-real-ai-premium-ui`  
+**Exact CI-tested commit:** `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6`  
+**Workflow:** [My Last AI Girlfriends CI — run 39111020536](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111020536)  
+**Result:** PASS
+
+The GitHub Actions log for this exact commit shows:
+
+```text
+uv lock --check                         PASS
+uv sync --locked                        PASS
+Python version assertion (3.12.11)     PASS
+python -m compileall -q src tests       PASS
+make check                              PASS — Ran 76 tests, OK
+uv build                                PASS — sdist and wheel produced
+```
+
+Owner-supplied local evidence for the same feature work also reports 76 passing tests and a focused skill/migration/API suite of 16 passing tests. The CI result above independently confirms the full 76-test suite and package build for commit `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6`.
+
+**Database integrity remains separate from test status.** The canonical `data/my_last_ai_girlfriends.sqlite3` is invalid (`file is not a database`) and remains unchanged. The original invalid file was preserved byte-for-byte. The recovery candidate passes `PRAGMA integrity_check = ok`; an isolated copy initializes through schema version 10, preserves the six recorded row counts and includes `skills.definition_json`. No live replacement/migration has been performed.
+
+**Stage 06 evidence remains split by source:**
+- Docker image build and authenticated/unauthenticated container assertions: owner-supplied PASS.
+- Exact source-commit/image provenance: UNVERIFIED.
+- Container cleanup verification: PENDING.
+- The current CI workflow does not include the Stage 06 Docker container smoke; do not treat this CI run as Docker smoke evidence.
+
+The older entries below remain as chronological records for the dates and commits when they were run; their historical test totals and branch SHAs are not the current checkpoint.
+
 
 ## Baseline — 17 October 2026
 

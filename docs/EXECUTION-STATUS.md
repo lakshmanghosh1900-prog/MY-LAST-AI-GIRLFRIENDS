@@ -1,55 +1,71 @@
 # MY LAST AI GIRLFRIENDS — Execution Status
 
-**Execution started:** 17 October 2026
+**Current checkpoint:** 18 October 2026
 
-**Working branch:** `feat/mlag-real-ai-premium-ui`
+**Repository:** `https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS`
 
-**Initial execution baseline:** `2dc3162b08acea6914a29d89181c45f37f4ee883`
+**Feature branch:** `feat/mlag-real-ai-premium-ui`
 
-**Reconciliation snapshot:** the owner-verified published feature branch is
-`fdf5fc473813609b23232960c397895fe8cc64fd`. Local HEAD and the remote-tracking
-feature ref match that SHA. A fresh network `git ls-remote` retry was interrupted
-by a connection reset in this container; the owner-provided remote verification is
-the authoritative publication evidence for this checkpoint.
+**Current published feature HEAD:** `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6` — verified on GitHub after adding the CI workflow.
 
-**Earlier publication retries:** the failed attempts at `6153b75` and
-`d93b852` are preserved as historical evidence. The later owner publication at
-`ebd37c3` supersedes the older `3acccc3` checkpoint.
+**Remote main:** `c98a091330a05ef73823d9744bfd58d5c973059f`.
 
-**Remote `origin/main` at baseline:** `c98a091330a05ef73823d9744bfd58d5c973059f`
-**Remote refresh:** the last successful remote-tracking refresh still shows
-`origin/main` at `c98a091330a05ef73823d9744bfd58d5c973059f`; the latest network
-refresh retry failed with `Recv failure: Connection reset by peer`.
-**Feature branch publication:** `PASS — OWNER VERIFIED` —
-`origin/feat/mlag-real-ai-premium-ui` is recorded at
-`fdf5fc473813609b23232960c397895fe8cc64fd`.
+**Branch comparison:** 45 commits ahead of `main`, 0 behind at this checkpoint.
 
-**Current published implementation tip:** `fdf5fc4` is the owner-verified
-baseline; its isolated worktree regression result is 48 tests passed. **Current
-local implementation tip:** `b8f1a6a` adds an approved declarative local skill
-execution slice on top of explicit memory context selection and the Stage 15–21
-governance slices; it passes 76 tests locally and is not yet published.
+**Pull request:** [Draft PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1) is open, draft, unmerged, and reported mergeable. No main integration is claimed.
 
-**Current local evidence/documentation series:** documentation below the current
-checkpoint may retain `3acccc3` and earlier commit references as historical
-evidence only. No commit after `fdf5fc4` is claimed as remote yet. The latest
-normal push retry after local verification failed with
-`fatal: could not read Username for 'https://github.com': No such device or address`.
+## Current verification
 
-**Pull request status:** `OPEN DRAFT #1` — the GitHub API reports the existing
-head/base PR; the `gh` executable is not installed in this execution container,
-so no PR mutation was attempted.
+A new GitHub Actions workflow was added at `.github/workflows/ci.yml`. The completed run on feature commit `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6` passed:
 
-**Draft PR #1 recheck:** GitHub's pull-request API reports the existing draft PR
-at current published SHA `fdf5fc4` as `open`, `draft=true`, `mergeable=true`,
-`mergeable_state=clean`, with zero status contexts and zero check runs. Therefore
-the reported `mergeability=false` is stale or UI-specific; no merge was attempted.
-The PR body
-still contains the older 48-test/Stages 14–21-not-started wording and is not
-treated as current implementation evidence.
+- `uv lock --check`
+- `uv sync --locked`
+- Python 3.12.11 verification
+- `python -m compileall -q src tests`
+- `make check` — **76 tests passed, 0 failures, 0 skips**
+- `uv build` — source distribution and wheel built successfully
 
-**Current report:** `docs/FINAL-EXECUTION-REPORT.md` records the exact
-furthest verified result and the remaining external gates.
+Run: [My Last AI Girlfriends CI](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111020536).
+
+These results apply to the exact CI-tested feature commit above. Subsequent source changes require a fresh run.
+
+## Current database recovery status
+
+- Canonical database: `data/my_last_ai_girlfriends.sqlite3`; it reports `DatabaseError: file is not a database`. Its SHA-256 is `2e3c9e3a21b33a867a9958ebbec68e960cf8daae652073f91bca0b6cdc8810d5`.
+- The invalid canonical file was preserved byte-for-byte at `data/migration-backups/canonical-invalid-preserved-20261018T000000Z.sqlite3`.
+- Recovery candidate: `data/migration-backups/my_last_ai_girlfriends.recovered.20261017T103434Z.sqlite3`; `PRAGMA integrity_check` returns `ok`. Its SHA-256 is `47ada56b639d5edf9194e79f19a3391b031c5ca20dbbfc56eafad1ebffaea073`.
+- An isolated copy initialized through schema version 10, passed integrity check, retained the six recorded row counts, and contains `skills.definition_json`.
+- **No live database replacement or migration has been performed.** A verified restoration and application-level recovery run remain open.
+
+## Current stage status
+
+| Stage | Current status | Remaining major work |
+|---|---|---|
+| 01–05 | Previously reported CLOSED — VERIFIED | Preserve the existing baseline; run regressions after changes. |
+| 06 | BLOCKED_EXTERNAL | Owner-supplied Docker build/smoke evidence exists; exact image/source commit provenance and cleanup verification remain pending. |
+| 07–10 | PARTIAL | Broader memory lifecycle, PDF/DOCX and grounded answers, search/claim verification, recurring/restart-safe scheduler. |
+| 11 | PARTIAL / BLOCKED_EXTERNAL | Browser-native voice path exists; full microphone/audio-provider integration and real device verification remain incomplete. |
+| 12–13 | PARTIAL | Broader controlled automation, execution verification, evaluation coverage and rollback criteria remain. |
+| 14 | BLOCKED_EXTERNAL / CONTRACT PARTIAL | Native Android companion and toolchain/device verification remain. |
+| 15 | PARTIAL | Full encrypted PC–phone transport is not implemented. |
+| 16 | PARTIAL | Bounded read-only MCP transport exists; broad connector coverage and write scopes are not enabled. |
+| 17 | PARTIAL | Approved declarative skill executor is limited to one local text-file read; self-learning and arbitrary execution are disabled. |
+| 18 | PARTIAL | Local role/agent evidence exists; full provider-backed multi-step delegation remains. |
+| 19 | PARTIAL | Local approval/schedule path exists; external calendar/email actions remain disabled. |
+| 20 | PARTIAL | Optional loopback Ollama adapter exists; device mesh is not verified. |
+| 21 | PARTIAL | Readiness/integrity endpoints exist; final cross-feature hardening and release gates remain. |
+
+## Current publication status
+
+- Feature branch is published at the checkpoint above.
+- CI passed for that checkpoint, including all 76 unit/integration tests and package build.
+- The pre-existing untracked owner file named `main` remains local and must be preserved.
+- Do not describe the project as fully complete or production-ready while the listed stage and database/release items remain open.
+
+The historical execution detail log follows. Older SHA, test-count, and publication statements within that log describe their original checkpoints and are superseded by this current checkpoint.
+
+
+## Historical execution details (earlier checkpoints; current checkpoint above takes precedence)
 
 ## Task 00 — Repository recovery and baseline
 

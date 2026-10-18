@@ -73,9 +73,7 @@ explicit local memory management, bounded text-document indexing/search and
 explicit public-URL research with source provenance; they do not close their
 full stages or authorize remote memory/document transfer.
 
-The owner-verified published feature baseline is
-`fdf5fc473813609b23232960c397895fe8cc64fd`. Local continuation through
-`b8f1a6a` is not published or stage-complete. Current status is:
+The current published feature tip is `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6`; it adds a CI workflow that passed 76 tests (0 failures, 0 skips), locked dependency validation, compileall and `uv build`. Remote `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`, with 45 commits between the current feature tip and main. Draft PR #1 is open and unmerged. Current status is:
 
 | Stage | Current status | Implemented slice / remaining gate |
 |---|---|---|
@@ -88,9 +86,18 @@ The owner-verified published feature baseline is
 | 20 | `PARTIAL — LOCAL PROVIDER` | Device/local-brain inventory and optional loopback Ollama adapter; no local service/device mesh verified. |
 | 21 | `PARTIAL — LOCAL GATE` | Integrity/schema/secret-free readiness endpoints; Docker cleanup, provenance, PR and `main` integration remain open. |
 
-The current deterministic suite is 76 passing tests. The canonical SQLite path
+The current deterministic suite is 76 passing tests, confirmed by GitHub Actions at the checkpoint above. The canonical SQLite path
 is `data/my_last_ai_girlfriends.sqlite3`; it is preserved and not migrated
 because its header is invalid. The verified recovery candidate remains in
 `data/migration-backups/`, and migrations through version 10 have only been
 executed on an isolated copy with all existing row counts preserved. No live
 replacement has been performed.
+
+
+## Current delivery checkpoint — 18 October 2026
+
+- Published feature HEAD: `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6`.
+- Exact CI run: [39111020536](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111020536) — PASS; 76 tests, dependency lock/sync, compileall and package build pass.
+- Draft PR #1 remains open and unmerged; `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
+- Database restoration, Stage 06 Docker cleanup/provenance, full Stage 11 voice, Stage 14 native Android, full PC–phone transport, broad MCP/skill/agent execution, external actions, device mesh and final hardening remain incomplete.
+- Stage status labels in this roadmap refer to engineering scope; the current release and database blockers are not waived by a green unit-test/packaging workflow.

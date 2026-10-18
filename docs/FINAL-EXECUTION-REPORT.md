@@ -14,18 +14,19 @@ failed push is historical evidence.
 | Field | Observed value |
 |---|---|
 | Repository | `https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS.git` |
-| Workspace | `C:\Users\User\Desktop\MY LAST AI GIRLFRIENDS` |
+| Workspace | `C:\\Users\\User\\Desktop\\MY LAST AI GIRLFRIENDS` |
 | Working branch | `feat/mlag-real-ai-premium-ui` |
-| Last published feature tip at resume | Owner-verified `fdf5fc473813609b23232960c397895fe8cc64fd` |
-| Current local status | Local implementation tip `b8f1a6a` plus refreshed evidence commits; current local suite is 76 tests |
-| Local `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
-| `origin/main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
-| Remote feature branch | `feat/mlag-real-ai-premium-ui` at owner-verified `fdf5fc473813609b23232960c397895fe8cc64fd` |
-| Pull request | Draft #1 open for feature branch → `main`; no merge attempted |
-| Integrated release commit | None; verified feature work is not merged into `main` |
+| Current published feature tip | `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6` |
+| Remote `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
+| Branch comparison | 45 commits ahead of `main`, 0 behind at this checkpoint |
+| Pull request | [Draft PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1), open and unmerged |
+| Latest verified CI run | [Run 39111020536](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111020536), success on the exact feature tip above |
+| CI verification | Python 3.12.11, lock check, locked sync, compileall, 76 tests passed, package build passed |
+| Local checkout note | The owner's last reported Windows checkout was at `b9e6ef4`; fetch and fast-forward to the current remote branch before further local work |
+| Local untracked owner file | `main` is preserved and must not be staged or deleted without authorization |
+| Integrated release commit | None; feature work remains unmerged into `main` |
 
-The pre-existing empty untracked file named `main` was preserved. No reset,
-force-push, destructive cleanup, or overwrite of local user work was used.
+The current feature branch is published. Earlier local-only/push-failure statements below are historical checkpoint records and do not describe the current publication state.
 
 ## 2. Actual architecture and stack
 
@@ -53,7 +54,7 @@ slices; external calendar/email side effects remain disabled.
 | Stage | Status | Evidence / exact limitation |
 |---|---|---|
 | Task 00 | `CLOSED — VERIFIED` | Local/remote history, source, docs, ignored data and branch relationship reconciled; database recovery evidence recorded. |
-| 01 | `CLOSED — VERIFIED` | Configuration conflicts, HTTPS validation, token/startup safety, SQLite mounted-workspace fallback and authenticated launch pass; published baseline has 48 tests and current local continuation has 72. |
+| 01 | `CLOSED — VERIFIED` | Configuration conflicts, HTTPS validation, token/startup safety, SQLite mounted-workspace fallback and authenticated launch pass; current published CI ran 76 tests with 0 failures/skips. |
 | 02 | `CLOSED — VERIFIED` | Package/CLI/product rename, MLAG naming, idempotent transactional legacy migration, source preservation and relationship checks pass. |
 | 03 | `CLOSED — VERIFIED` | Gemini adapter tests plus three repeated live application requests succeeded with `ai_generated=true`; no fallback. |
 | 04 | `CLOSED — VERIFIED` | Bounded same-conversation context, isolation, role ordering, exact-once current prompt and privacy filtering pass. |
@@ -355,13 +356,11 @@ These are partial slices, not completed stages.
 
 ## Draft PR #1 status
 
-The existing draft PR #1 was checked through GitHub's pull-request API at current
-published head `fdf5fc4`; it reports `open`, `draft=true`, `mergeable=true`,
-`mergeable_state=clean`, zero status contexts and zero check runs. The requested
-`mergeability=false` state was not reproducible and appears to be stale/UI-specific.
-No merge was attempted. The PR description remains
-stale because it still describes the 48-test baseline and says Stages 14–21 are
-not started; it is not treated as current evidence.
+The existing [PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1) is open, draft, unmerged, and GitHub reports it mergeable at current branch head `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6`. It is not integrated into `main`.
+
+A feature-branch CI workflow was added and its run succeeded on `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6`: Python 3.12.11, locked dependency validation and install, compileall, `make check` (**76 passed, 0 failures, 0 skips**) and `uv build`. See [CI run 39111020536](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111020536).
+
+The PR remains draft because the live SQLite database has not been restored, Docker cleanup/source-image provenance remain pending, and Stages 06–21 have incomplete work as detailed in this report.
 
 ## 8. Windows startup, authentication and recovery
 
@@ -400,17 +399,12 @@ for the observed stale-sidecar condition. Do not reset the database.
 
 ## 9. Final decision
 
-`BLOCKED`
+`BLOCKED — NOT FULLY COMPLETE`
 
-The bounded local-first MVP implementation through Stage 05 is verified, and a
-real application-level Gemini smoke passed in the configured environment. The
-published `fdf5fc4` baseline has the earlier 48-test evidence; the local
-continuation through `b8f1a6a` has 76 passing tests with no skips. The owner has supplied PASS
-evidence for the Docker image build and container smoke, but exact
-source-commit/image provenance is unverified and cleanup remains PENDING. Local
-continuation commits are not yet published, PR #1 remains a draft, and main
-integration is still open. Stages 07–10 and 12–13 remain partial; Stage 11 and
-Stage 14/20 are externally blocked; safe local slices exist for Stages 15–19 and
-21. The project must not be described as fully complete or production-ready
-until cleanup, publication, review/integration and all remaining release gates
-are verified.
+The feature branch is published at `cf6ba6da5d9ff25d1929c4a70b0dac0fd85b22a6`. GitHub Actions is green for that exact commit: 76 tests passed with zero failures/skips; dependency lock, compile and source/wheel package build also passed. PR #1 remains a draft and `main` remains at `c98a091330a05ef73823d9744bfd58d5c973059f`.
+
+The verified local memory, document, research, scheduler, controlled tool, evaluation, device/connector/skill/agent/action/Ollama slices are partial implementations rather than full-stage closures. Stage 06 cleanup and image/source provenance remain open; Stage 14's native Android companion is not implemented; full voice, PC–phone transport, broad MCP connectors, provider-backed orchestration, external actions, device mesh and final hardening remain incomplete.
+
+The canonical live SQLite database is invalid and has not been migrated or replaced. A preserved recovery candidate passed integrity checks and an isolated migration to schema 10 without changing recorded row counts. A verified, application-tested restoration is still required.
+
+Do not call the project fully complete or production-ready until database restoration, remaining feature work, applicable release checks and main integration are completed.
