@@ -4,10 +4,11 @@
 
 **Decision:** `BLOCKED`
 
-This report describes the furthest verified local result. It does not claim
+This report describes the furthest verified published result. It does not claim
 that the project completed all 21 stages, was merged to `main`, or is
-production-ready. The feature branch is now published on GitHub; the previous
-failed push is historical evidence.
+production-ready. The latest feature implementation and regression fixes are
+published on the existing feature branch; the failed push in older
+chronological notes is historical evidence.
 
 ## 1. Repository and Git state
 
@@ -16,20 +17,20 @@ failed push is historical evidence.
 | Repository | `https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS.git` |
 | Workspace | `C:\\Users\\User\\Desktop\\MY LAST AI GIRLFRIENDS` |
 | Working branch | `feat/mlag-real-ai-premium-ui` |
-| Latest published implementation commit | `98cfca5b34d101d51867987f83cd8e8510aa7ce4` |
-| Latest local implementation commit | `883613d` |
+| Latest published implementation commit | `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83` |
+| Latest local implementation commit | `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83` (latest published tip) |
 | Remote `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
-| Branch comparison at implementation commit | 47 commits ahead of `main`, 0 behind |
+| Branch comparison at implementation commit | Feature branch is ahead of `main`; PR #1 has not been merged |
 | Pull request | [Draft PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1), open and unmerged |
-| Push CI | [Run 39111389515](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111389515) — PASS |
-| Pull-request CI | [Run 39111392093](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111392093) — PASS |
-| Published verification | Python 3.12.11, lock check/sync, compileall, 76 tests passed, source/wheel package build passed |
-| Local continuation verification | Python 3.12.11, lock check/sync, compileall, 82 tests passed, source/wheel package build passed |
-| Local Windows checkout at last owner report | `b9e6ef4`; fetch and fast-forward before continuing local development |
+| Push CI | [Run 39130261975](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39130261975) — PASS |
+| Pull-request CI | [Run 39130266696](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39130266696) — PASS |
+| Published verification | Python 3.12.11, lock check/sync, compileall, 83 tests passed, source/wheel package build passed |
+| Latest exact-head verification | Python 3.12.11, lock check/sync, compileall, 83 tests passed, source/wheel package build passed in both CI workflows |
+| Local Windows checkout at last owner report | `6b0b49b`; fetch latest published feature tip before continuing; preserve untracked `main` |
 | Owner local untracked file | `main`; preserved and must not be staged/deleted |
 | Main integration | Not merged; no production-release claim |
 
-This report's current checkpoint is anchored to the latest implementation commit above. A documentation-only checkpoint follows it. Historical SHA/test-count passages below record earlier execution states.
+This report's current checkpoint is anchored to the latest published implementation commit above. Historical SHA/test-count passages below record earlier execution states and should not override current 83-test CI evidence.
 
 ## 2. Actual architecture and stack
 
@@ -57,7 +58,7 @@ slices; external calendar/email side effects remain disabled.
 | Stage | Status | Evidence / exact limitation |
 |---|---|---|
 | Task 00 | `CLOSED — VERIFIED` | Local/remote history, source, docs, ignored data and branch relationship reconciled; database recovery evidence recorded. |
-| 01 | `CLOSED — VERIFIED` | Configuration, HTTPS validation, token/startup safety, SQLite mounted-workspace fallback and authenticated launch pass; latest implementation CI confirms 76 tests with zero failures/skips. |
+| 01 | `CLOSED — VERIFIED` | Configuration, HTTPS validation, token/startup safety, SQLite mounted-workspace fallback and authenticated launch pass; latest implementation CI confirms 83 tests with zero failures/skips. |
 | 02 | `CLOSED — VERIFIED` | Package/CLI/product rename, MLAG naming, idempotent transactional legacy migration, source preservation and relationship checks pass. |
 | 03 | `CLOSED — VERIFIED` | Gemini adapter tests plus three repeated live application requests succeeded with `ai_generated=true`; no fallback. |
 | 04 | `CLOSED — VERIFIED` | Bounded same-conversation context, isolation, role ordering, exact-once current prompt and privacy filtering pass. |

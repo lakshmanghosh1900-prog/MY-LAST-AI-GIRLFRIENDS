@@ -2,9 +2,9 @@
 
 ## Current verified implementation checkpoint — 18 October 2026
 
-**Implementation commit:** `cc295be03b993b55abd5422c2e84abff4cd765a3`  
-**Push CI:** [39111389515](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111389515) — PASS  
-**Pull-request CI:** [39111392093](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111392093) — PASS
+**Implementation commit:** `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`  
+**Push CI:** [39130261975](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39130261975) — PASS  
+**Pull-request CI:** [39130266696](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39130266696) — PASS
 
 The GitHub Actions logs on the exact implementation commit show:
 
@@ -13,13 +13,13 @@ uv lock --check                         PASS
 uv sync --locked                        PASS
 Python version assertion (3.12.11)     PASS
 python -m compileall -q src tests       PASS
-make check                              PASS — Ran 76 tests, OK
+make check                              PASS — Ran 83 tests, OK
 uv build                                PASS — sdist and wheel produced
 ```
 
-A prior pull-request CI attempt on `cf6ba6d` exposed `sqlite3.InterfaceError: bad parameter or other API misuse` in concurrent scheduler read access. The implementation commit `cc295be03b993b55abd5422c2e84abff4cd765a3` serializes `get_schedule`, `list_schedules`, `due_schedules` and `get_schedule_run` with the database reentrant lock. Both subsequent push and PR runs passed. Keep this regression test enabled.
+A prior pull-request CI attempt exposed `sqlite3.InterfaceError: bad parameter or other API misuse` in concurrent scheduler reads. Current implementation serializes public database methods that use the shared SQLite connection and routes the research-run existence check through a serialized Database method. `tests/test_storage_thread_safety.py` covers threaded conversation/message/task/settings operations. Both current push and PR runs pass. Keep this regression coverage enabled.
 
-The live canonical `data/my_last_ai_girlfriends.sqlite3` remains invalid (`file is not a database`) and unchanged. The invalid original was preserved byte-for-byte. The recovery candidate passes `PRAGMA integrity_check = ok`; an isolated copy initialized through schema version 10, preserved all six recorded row counts and contains `skills.definition_json`. No live replacement or migration was performed.
+The live canonical `data/my_last_ai_girlfriends.sqlite3` remains invalid (`file is not a database`) and unchanged. The invalid original was preserved byte-for-byte. The recovery candidate passes `PRAGMA integrity_check = ok`; an isolated copy initialized through schema version 11, preserved all six recorded pre-smoke row counts, and the separate HTTP smoke validated reads/writes against the isolated copy. No live replacement or migration was performed.
 
 Stage 06 Docker image build/container assertions are owner-supplied PASS; exact image/source-commit provenance is UNVERIFIED and cleanup remains PENDING. The current CI workflow does not include the Stage 06 Docker smoke, so these facts remain separate.
 

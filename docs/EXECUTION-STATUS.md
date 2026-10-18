@@ -6,19 +6,19 @@
 
 **Feature branch:** `feat/mlag-real-ai-premium-ui`
 
-**Latest local implementation commit:** `883613d` — this adds bounded DOCX/PDF text extraction on top of the recurring scheduler and isolated recovery verifier. It is not yet published.
+**Latest published implementation commit:** `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83` — includes recurring scheduler, bounded DOCX/PDF extraction, isolated recovery verification, regression coverage for threaded SQLite access, and a serialized research-run lookup.
 
-**Remote feature tip before this continuation:** `98cfca5b34d101d51867987f83cd8e8510aa7ce4`. The local feature branch is now one commit ahead and has not been pushed yet.
+**Verified remote feature tip:** `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`. The local Windows checkout last demonstrated at `6b0b49b` must fetch this newer tip before further local execution; preserve its untracked `main` file.
 
 **Pull request:** [Draft PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1) remains open and unmerged. No main integration is claimed.
 
-## Latest published verification for implementation commit `cc295be03b993b55abd5422c2e84abff4cd765a3`
+## Latest published verification for implementation commit `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`
 
 Both GitHub Actions runs passed:
-- [Push CI run 39111389515](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111389515)
-- [Pull-request CI run 39111392093](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39111392093)
+- [Push CI run 39130261975](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39130261975)
+- [Pull-request CI run 39130266696](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39130266696)
 
-Both runs confirm Python 3.12.11, `uv lock --check`, `uv sync --locked`, compileall, `make check` (**76 tests passed, 0 failures, 0 skips**) and `uv build` (source distribution and wheel). The earlier PR run on `cf6ba6d` exposed `sqlite3.InterfaceError` in concurrent scheduler reads; commit `cc295be03b993b55abd5422c2e84abff4cd765a3` serializes `get_schedule`, `list_schedules`, `due_schedules` and `get_schedule_run` access with the database reentrant lock, and both new runs pass.
+Both runs on the exact current commit confirm Python 3.12.11, `uv lock --check`, `uv sync --locked`, compileall, `make check` (**83 tests passed, 0 failures, 0 skips**) and `uv build` (source distribution and wheel). After the original scheduler race exposed `sqlite3.InterfaceError`, the current implementation serializes public database methods that use the shared SQLite connection and provides a serialized research-run existence lookup; `tests/test_storage_thread_safety.py` stresses threaded conversation/message/task/settings operations. The latest push and PR runs both pass.
 
 ## Current database recovery status
 

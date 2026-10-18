@@ -73,7 +73,7 @@ explicit local memory management, bounded text-document indexing/search and
 explicit public-URL research with source provenance; they do not close their
 full stages or authorize remote memory/document transfer.
 
-The latest published implementation commit is `98cfca5b34d101d51867987f83cd8e8510aa7ce4`, with local continuations through `883613d`. Published push and pull-request GitHub Actions pass 76 tests; the local continuation passes 82 tests plus locked dependency validation, compileall and `uv build`. Draft PR #1 is open and unmerged. Current status is:
+The latest published implementation commit is `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`. Both push and pull-request GitHub Actions pass 83 tests, locked dependency validation, compileall and `uv build`. Draft PR #1 is open and unmerged. Current status is:
 
 | Stage | Current status | Implemented slice / remaining gate |
 |---|---|---|
@@ -87,7 +87,7 @@ The latest published implementation commit is `98cfca5b34d101d51867987f83cd8e851
 | 20 | `PARTIAL — LOCAL PROVIDER` | Device/local-brain inventory and optional loopback Ollama adapter; no local service/device mesh verified. |
 | 21 | `PARTIAL — LOCAL GATE` | Integrity/schema/secret-free readiness endpoints; Docker cleanup, provenance, PR and `main` integration remain open. |
 
-The published deterministic suite is 76 passing tests, confirmed by both push and pull-request GitHub Actions. The local continuation at `883613d` passes 82 tests. The canonical SQLite path
+The published deterministic suite at `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83` is 83 passing tests, confirmed by both push and pull-request GitHub Actions. The canonical SQLite path
 is `data/my_last_ai_girlfriends.sqlite3`; it is preserved and not migrated
 because its header is invalid. The verified recovery candidate remains in
 `data/migration-backups/`, and migrations through version 11 have only been
@@ -97,9 +97,9 @@ replacement has been performed.
 
 ## Current delivery checkpoint — 18 October 2026
 
-- Published feature HEAD: `98cfca5b34d101d51867987f83cd8e8510aa7ce4`.
-- Local continuation: `883613d` — recurring scheduler, isolated recovery verifier and bounded DOCX/PDF extraction; not yet pushed.
-- Published CI evidence: push/PR checks recorded above — PASS; 76 tests, dependency lock/sync, compileall and package build pass.
+- Published feature HEAD: `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`.
+- The latest published continuation includes recurring schedules, isolated recovery verification, bounded DOCX/PDF extraction and shared SQLite concurrency regression coverage.
+- Published CI evidence: [push run 39130261975](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39130261975) and [PR run 39130266696](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39130266696) — PASS; 83 tests, dependency lock/sync, compileall and package build pass.
 - Draft PR #1 remains open and unmerged; `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
 - Database restoration, Stage 06 Docker cleanup/provenance, full Stage 11 voice, Stage 14 native Android, full PC–phone transport, broad MCP/skill/agent execution, external actions, device mesh and final hardening remain incomplete.
 - Stage status labels in this roadmap refer to engineering scope; the current release and database blockers are not waived by a green unit-test/packaging workflow.
@@ -114,7 +114,7 @@ replacement has been performed.
 - A concurrent SQLite scheduler-read race exposed on an earlier PR run is fixed in the tested implementation commit by serializing read methods on the shared connection.
 - Draft PR #1 remains open/unmerged; remote `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
 
-## Local continuation checkpoint — 18 October 2026
+## Earlier local continuation checkpoint — 18 October 2026
 
 - Local implementation commit: `883613d`.
 - `make check`: PASS — 82 tests, 0 failures, 0 skips.
