@@ -301,7 +301,7 @@ class MyLastAIGirlfriendsService:
 
     def analyze_research_evidence(self, run_id: str, claims: list[str]) -> dict:
         sources = self.db.get_research_sources_with_content(run_id)
-        if not sources and self.db.connection.execute("SELECT 1 FROM research_runs WHERE id = ?", (run_id,)).fetchone() is None:
+        if not sources and not self.db.research_run_exists(run_id):
             raise KeyError("research run not found")
         return analyze_claims(claims, sources)
 
