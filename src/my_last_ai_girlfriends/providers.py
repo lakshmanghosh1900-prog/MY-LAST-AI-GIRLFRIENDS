@@ -13,6 +13,18 @@ from typing import Iterable
 from urllib.parse import urlsplit, urlunsplit
 
 
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Prevent provider POST bodies from being forwarded to redirect targets."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _open_without_redirects(request: urllib.request.Request, timeout: int):
+    opener = urllib.request.build_opener(_NoRedirectHandler())
+    return opener.open(request, timeout=timeout)
+
+
 class ProviderError(RuntimeError):
     def __init__(self, code: str, message: str, usage_unknown: bool = False):
         super().__init__(message)
@@ -129,7 +141,7 @@ class OllamaProvider(Provider):
         request = urllib.request.Request(self.endpoint, data=body, method="POST", headers={"Content-Type": "application/json", "Accept": "application/json", "User-Agent": "my-last-ai-girlfriends/0.2.0"})
         started = time.monotonic()
         try:
-            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            with _open_without_redirects(request, timeout_seconds) as response:
                 raw = response.read(2_000_000)
         except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, socket.timeout, OSError) as exc:
             raise ProviderError("LOCAL_PROVIDER_UNAVAILABLE", "The local Ollama provider did not return a completed response.", usage_unknown=True) from exc
@@ -188,7 +200,7 @@ class GeminiProvider(Provider):
         )
         started = time.monotonic()
         try:
-            with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            with _open_without_redirects(request, timeout_seconds) as response:
                 raw = response.read(2_000_000)
                 status = getattr(response, "status", 200)
                 if len(raw) >= 2_000_000:

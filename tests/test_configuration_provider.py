@@ -4,13 +4,14 @@ import json
 import os
 import tempfile
 import urllib.error
+import urllib.request
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 from my_last_ai_girlfriends.config import Config, ConfigError, diagnose_environment, load_environment, token_status
 from my_last_ai_girlfriends.main import main
-from my_last_ai_girlfriends.providers import GeminiProvider, OllamaProvider, ProviderError, build_chat_completions_url
+from my_last_ai_girlfriends.providers import GeminiProvider, OllamaProvider, ProviderError, _NoRedirectHandler, build_chat_completions_url
 
 
 class _Response:
@@ -77,7 +78,7 @@ class ConfigurationAndProviderTests(unittest.TestCase):
         config = Config.from_report(load_environment(Path("missing.env"), base))
         self.assertEqual(config.provider, "ollama")
         provider = OllamaProvider("http://127.0.0.1:11434", "llama3.2")
-        with patch("urllib.request.urlopen", lambda *_args, **_kwargs: _Response({"message": {"content": "local answer"}, "prompt_eval_count": 2, "eval_count": 3})):
+        with patch("my_last_ai_girlfriends.providers._open_without_redirects", lambda *_args, **_kwargs: _Response({"message": {"content": "local answer"}, "prompt_eval_count": 2, "eval_count": 3})):
             result = provider.complete([{"role": "user", "content": "hello"}], 128, 3)
         self.assertEqual(result.text, "local answer")
         self.assertTrue(provider.status()["local"])
@@ -110,6 +111,25 @@ class ConfigurationAndProviderTests(unittest.TestCase):
         self.assertEqual(build_chat_completions_url(base), base.rstrip("/") + "/chat/completions")
         self.assertEqual(build_chat_completions_url(base.rstrip("/") + "/chat/completions"), base.rstrip("/") + "/chat/completions")
 
+    def test_provider_redirect_handler_blocks_cross_host_post_redirects(self):
+        handler = _NoRedirectHandler()
+        request = urllib.request.Request(
+            "https://example.test/chat/completions",
+            data=b'{"messages":[{"content":"private prompt"}]}',
+            method="POST",
+        )
+        for status in (301, 302, 303, 307, 308):
+            with self.subTest(status=status):
+                redirected = handler.redirect_request(
+                    request,
+                    None,
+                    status,
+                    "redirect",
+                    {},
+                    "https://attacker.test/collect",
+                )
+                self.assertIsNone(redirected)
+
     def test_gemini_request_uses_bearer_and_real_response(self):
         provider = GeminiProvider("https://example.test/v1beta/openai/", "secret-key", "gemini-3.8-flash", 0.75, 3.75)
         captured = {}
@@ -121,7 +141,7 @@ class ConfigurationAndProviderTests(unittest.TestCase):
             captured["timeout"] = timeout
             return _Response({"id": "req-1", "model": "gemini-3.8-flash", "choices": [{"message": {"content": "real answer"}}], "usage": {"prompt_tokens": 5, "completion_tokens": 2}})
 
-        with patch("urllib.request.urlopen", fake_urlopen):
+        with patch("my_last_ai_girlfriends.providers._open_without_redirects", fake_urlopen):
             result = provider.complete([{"role": "user", "content": "hello"}], 128, 7)
         self.assertEqual(captured["url"], "https://example.test/v1beta/openai/chat/completions")
         self.assertEqual(captured["authorization"], "Bearer secret-key")
@@ -132,7 +152,7 @@ class ConfigurationAndProviderTests(unittest.TestCase):
 
     def test_gemini_malformed_response_fails_without_demo_fallback(self):
         provider = GeminiProvider("https://example.test/v1beta/openai/", "secret-key", "gemini-3.8-flash", 0.75, 3.75)
-        with patch("urllib.request.urlopen", lambda *_args, **_kwargs: _Response({"choices": []})):
+        with patch("my_last_ai_girlfriends.providers._open_without_redirects", lambda *_args, **_kwargs: _Response({"choices": []})):
             with self.assertRaises(ProviderError) as caught:
                 provider.complete([{"role": "user", "content": "hello"}], 128, 7)
         self.assertEqual(caught.exception.code, "PROVIDER_SCHEMA")
@@ -143,7 +163,7 @@ class ConfigurationAndProviderTests(unittest.TestCase):
             ({"choices": [{"message": {"content": ""}}]}, "PROVIDER_EMPTY_OUTPUT"),
             ({"choices": [{"message": {"content": "answer", "tool_calls": [{"id": "x"}]}}]}, "PROVIDER_TOOL_CALL_REJECTED"),
         ):
-            with self.subTest(code=code), patch("urllib.request.urlopen", lambda *_args, **_kwargs: _Response(payload)):
+            with self.subTest(code=code), patch("my_last_ai_girlfriends.providers._open_without_redirects", lambda *_args, **_kwargs: _Response(payload)):
                 with self.assertRaises(ProviderError) as caught:
                     provider.complete([{"role": "user", "content": "hello"}], 128, 7)
                 self.assertEqual(caught.exception.code, code)
@@ -151,11 +171,11 @@ class ConfigurationAndProviderTests(unittest.TestCase):
     def test_gemini_rejects_oversized_output_and_resets_connection_status(self):
         provider = GeminiProvider("https://example.test/v1beta/openai/", "secret-key", "gemini-3.8-flash", 0.75, 3.75)
         payload = {"choices": [{"message": {"content": "x" * 2049}}], "usage": {"prompt_tokens": 1, "completion_tokens": 999}}
-        with patch("urllib.request.urlopen", lambda *_args, **_kwargs: _Response(payload)):
+        with patch("my_last_ai_girlfriends.providers._open_without_redirects", lambda *_args, **_kwargs: _Response(payload)):
             with self.assertRaisesRegex(ProviderError, "output bound"):
                 provider.complete([{"role": "user", "content": "hello"}], 256, 7)
         self.assertFalse(provider.status()["connected"])
-        with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("offline")):
+        with patch("my_last_ai_girlfriends.providers._open_without_redirects", side_effect=urllib.error.URLError("offline")):
             with self.assertRaises(ProviderError):
                 provider.complete([{"role": "user", "content": "hello"}], 128, 7)
         self.assertFalse(provider.status()["connected"])
@@ -170,13 +190,13 @@ class ConfigurationAndProviderTests(unittest.TestCase):
             def raise_http_error(*_args, _status=status, **_kwargs):
                 raise urllib.error.HTTPError("https://example.test", _status, "provider", {}, None)
 
-            with self.subTest(status=status), patch("urllib.request.urlopen", raise_http_error):
+            with self.subTest(status=status), patch("my_last_ai_girlfriends.providers._open_without_redirects", raise_http_error):
                 with self.assertRaises(ProviderError) as caught:
                     provider.complete([{"role": "user", "content": "hello"}], 128, 7)
                 self.assertEqual(caught.exception.code, code)
                 self.assertEqual(caught.exception.usage_unknown, unknown)
 
-        with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("offline")):
+        with patch("my_last_ai_girlfriends.providers._open_without_redirects", side_effect=urllib.error.URLError("offline")):
             with self.assertRaises(ProviderError) as caught:
                 provider.complete([{"role": "user", "content": "hello"}], 128, 7)
         self.assertEqual(caught.exception.code, "PROVIDER_TIMEOUT_OR_NETWORK")
