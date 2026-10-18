@@ -8,7 +8,7 @@
 
 **Latest published implementation commit:** `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83` — includes recurring scheduler, bounded DOCX/PDF extraction, isolated recovery verification, regression coverage for threaded SQLite access, and a serialized research-run lookup.
 
-**Verified remote feature-branch HEAD:** `c80b743f2d89b701d4aae8de60bb25ccd28cee08` (docs-only checkpoint after implementation commit `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`). The local Windows checkout last demonstrated at `6b0b49b` must fetch the latest head before further local execution; preserve its untracked `main` file.
+**Source-code implementation commit verified by both CI workflows:** `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`. Later docs-only commits reconcile this report to that tested implementation. Consult Draft PR #1 for the exact current branch head and its own CI; the local Windows checkout last demonstrated at `6b0b49b` must fetch the latest remote branch before further local execution and preserve its untracked `main` file.
 
 **Pull request:** [Draft PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1) remains open and unmerged. No main integration is claimed.
 

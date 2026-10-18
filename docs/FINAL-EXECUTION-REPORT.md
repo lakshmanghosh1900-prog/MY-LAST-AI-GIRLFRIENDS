@@ -19,7 +19,7 @@ chronological notes is historical evidence.
 | Working branch | `feat/mlag-real-ai-premium-ui` |
 | Latest published implementation commit | `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83` |
 | Latest code implementation commit | `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83` |
-| Latest feature-branch HEAD | `c80b743f2d89b701d4aae8de60bb25ccd28cee08` (docs-only reconciliation) |
+| Documentation checkpoint | Later docs-only commits reconcile status/evidence after source-code commit `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`; consult PR #1 for the current exact tip |
 | Remote `main` | `c98a091330a05ef73823d9744bfd58d5c973059f` |
 | Branch comparison at implementation commit | Feature branch is ahead of `main`; PR #1 has not been merged |
 | Pull request | [Draft PR #1](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/pull/1), open and unmerged |

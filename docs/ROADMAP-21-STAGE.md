@@ -97,9 +97,8 @@ replacement has been performed.
 
 ## Current delivery checkpoint — 18 October 2026
 
-- Published feature HEAD: `c80b743f2d89b701d4aae8de60bb25ccd28cee08` (docs-only checkpoint).
-- Latest source-code implementation commit: `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`; it includes recurring schedules, isolated recovery verification, bounded DOCX/PDF extraction and shared SQLite concurrency regression coverage.
-- Published exact-head CI evidence: [push run 39130586204](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39130586204) and [PR run 39130591329](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39130591329) — PASS; 83 tests, dependency lock/sync, compileall and package build pass.
+- Latest source-code implementation commit verified by push and PR CI: `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`; it includes recurring schedules, isolated recovery verification, bounded DOCX/PDF extraction and shared SQLite concurrency regression coverage.
+- Its exact implementation-head CI: [push run 39130261975](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39130261975) and [PR run 39130266696](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39130266696) — PASS; 83 tests, dependency lock/sync, compileall and package build pass. Later commits are documentation-only; Draft PR #1 gives the latest published branch head and exact-head check results.
 - Draft PR #1 remains open and unmerged; `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
 - Database restoration, Stage 06 Docker cleanup/provenance, full Stage 11 voice, Stage 14 native Android, full PC–phone transport, broad MCP/skill/agent execution, external actions, device mesh and final hardening remain incomplete.
 - Stage status labels in this roadmap refer to engineering scope; the current release and database blockers are not waived by a green unit-test/packaging workflow.
