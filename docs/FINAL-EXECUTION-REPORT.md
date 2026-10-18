@@ -21,7 +21,7 @@ database files. The resumed hardening increment adds WAL-aware isolated
 recovery backup, atomic migration regression coverage, exact schema readiness,
 cancellation-race handling, inter-process migration locking/no-clobber
 installation, and executable approved local schedules. Local verification
-passed 97 tests with zero
+passed 98 tests with zero
 failures/skips, `uv lock --check`, `uv sync --locked`, compileall and `uv build`.
 
 Stage 08C is a local-only evidence contract: it returns bounded extractive

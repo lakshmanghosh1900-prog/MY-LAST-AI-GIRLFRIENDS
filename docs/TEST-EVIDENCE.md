@@ -9,7 +9,7 @@ were verified locally:
 uv lock --check                         PASS
 uv sync --locked                        PASS
 python -m compileall -q src tests       PASS
-make check                              PASS — Ran 97 tests, OK
+make check                              PASS — Ran 98 tests, OK
 uv build                                PASS — sdist and wheel produced
 ```
 
@@ -22,7 +22,8 @@ read-only SQLite backup so committed WAL rows are included without modifying
 the candidate; migration rollback and scheduler cancellation-race regressions
 are also covered. Migration mutex/no-clobber behavior and approved local
 schedule execution are also covered. No live database file was opened or
-modified by these tests.
+modified by these tests. Commit-failure rollback and shared-connection
+recovery are also covered.
 
 ## Previously verified docs-only checkpoint — 18 October 2026
 

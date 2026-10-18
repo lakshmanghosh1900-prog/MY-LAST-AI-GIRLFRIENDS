@@ -227,24 +227,28 @@ class Database:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.RLock()
-        self.connection = self._connect()
-        self.connection.row_factory = sqlite3.Row
-        self.connection.execute("PRAGMA foreign_keys = ON")
+        self.connection = self._open_connection()
+
+    def _open_connection(self) -> sqlite3.Connection:
+        connection = self._connect()
+        connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA foreign_keys = ON")
         try:
-            self.connection.execute("PRAGMA journal_mode = WAL")
+            connection.execute("PRAGMA journal_mode = WAL")
         except sqlite3.OperationalError as exc:
             # Some mounted Windows/virtiofs workspaces can retain a stale WAL
             # sidecar that makes SQLite's default VFS return disk I/O errors.
             # Retry with SQLite's exclusive POSIX VFS only on non-Windows
             # runtimes; native Windows keeps the normal portable VFS path.
             if os.name == "nt" or "disk i/o error" not in str(exc).lower():
-                self.connection.close()
+                connection.close()
                 raise
-            self.connection.close()
-            self.connection = self._connect(vfs="unix-excl")
-            self.connection.row_factory = sqlite3.Row
-            self.connection.execute("PRAGMA foreign_keys = ON")
-        self.connection.execute("PRAGMA busy_timeout = 5000")
+            connection.close()
+            connection = self._connect(vfs="unix-excl")
+            connection.row_factory = sqlite3.Row
+            connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("PRAGMA busy_timeout = 5000")
+        return connection
 
     def _connect(self, vfs: str | None = None) -> sqlite3.Connection:
         if vfs is None:
@@ -270,6 +274,13 @@ class Database:
         remainder = "".join(statement).strip()
         if remainder:
             self.connection.execute(remainder)
+
+    def _replace_connection(self) -> None:
+        failed_connection = self.connection
+        try:
+            failed_connection.close()
+        finally:
+            self.connection = self._open_connection()
 
     @_serialized_database_access
     def initialize(self) -> None:
@@ -524,7 +535,20 @@ class Database:
                 self.connection.rollback()
                 raise
             else:
-                self.connection.commit()
+                try:
+                    self.connection.commit()
+                except Exception:
+                    try:
+                        self.connection.rollback()
+                    except Exception:
+                        try:
+                            self._replace_connection()
+                        except Exception:
+                            # Preserve the commit failure while leaving the
+                            # failed connection closed if recovery is not
+                            # possible.
+                            pass
+                    raise
 
     @_serialized_database_access
     def close(self) -> None:
