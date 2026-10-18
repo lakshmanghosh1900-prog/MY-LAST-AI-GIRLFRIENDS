@@ -809,6 +809,11 @@ class Database:
             )
 
     @_serialized_database_access
+    def research_run_exists(self, run_id: str) -> bool:
+        row = self.connection.execute("SELECT 1 FROM research_runs WHERE id = ?", (run_id,)).fetchone()
+        return row is not None
+
+    @_serialized_database_access
     def get_research_run(self, run_id: str) -> dict | None:
         row = self.connection.execute(
             "SELECT id, status, created_at, completed_at FROM research_runs WHERE id = ?",
