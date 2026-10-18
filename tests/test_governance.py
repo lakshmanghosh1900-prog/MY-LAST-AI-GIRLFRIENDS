@@ -63,6 +63,31 @@ class GovernanceTests(unittest.TestCase):
                 service.create_approval("calendar.write", {"title": "expired"}, "2000-01-01T00:00:00Z")
             service.close()
 
+    def test_approval_expiry_requires_timezone_and_normalizes_to_utc(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            with self.assertRaisesRegex(GovernanceError, "include a timezone"):
+                service.create_approval("local.schedule.create", {}, "2030-01-01T00:00:00")
+
+            parameters = {"conversation_id": "unused", "title": "reminder", "prompt": "hello", "run_at": "2030-01-01T00:00:00Z"}
+            approval = service.create_approval(
+                "local.schedule.create",
+                parameters,
+                "2030-01-01T02:00:00+02:00",
+            )
+            self.assertEqual(approval["expires_at"], "2030-01-01T00:00:00.000000Z")
+            service.transition_approval(approval["id"], "APPROVED", "owner-session")
+
+            # Guard against historical/corrupt records with a naive timestamp.
+            with service.db.transaction():
+                service.db.connection.execute(
+                    "UPDATE approvals SET expires_at = ? WHERE id = ?",
+                    ("2030-01-01T00:00:00", approval["id"]),
+                )
+            with self.assertRaisesRegex(GovernanceError, "include a timezone"):
+                service.execute_approved_action(approval["id"], parameters, approval["nonce"])
+            service.close()
+
     def test_approved_local_schedule_action_is_single_use(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))

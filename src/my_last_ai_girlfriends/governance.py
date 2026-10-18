@@ -30,6 +30,20 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
 
 
+def parse_approval_expiry(value: str) -> datetime:
+    """Parse an ISO approval expiry and normalize it to timezone-aware UTC."""
+
+    if not isinstance(value, str) or not value.strip() or len(value) > 64:
+        raise GovernanceError("APPROVAL_EXPIRY_INVALID", "Approval expiry must be a valid ISO timestamp.")
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise GovernanceError("APPROVAL_EXPIRY_INVALID", "Approval expiry must be a valid ISO timestamp.") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise GovernanceError("APPROVAL_EXPIRY_TIMEZONE_REQUIRED", "Approval expiry must include a timezone.")
+    return parsed.astimezone(timezone.utc)
+
+
 def secret_hash(value: str) -> str:
     if not isinstance(value, str) or not value:
         raise GovernanceError("SECRET_REQUIRED", "A non-empty secret value is required.")

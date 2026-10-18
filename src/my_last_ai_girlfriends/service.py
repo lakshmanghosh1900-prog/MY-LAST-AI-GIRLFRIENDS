@@ -27,6 +27,7 @@ from .governance import (
     SkillNotFoundError,
     canonical_json,
     new_nonce,
+    parse_approval_expiry,
     secret_hash,
     validate_connector_endpoint,
     validate_skill_definition,
@@ -557,15 +558,13 @@ class MyLastAIGirlfriendsService:
     def create_approval(self, action_type: str, parameters: dict, expires_at: str) -> dict:
         if action_type not in {"calendar.write", "email.send", "local.schedule.create"}:
             raise GovernanceError("ACTION_TYPE_DISABLED", "Only narrowly scoped action types are registered.")
-        try:
-            expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
-        except (AttributeError, TypeError, ValueError) as exc:
-            raise GovernanceError("APPROVAL_EXPIRY_INVALID", "Approval expiry must be a valid ISO timestamp.") from exc
+        expiry = parse_approval_expiry(expires_at)
         if expiry <= datetime.now(timezone.utc):
             raise GovernanceError("APPROVAL_EXPIRY_INVALID", "Approval expiry must be in the future.")
+        normalized_expiry = expiry.isoformat(timespec="microseconds").replace("+00:00", "Z")
         normalized = canonical_json(parameters)
         nonce = new_nonce()
-        item = self.db.create_approval(action_type, secret_hash(normalized), secret_hash(nonce), expires_at)
+        item = self.db.create_approval(action_type, secret_hash(normalized), secret_hash(nonce), normalized_expiry)
         item["nonce"] = nonce
         return item
 
@@ -589,10 +588,7 @@ class MyLastAIGirlfriendsService:
             raise GovernanceError("EXTERNAL_ACTION_DISABLED", "External calendar and email actions remain disabled.")
         if approval["status"] != "APPROVED":
             raise GovernanceError("APPROVAL_NOT_EXECUTABLE", "Only an approved, single-use approval can be executed.")
-        try:
-            expiry = datetime.fromisoformat(approval["expires_at"].replace("Z", "+00:00"))
-        except ValueError as exc:
-            raise GovernanceError("APPROVAL_EXPIRY_INVALID", "Approval expiry is invalid.") from exc
+        expiry = parse_approval_expiry(approval["expires_at"])
         if expiry <= datetime.now(timezone.utc):
             raise GovernanceError("APPROVAL_EXPIRED", "The approval has expired.")
         if secret_hash(canonical_json(parameters)) != approval["parameters_hash"] or secret_hash(nonce) != approval["nonce_hash"]:
