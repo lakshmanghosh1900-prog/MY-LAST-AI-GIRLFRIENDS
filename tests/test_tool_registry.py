@@ -20,6 +20,12 @@ class ToolRegistryTests(unittest.TestCase):
         policy = PolicyEngine(1000, False)
         self.assertEqual(policy.check_tool("shell.exec", {"command": "id"}).decision, Decision.DENY)
 
+    def test_tool_lookup_rejects_invalid_name_types_and_lengths(self):
+        for name in (None, [], {}, "", "x" * 129):
+            with self.subTest(name_type=type(name).__name__):
+                with self.assertRaisesRegex(ToolRegistryError, "valid registered tool name"):
+                    get_tool(name)
+
     def test_registered_handlers_are_the_only_execution_path(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)

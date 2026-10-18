@@ -44,6 +44,8 @@ REGISTRY: dict[str, ToolSpec] = {
 
 
 def get_tool(name: str) -> ToolSpec:
+    if not isinstance(name, str) or not name.strip() or len(name) > 128:
+        raise ToolRegistryError("TOOL_NAME_INVALID", "A valid registered tool name is required.")
     try:
         return REGISTRY[name]
     except KeyError as exc:
