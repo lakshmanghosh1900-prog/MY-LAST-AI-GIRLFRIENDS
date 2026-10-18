@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from my_last_ai_girlfriends.connectors import ConnectorError, call_mcp
+from my_last_ai_girlfriends.governance import GovernanceError
 from my_last_ai_girlfriends.service import MyLastAIGirlfriendsService
 
 from test_budget_service import make_config
@@ -50,6 +51,23 @@ class ConnectorTests(unittest.TestCase):
     def test_unsupported_mcp_method_is_rejected(self):
         with self.assertRaisesRegex(ConnectorError, "tools/list"):
             call_mcp("https://example.com/mcp", "resources/read", {})
+
+    def test_mcp_rejects_private_endpoints_invalid_params_and_non_object_results(self):
+        with self.assertRaisesRegex(ConnectorError, "public HTTPS"):
+            call_mcp("https://127.0.0.1/mcp", "tools/list", {})
+        with self.assertRaisesRegex(ConnectorError, "JSON data"):
+            call_mcp("https://example.com/mcp", "tools/list", {"value": {1, 2}})
+
+        with patch("urllib.request.urlopen", lambda *_args, **_kwargs: Response({"jsonrpc": "2.0", "id": json.loads(_args[0].data.decode())["id"], "result": []})):
+            with self.assertRaisesRegex(ConnectorError, "no result"):
+                call_mcp("https://example.com/mcp", "tools/list", {})
+
+    def test_service_rejects_private_connector_endpoint(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            with self.assertRaisesRegex(GovernanceError, "public HTTPS"):
+                service.register_connector("local", "https://localhost/mcp", "read:tools/list")
+            service.close()
 
 
 if __name__ == "__main__":

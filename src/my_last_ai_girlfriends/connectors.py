@@ -7,6 +7,8 @@ import urllib.error
 import urllib.request
 import uuid
 
+from .governance import GovernanceError, validate_connector_endpoint
+
 
 class ConnectorError(RuntimeError):
     def __init__(self, code: str, message: str):
@@ -15,9 +17,21 @@ class ConnectorError(RuntimeError):
 
 
 def call_mcp(endpoint: str, method: str, params: dict, timeout_seconds: int = 10, max_bytes: int = 262_144) -> dict:
+    try:
+        endpoint = validate_connector_endpoint(endpoint)
+    except GovernanceError as exc:
+        raise ConnectorError(exc.code, str(exc)) from exc
     if method not in {"tools/list", "tools/call"}:
         raise ConnectorError("MCP_METHOD_UNSUPPORTED", "Only MCP tools/list and tools/call are supported.")
-    if not isinstance(params, dict) or len(json.dumps(params, ensure_ascii=False)) > 32_000:
+    if not isinstance(timeout_seconds, int) or isinstance(timeout_seconds, bool) or not 1 <= timeout_seconds <= 60:
+        raise ConnectorError("MCP_TIMEOUT_INVALID", "The connector timeout must be between 1 and 60 seconds.")
+    if not isinstance(max_bytes, int) or isinstance(max_bytes, bool) or not 1024 <= max_bytes <= 1_048_576:
+        raise ConnectorError("MCP_RESPONSE_LIMIT_INVALID", "The connector response limit is invalid.")
+    try:
+        serialized_params = json.dumps(params, ensure_ascii=False)
+    except (TypeError, ValueError) as exc:
+        raise ConnectorError("MCP_PARAMS_INVALID", "MCP parameters must be JSON data.") from exc
+    if not isinstance(params, dict) or len(serialized_params) > 32_000:
         raise ConnectorError("MCP_PARAMS_INVALID", "MCP parameters must be a bounded JSON object.")
     request_id = str(uuid.uuid4())
     body = json.dumps({"jsonrpc": "2.0", "id": request_id, "method": method, "params": params}, separators=(",", ":")).encode("utf-8")
@@ -39,6 +53,6 @@ def call_mcp(endpoint: str, method: str, params: dict, timeout_seconds: int = 10
         raise ConnectorError("MCP_RESPONSE_INVALID", "The connector returned an invalid JSON-RPC response.")
     if "error" in payload:
         raise ConnectorError("MCP_REMOTE_ERROR", "The connector reported an MCP error.")
-    if "result" not in payload:
+    if "result" not in payload or not isinstance(payload["result"], dict):
         raise ConnectorError("MCP_RESPONSE_INVALID", "The connector response has no result.")
     return {"method": method, "request_id": request_id, "result": payload["result"]}

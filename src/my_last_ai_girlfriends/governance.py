@@ -8,6 +8,7 @@ enabled.
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import json
 import secrets
 from dataclasses import dataclass
@@ -94,6 +95,15 @@ def validate_connector_endpoint(endpoint: str) -> str:
         raise GovernanceError("CONNECTOR_PORT_INVALID", "Connector endpoints must use HTTPS port 443.") from exc
     if port not in {None, 443}:
         raise GovernanceError("CONNECTOR_PORT_INVALID", "Connector endpoints must use HTTPS port 443.")
+    host = (parsed.hostname or "").casefold().rstrip(".")
+    if not host or host in {"localhost", "localhost.localdomain"} or host.endswith((".local", ".localhost")):
+        raise GovernanceError("CONNECTOR_PRIVATE_ENDPOINT", "Connector endpoints must use public HTTPS hosts.")
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        address = None
+    if address is not None and not address.is_global:
+        raise GovernanceError("CONNECTOR_PRIVATE_ENDPOINT", "Connector endpoints must use public HTTPS addresses.")
     return endpoint.strip()
 
 
