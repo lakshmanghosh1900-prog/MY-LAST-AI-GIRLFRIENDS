@@ -246,7 +246,7 @@ class Database:
             return
         if not header:
             return
-        if header != b"SQLite format 3\\x00":
+        if header != b"SQLite format 3\x00":
             raise sqlite3.DatabaseError("file is not a SQLite database (invalid header)")
 
     def _open_connection(self) -> sqlite3.Connection:
