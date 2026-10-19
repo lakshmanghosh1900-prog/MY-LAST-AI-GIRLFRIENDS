@@ -37,8 +37,17 @@ class AgentRun:
 def run_bounded_local_pipeline(run_id: str, prompt: str, max_depth: int = 1, max_roles: int = 5) -> AgentRun:
     if not isinstance(prompt, str) or not prompt.strip():
         raise OrchestrationError("AGENT_PROMPT_REQUIRED", "A bounded agent prompt is required.")
-    if max_depth < 0 or max_depth > 3 or max_roles < 1 or max_roles > len(ROLES):
-        raise OrchestrationError("AGENT_LIMIT_INVALID", "Agent limits exceed the safe local bounds.")
+    if (
+        not isinstance(max_depth, int)
+        or isinstance(max_depth, bool)
+        or not isinstance(max_roles, int)
+        or isinstance(max_roles, bool)
+        or max_depth < 0
+        or max_depth > 3
+        or max_roles < 1
+        or max_roles > len(ROLES)
+    ):
+        raise OrchestrationError("AGENT_LIMIT_INVALID", "Agent limits must be integers within the safe local bounds.")
     roles = ROLES[:max_roles]
     evidence = ("planner: bounded local plan created", "verifier: no new capability granted")
     return AgentRun(run_id, "SUCCEEDED", roles, max_depth, ("read-only-file", "public-fetch"), evidence)
