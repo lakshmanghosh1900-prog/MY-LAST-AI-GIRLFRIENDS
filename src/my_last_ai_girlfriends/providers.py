@@ -167,6 +167,8 @@ class OllamaProvider(Provider):
                 raise ProviderError("PROVIDER_OUTPUT_TOO_LARGE", "The local provider returned more text than the configured output bound.")
             input_tokens = int(payload.get("prompt_eval_count", estimate_tokens(" ".join(m["content"] for m in items))))
             output_tokens = int(payload.get("eval_count", estimate_tokens(text)))
+            if input_tokens < 0 or output_tokens < 0:
+                raise ValueError("negative token usage")
         except ProviderError:
             raise
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:

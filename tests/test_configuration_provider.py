@@ -149,6 +149,22 @@ class ConfigurationAndProviderTests(unittest.TestCase):
         self.assertEqual(ollama_response.read_count, 0)
         self.assertFalse(ollama.status()["connected"])
 
+    def test_ollama_rejects_negative_token_usage(self):
+        provider = OllamaProvider("http://127.0.0.1:11434", "llama3.2")
+        payloads = (
+            {"message": {"content": "local answer"}, "prompt_eval_count": -1, "eval_count": 2},
+            {"message": {"content": "local answer"}, "prompt_eval_count": 1, "eval_count": -2},
+        )
+        for payload in payloads:
+            with self.subTest(payload=payload), patch(
+                "my_last_ai_girlfriends.providers._open_without_redirects",
+                lambda *_args, _payload=payload, **_kwargs: _Response(_payload),
+            ):
+                with self.assertRaises(ProviderError) as caught:
+                    provider.complete([{"role": "user", "content": "hello"}], 128, 3)
+                self.assertEqual(caught.exception.code, "PROVIDER_SCHEMA")
+                self.assertFalse(provider.status()["connected"])
+
     def test_ollama_rejects_oversized_response(self):
         provider = OllamaProvider("http://127.0.0.1:11434", "llama3.2")
         response = _Response({"message": {"content": "small"}, "padding": "x" * 2_100_000})
