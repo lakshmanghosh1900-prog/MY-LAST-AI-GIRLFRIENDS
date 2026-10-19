@@ -1,5 +1,20 @@
 # MY LAST AI GIRLFRIENDS — 21-Stage Execution Roadmap
 
+## Latest verified published checkpoint — 19 October 2026 (Stage 17 increment)
+
+- Feature branch HEAD: `0db437c4d74304ee8d0bfd7a0dc9dabaf87ba0d6`.
+- Exact-head push CI: [39179606680](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39179606680) — PASS.
+- Exact-head pull-request CI: [39179610569](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39179610569) — PASS.
+- Both workflows report 123 tests passed, zero failures/skips; locked dependency validation, Python compilation and source/wheel builds passed.
+- Docker CI source revision/repository provenance, isolated read-only runtime, health/security-header and cleanup checks passed on this exact head.
+- Stage 17 now supports one to three declarative local `file.read_text` steps, with every step schema/policy-validated before execution, bounded aggregate output, per-step failure attribution, and hashes-only audit metadata. Shell/code/network/provider execution and side effects remain disabled.
+- Ollama provider rejects negative token usage; regression tests cover prompt and output token counts.
+- PR #1 remains open, draft and unmerged. `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
+- Overall release remains partial. The invalid canonical SQLite database has not been replaced/migrated; candidate recovery is only validated in isolation. Real voice/audio, native Android, encrypted PC–phone transport, provider-backed multi-agent orchestration, external email/calendar actions, device mesh and full release acceptance remain incomplete.
+
+This checkpoint supersedes older stage/report statements for the current state. Prior entries are retained as historical evidence.
+
+
 ## Latest verified published checkpoint — 19 October 2026
 
 - Feature branch HEAD: `0ff5f3cfbfdc4706ee2d007328b559e557a041d2`.
