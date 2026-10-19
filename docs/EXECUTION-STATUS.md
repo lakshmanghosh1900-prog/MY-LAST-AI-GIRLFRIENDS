@@ -1,5 +1,19 @@
 # MY LAST AI GIRLFRIENDS — Execution Status
 
+## Latest verified published checkpoint — 19 October 2026 (reliability hardening)
+
+- Feature branch HEAD: `1d9b705303077fc75ae29c9b8499c92c397439b6`.
+- Exact-head push CI: [39180312945](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39180312945) — PASS.
+- Exact-head pull-request CI: [39180316267](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39180316267) — PASS.
+- Both workflows: 128 tests passed, zero failures/skips; locked dependencies, Python compilation, source distribution and wheel build passed.
+- Docker provenance, isolated read-only container startup, runtime/security-header and cleanup CI job passed on this exact head.
+- Recent verified code hardening: Stage 17 bounded 1–3-step read-only declarative skills with all-step preflight policy, bounded aggregate result memory, per-step error reporting and hashes-only audit; Stage 09 malformed HTTPS URL authorities become typed research errors; non-finite decimal settings are rejected and doctor readiness now reuses startup validation; concurrent scheduler start/stop lifecycle is serialized.
+- PR #1 is open, draft and unmerged. `main` is unchanged at `c98a091330a05ef73823d9744bfd58d5c973059f`.
+- Stage 06 Docker build/provenance/runtime/cleanup sub-gate is now CI-verified. Overall release remains partial: canonical SQLite is invalid and has not been restored/replaced; the recovery candidate is validated only in isolation. Real voice/audio provider integration, native Android app/toolchain evidence, encrypted PC–phone transport, provider-backed multi-agent execution, external email/calendar effects, device mesh and complete release acceptance remain incomplete.
+
+This checkpoint supersedes older current-state statements; prior entries are retained as historical evidence.
+
+
 ## Latest verified published checkpoint — 19 October 2026 (Stage 17 increment)
 
 - Feature branch HEAD: `0db437c4d74304ee8d0bfd7a0dc9dabaf87ba0d6`.
