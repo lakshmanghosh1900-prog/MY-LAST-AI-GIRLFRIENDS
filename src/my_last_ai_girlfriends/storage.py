@@ -228,8 +228,26 @@ class Database:
     def __init__(self, path: Path | str):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._validate_existing_header()
         self._lock = threading.RLock()
         self.connection = self._open_connection()
+
+    def _validate_existing_header(self) -> None:
+        """Reject non-SQLite files before opening a writable SQLite connection.
+
+        Empty or missing files are valid creation targets. Existing non-empty
+        files must have SQLite's 16-byte signature; this check is read-only and
+        prevents journal-mode setup from touching a known-invalid database.
+        """
+        try:
+            with self.path.open("rb") as stream:
+                header = stream.read(16)
+        except FileNotFoundError:
+            return
+        if not header:
+            return
+        if header != b"SQLite format 3\\x00":
+            raise sqlite3.DatabaseError("file is not a SQLite database (invalid header)")
 
     def _open_connection(self) -> sqlite3.Connection:
         connection = self._connect()
