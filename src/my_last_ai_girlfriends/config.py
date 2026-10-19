@@ -147,7 +147,10 @@ def load_environment(path: Path = Path(".env"), environ: Mapping[str, str] | Non
 
 
 def _validate_provider_base_url(value: str, mode: str, provider: str) -> str:
-    parsed = urlsplit(value.strip())
+    try:
+        parsed = urlsplit(value.strip())
+    except ValueError as exc:
+        raise ConfigError("MLAG_PROVIDER_BASE_URL must be a credential-free absolute HTTP(S) URL") from exc
     if (
         parsed.scheme not in {"http", "https"}
         or not parsed.netloc
@@ -188,6 +191,14 @@ def diagnose_environment(report: EnvReport) -> dict:
     mode = report.values.get("MLAG_MODE", "offline").strip().lower()
     provider = report.values.get("MLAG_PROVIDER", "gemini").strip().lower()
     model = report.values.get("MLAG_MODEL", "gemini-3.8-flash").strip()
+    try:
+        # Reuse the same validation as service startup so the doctor does not
+        # say READY when mandatory provider credentials or endpoint settings
+        # would immediately cause startup to safe-stop.
+        Config.from_report(report)
+        ready = True
+    except (ConfigError, OSError, ValueError):
+        ready = False
     return {
         "dotenv_path": str(report.dotenv_path),
         "configuration_source": "process" if report.source.get("MLAG_AUTH_TOKEN", "").startswith("process") else "dotenv/default",
@@ -196,7 +207,7 @@ def diagnose_environment(report: EnvReport) -> dict:
         "mode": mode,
         "provider": provider,
         "model": model,
-        "ready": token_status(token) == "valid" and mode in {"offline", "real"},
+        "ready": ready,
         "api_key_present": bool(report.values.get("MLAG_GEMINI_API_KEY", "").strip()),
     }
 

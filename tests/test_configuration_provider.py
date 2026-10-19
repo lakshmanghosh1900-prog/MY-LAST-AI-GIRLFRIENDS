@@ -43,6 +43,25 @@ class ConfigurationAndProviderTests(unittest.TestCase):
             self.assertEqual(diagnosis["token_status"], "valid")
             self.assertNotIn("P" * 48, str(diagnosis))
 
+    def test_doctor_readiness_matches_startup_provider_requirements(self):
+        token = "T" * 48
+        real_without_key = load_environment(
+            Path("missing.env"), {"MLAG_AUTH_TOKEN": token, "MLAG_MODE": "real"}
+        )
+        self.assertFalse(diagnose_environment(real_without_key)["ready"])
+
+        real_with_key = load_environment(
+            Path("missing.env"),
+            {"MLAG_AUTH_TOKEN": token, "MLAG_MODE": "real", "MLAG_GEMINI_API_KEY": "K" * 40},
+        )
+        self.assertTrue(diagnose_environment(real_with_key)["ready"])
+
+        unsupported = load_environment(
+            Path("missing.env"),
+            {"MLAG_AUTH_TOKEN": token, "MLAG_MODE": "real", "MLAG_PROVIDER": "unknown", "MLAG_GEMINI_API_KEY": "K" * 40},
+        )
+        self.assertFalse(diagnose_environment(unsupported)["ready"])
+
     def test_legacy_dotenv_values_are_explicit_compatibility_only(self):
         with tempfile.TemporaryDirectory() as raw:
             path = Path(raw) / ".env"
@@ -69,7 +88,7 @@ class ConfigurationAndProviderTests(unittest.TestCase):
             "MLAG_MODE": "real",
             "MLAG_GEMINI_API_KEY": "K" * 40,
         }
-        for url in ("http://example.test/openai/", "https://user:pass@example.test/openai/", "not-a-url"):
+        for url in ("http://example.test/openai/", "https://user:pass@example.test/openai/", "https://[::1", "not-a-url"):
             with self.subTest(url=url):
                 with self.assertRaises(ConfigError):
                     Config.from_report(load_environment(Path("missing.env"), {**base, "MLAG_PROVIDER_BASE_URL": url}))
