@@ -5,11 +5,13 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from threading import Barrier, Event, Lock
+from threading import Barrier, Event, Lock, Thread
 
 from my_last_ai_girlfriends.scheduler import SchedulerError, SchedulerWorker, next_run_at, validate_schedule
 from my_last_ai_girlfriends.service import MyLastAIGirlfriendsService
 from my_last_ai_girlfriends.storage import Database
+
+from unittest.mock import patch
 
 from test_budget_service import FailingProvider, make_config
 
@@ -30,6 +32,44 @@ class SchedulerTests(unittest.TestCase):
         worker.stop()
         self.assertFalse(worker.running)
         self.assertGreaterEqual(len(calls), 1)
+
+    def test_concurrent_start_calls_create_only_one_worker(self):
+        release_thread_start = Event()
+        thread_start_entered = Event()
+        created_threads = []
+
+        class DelayedStartThread(Thread):
+            def start(self):
+                created_threads.append(self)
+                thread_start_entered.set()
+                if not release_thread_start.wait(timeout=3):
+                    raise RuntimeError("test did not release delayed thread start")
+                super().start()
+
+        worker = SchedulerWorker(lambda: None, interval_seconds=1)
+        with patch("my_last_ai_girlfriends.scheduler.Thread", DelayedStartThread):
+            first = Thread(target=worker.start)
+            first.start()
+            self.assertTrue(thread_start_entered.wait(timeout=1))
+            second_entered = Event()
+
+            def second_start():
+                second_entered.set()
+                worker.start()
+
+            second = Thread(target=second_start)
+            second.start()
+            self.assertTrue(second_entered.wait(timeout=1))
+            release_thread_start.set()
+            first.join(timeout=2)
+            second.join(timeout=2)
+            try:
+                self.assertFalse(first.is_alive())
+                self.assertFalse(second.is_alive())
+                self.assertEqual(len(created_threads), 1)
+                self.assertTrue(worker.running)
+            finally:
+                worker.stop(timeout=2)
 
     def test_worker_stop_timeout_keeps_live_thread_reference(self):
         started = Event()

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 from datetime import datetime, timedelta, timezone
-from threading import Event, Thread
+from threading import Event, Lock, Thread
 from typing import Callable
 
 
@@ -76,10 +76,12 @@ class SchedulerWorker:
         self._on_error = on_error
         self._stop = Event()
         self._thread: Thread | None = None
+        self._lifecycle_lock = Lock()
 
     @property
     def running(self) -> bool:
-        return self._thread is not None and self._thread.is_alive()
+        with self._lifecycle_lock:
+            return self._thread is not None and self._thread.is_alive()
 
     def _run(self) -> None:
         while not self._stop.is_set():
@@ -95,11 +97,15 @@ class SchedulerWorker:
             self._stop.wait(self._interval_seconds)
 
     def start(self) -> None:
-        if self.running:
-            return
-        self._stop.clear()
-        self._thread = Thread(target=self._run, name="mlag-scheduler", daemon=True)
-        self._thread.start()
+        # Serialize the liveness check and thread creation: concurrent callers
+        # must not start multiple workers against the same durable schedule set.
+        with self._lifecycle_lock:
+            if self._thread is not None and self._thread.is_alive():
+                return
+            self._stop.clear()
+            thread = Thread(target=self._run, name="mlag-scheduler", daemon=True)
+            self._thread = thread
+            thread.start()
 
     def stop(self, timeout: float = 5.0) -> None:
         if (
@@ -111,12 +117,13 @@ class SchedulerWorker:
             raise SchedulerError("SCHEDULER_STOP_TIMEOUT_INVALID", "stop timeout must be a finite non-negative number.")
 
         self._stop.set()
-        thread = self._thread
-        if thread is None:
-            return
-        thread.join(timeout=timeout)
-        if thread.is_alive():
-            # Keep the reference so start() cannot spawn a duplicate worker.
-            raise SchedulerError("SCHEDULER_STOP_TIMEOUT", "scheduler worker did not stop before timeout.")
-        if self._thread is thread:
-            self._thread = None
+        with self._lifecycle_lock:
+            thread = self._thread
+            if thread is None:
+                return
+            thread.join(timeout=timeout)
+            if thread.is_alive():
+                # Keep the reference so start() cannot spawn a duplicate worker.
+                raise SchedulerError("SCHEDULER_STOP_TIMEOUT", "scheduler worker did not stop before timeout.")
+            if self._thread is thread:
+                self._thread = None
