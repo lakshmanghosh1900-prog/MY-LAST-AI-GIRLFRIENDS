@@ -552,7 +552,11 @@ class MyLastAIGirlfriendsService:
                 )
                 raise GovernanceError(decision.code, decision.reason)
 
-        step_outputs = []
+        output_parts = []
+        captured_length = 0
+        aggregate_length = 0
+        max_output_chars = self.config.max_message_chars
+        step_hashes = []
         for step_number, step in enumerate(steps, start=1):
             try:
                 result = execute_registered_tool(
@@ -572,16 +576,30 @@ class MyLastAIGirlfriendsService:
                     },
                 )
                 raise GovernanceError(exc.code, str(exc)) from exc
-            step_outputs.append({"path": step["arguments"]["path"], "text": result["text"]})
 
-        # Keep the single-step response byte-for-byte compatible. Multi-step
-        # output is deterministic, path-labelled, and bounded as one result.
-        if len(step_outputs) == 1:
-            output = step_outputs[0]["text"]
-        else:
-            output = "\n\n".join(f"[{item['path']}]\n{item['text']}" for item in step_outputs)
-        truncated = len(output) > self.config.max_message_chars
-        output = output[: self.config.max_message_chars]
+            path = step["arguments"]["path"]
+            step_text = result["text"]
+            if len(steps) == 1:
+                segment = step_text
+            elif step_number == 1:
+                segment = f"[{path}]\n{step_text}"
+            else:
+                segment = f"\n\n[{path}]\n{step_text}"
+            aggregate_length += len(segment)
+            remaining = max_output_chars - captured_length
+            if remaining > 0:
+                bounded_segment = segment[:remaining]
+                output_parts.append(bounded_segment)
+                captured_length += len(bounded_segment)
+            step_hashes.append(
+                {"path": path, "output_hash": hashlib.sha256(step_text.encode("utf-8")).hexdigest()}
+            )
+            # Do not retain each potentially-large raw step output in the
+            # aggregate list; only this bounded prefix survives the iteration.
+            del segment, step_text, result
+
+        output = "".join(output_parts)
+        truncated = aggregate_length > max_output_chars
         self.db.add_audit(
             "skill_execution_succeeded",
             {
@@ -590,11 +608,8 @@ class MyLastAIGirlfriendsService:
                 "version": skill["version"],
                 "definition_hash": definition_hash,
                 "output_hash": hashlib.sha256(output.encode("utf-8")).hexdigest(),
-                "step_count": len(step_outputs),
-                "step_hashes": [
-                    {"path": item["path"], "output_hash": hashlib.sha256(item["text"].encode("utf-8")).hexdigest()}
-                    for item in step_outputs
-                ],
+                "step_count": len(steps),
+                "step_hashes": step_hashes,
                 "status": "SUCCEEDED",
                 "truncated": truncated,
             },
@@ -605,7 +620,7 @@ class MyLastAIGirlfriendsService:
             "version": skill["version"],
             "status": "SUCCEEDED",
             "output": output,
-            "step_count": len(step_outputs),
+            "step_count": len(steps),
             "truncated": truncated,
         }
 

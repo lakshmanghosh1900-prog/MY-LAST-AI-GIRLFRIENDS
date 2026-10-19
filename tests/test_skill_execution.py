@@ -6,6 +6,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from my_last_ai_girlfriends.governance import GovernanceError
 from my_last_ai_girlfriends.http_api import MyLastAIGirlfriendsHTTPServer
@@ -83,6 +84,44 @@ class SkillExecutionTests(unittest.TestCase):
                 self.assertEqual([item["path"] for item in audit["step_hashes"]], ["first.md", "second.txt"])
                 self.assertNotIn("first private note", row[0])
                 self.assertNotIn("second private note", row[0])
+            finally:
+                service.close()
+
+    def test_multi_step_skill_aggregate_output_is_bounded(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "workspace").mkdir(parents=True)
+            service = MyLastAIGirlfriendsService(make_config(root))
+            try:
+                manifest = {
+                    "schema_version": 1,
+                    "steps": [
+                        {"tool": "file.read_text", "arguments": {"path": "first.md"}},
+                        {"tool": "file.read_text", "arguments": {"path": "second.md"}},
+                        {"tool": "file.read_text", "arguments": {"path": "third.md"}},
+                    ],
+                }
+                skill = approve(service, manifest=manifest)
+                limit = service.config.max_message_chars
+                large_texts = ["A" * (limit + 10), "B" * (limit + 20), "C" * (limit + 30)]
+                with patch(
+                    "my_last_ai_girlfriends.service.execute_registered_tool",
+                    side_effect=[{"text": item} for item in large_texts],
+                ):
+                    result = service.execute_skill(skill["id"])
+                self.assertEqual(result["status"], "SUCCEEDED")
+                self.assertTrue(result["truncated"])
+                self.assertEqual(len(result["output"]), limit)
+                row = service.db.connection.execute(
+                    "SELECT metadata_json FROM audit_events WHERE event = 'skill_execution_succeeded' ORDER BY rowid DESC LIMIT 1"
+                ).fetchone()
+                audit = json.loads(row[0])
+                self.assertTrue(audit["truncated"])
+                self.assertEqual(audit["step_count"], 3)
+                self.assertEqual(len(audit["step_hashes"]), 3)
+                self.assertNotIn("A" * 100, row[0])
+                self.assertNotIn("B" * 100, row[0])
+                self.assertNotIn("C" * 100, row[0])
             finally:
                 service.close()
 
