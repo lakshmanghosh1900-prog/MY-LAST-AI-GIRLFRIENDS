@@ -149,6 +149,12 @@ class ConnectorTests(unittest.TestCase):
             with self.assertRaisesRegex(ConnectorError, "no result"):
                 call_mcp("https://example.com/mcp", "tools/list", {})
 
+    def test_mcp_rejects_non_finite_json_numbers(self):
+        for value in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(ConnectorError, "JSON data"):
+                    call_mcp("https://example.com/mcp", "tools/list", {"value": value})
+
     def test_connector_endpoints_reject_query_parameters(self):
         with self.assertRaisesRegex(ConnectorError, "query parameters"):
             call_mcp("https://example.com/mcp?access_token=secret", "tools/list", {})

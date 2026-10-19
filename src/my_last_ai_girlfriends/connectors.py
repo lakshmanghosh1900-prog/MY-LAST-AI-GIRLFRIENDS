@@ -75,7 +75,7 @@ def call_mcp(endpoint: str, method: str, params: dict, timeout_seconds: int = 10
     if not isinstance(max_bytes, int) or isinstance(max_bytes, bool) or not 1024 <= max_bytes <= 1_048_576:
         raise ConnectorError("MCP_RESPONSE_LIMIT_INVALID", "The connector response limit is invalid.")
     try:
-        serialized_params = json.dumps(params, ensure_ascii=False)
+        serialized_params = json.dumps(params, ensure_ascii=False, allow_nan=False)
     except (TypeError, ValueError) as exc:
         raise ConnectorError("MCP_PARAMS_INVALID", "MCP parameters must be JSON data.") from exc
     if not isinstance(params, dict) or len(serialized_params) > 32_000:
