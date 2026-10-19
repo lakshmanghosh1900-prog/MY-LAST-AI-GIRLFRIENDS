@@ -84,6 +84,19 @@ class ConfigurationAndProviderTests(unittest.TestCase):
         self.assertEqual(result.text, "local answer")
         self.assertTrue(provider.status()["local"])
 
+    def test_decimal_configuration_rejects_non_finite_numbers(self):
+        base = {"MLAG_AUTH_TOKEN": "T" * 48}
+        cases = (
+            ("MLAG_FX_INR_PER_USD", "NaN"),
+            ("MLAG_FX_INR_PER_USD", "sNaN"),
+            ("MLAG_MONTHLY_BUDGET_INR", "Infinity"),
+            ("MLAG_INPUT_PRICE_USD_PER_MILLION", "-Infinity"),
+        )
+        for key, value in cases:
+            with self.subTest(key=key, value=value):
+                with self.assertRaises(ConfigError):
+                    Config.from_report(load_environment(Path("missing.env"), {**base, key: value}))
+
     def test_placeholder_and_short_tokens_are_not_accepted(self):
         self.assertEqual(token_status("deleted"), "invalid-placeholder")
         self.assertEqual(token_status("short"), "too-short")

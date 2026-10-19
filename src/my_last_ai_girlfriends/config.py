@@ -73,6 +73,8 @@ def _decimal(value: str, name: str, minimum: str, maximum: str) -> Decimal:
         parsed = Decimal(value)
     except InvalidOperation as exc:
         raise ConfigError(f"{name} must be a decimal number") from exc
+    if not parsed.is_finite():
+        raise ConfigError(f"{name} must be a finite decimal number")
     if not Decimal(minimum) <= parsed <= Decimal(maximum):
         raise ConfigError(f"{name} must be between {minimum} and {maximum}")
     return parsed
