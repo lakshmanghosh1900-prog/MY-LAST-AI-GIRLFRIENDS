@@ -22,6 +22,15 @@ class ResearchTests(unittest.TestCase):
             validate_research_url("https://example.com/article?api_key=hidden")
         self.assertEqual(validate_research_url("https://example.com/article?topic=local"), "https://example.com/article?topic=local")
 
+    def test_research_rejects_more_credential_query_parameter_names(self):
+        for key in ("access_key", "privatekey", "session_id", "jwt", "credential", "X-Amz-Credential"):
+            with self.subTest(key=key), self.assertRaisesRegex(ResearchError, "secret-like"):
+                validate_research_url(f"https://example.com/article?{key}=hidden")
+        self.assertEqual(
+            validate_research_url("https://example.com/article?topic=local"),
+            "https://example.com/article?topic=local",
+        )
+
     def test_research_url_malformed_authority_is_a_controlled_error(self):
         with self.assertRaises(ResearchError) as caught_ipv6:
             validate_research_url("https://[::1")

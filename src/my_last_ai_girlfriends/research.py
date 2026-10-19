@@ -27,7 +27,12 @@ class ResearchSource:
     text: str
 
 
-_SECRET_QUERY_KEYS = frozenset({"key", "api_key", "apikey", "token", "access_token", "password", "secret", "signature", "sig", "auth"})
+_SECRET_QUERY_KEYS = frozenset({
+    "key", "api_key", "apikey", "token", "access_token", "password", "secret",
+    "signature", "sig", "auth", "access_key", "accesskey", "private_key",
+    "privatekey", "client_key", "clientkey", "session", "session_id",
+    "sessionid", "jwt", "bearer", "credential",
+})
 _WORD_RE = re.compile(r"[^\W_]+", re.UNICODE)
 _NEGATION_TOKENS = frozenset({"not", "no", "never", "cannot", "isnt", "doesnt", "without"})
 _SENTENCE_RE = re.compile(r"[^.!?;\n]+")
@@ -113,7 +118,10 @@ def validate_research_url(url: str) -> str:
     if port not in {None, 443}:
         raise ResearchError("RESEARCH_URL_PORT", "Research accepts only HTTPS port 443.")
     for key, _ in parse_qsl(parts.query, keep_blank_values=True):
-        if key.lower() in _SECRET_QUERY_KEYS or any(marker in key.lower() for marker in ("token", "secret", "password", "api")):
+        if key.lower() in _SECRET_QUERY_KEYS or any(
+            marker in key.lower()
+            for marker in ("token", "secret", "password", "api", "credential", "access_key", "accesskey", "private_key", "privatekey", "session", "jwt", "bearer")
+        ):
             raise ResearchError("RESEARCH_SECRET_QUERY", "Research URLs cannot contain secret-like query parameters.")
     return url
 

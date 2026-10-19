@@ -11,7 +11,7 @@ PATTERNS = (
     (re.compile(r"(?i)(password\s*[:=]\s*)[^\s,;]+"), r"\1[REDACTED]"),
     (
         re.compile(
-            r"(?i)([?&][a-z0-9_.-]*(?:token|secret|password|passwd|api[_-]?key|signature|credential|authorization|auth)[a-z0-9_.-]*=)[^&#\s]*"
+            r"(?i)([?&][a-z0-9_.-]*(?:token|secret|password|passwd|api[_-]?key|access[_-]?key|private[_-]?key|client[_-]?key|session(?:[_-]?id)?|jwt|bearer|signature|credential|authorization|auth)[a-z0-9_.-]*=)[^&#\s]*"
         ),
         r"\1[REDACTED]",
     ),
