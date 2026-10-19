@@ -48,19 +48,25 @@ class ConfigurationAndProviderTests(unittest.TestCase):
         real_without_key = load_environment(
             Path("missing.env"), {"MLAG_AUTH_TOKEN": token, "MLAG_MODE": "real"}
         )
-        self.assertFalse(diagnose_environment(real_without_key)["ready"])
+        missing_key_diagnosis = diagnose_environment(real_without_key)
+        self.assertFalse(missing_key_diagnosis["ready"])
+        self.assertIn("MLAG_GEMINI_API_KEY", missing_key_diagnosis["readiness_error"])
 
         real_with_key = load_environment(
             Path("missing.env"),
             {"MLAG_AUTH_TOKEN": token, "MLAG_MODE": "real", "MLAG_GEMINI_API_KEY": "K" * 40},
         )
-        self.assertTrue(diagnose_environment(real_with_key)["ready"])
+        valid_diagnosis = diagnose_environment(real_with_key)
+        self.assertTrue(valid_diagnosis["ready"])
+        self.assertIsNone(valid_diagnosis["readiness_error"])
 
         unsupported = load_environment(
             Path("missing.env"),
             {"MLAG_AUTH_TOKEN": token, "MLAG_MODE": "real", "MLAG_PROVIDER": "unknown", "MLAG_GEMINI_API_KEY": "K" * 40},
         )
-        self.assertFalse(diagnose_environment(unsupported)["ready"])
+        unsupported_diagnosis = diagnose_environment(unsupported)
+        self.assertFalse(unsupported_diagnosis["ready"])
+        self.assertIn("MLAG_PROVIDER", unsupported_diagnosis["readiness_error"])
 
     def test_legacy_dotenv_values_are_explicit_compatibility_only(self):
         with tempfile.TemporaryDirectory() as raw:
