@@ -74,29 +74,32 @@ def validate_skill_definition(definition: dict, capabilities: list[str]) -> dict
     if not isinstance(capabilities, list) or set(capabilities) != {"read-only-file"} or len(capabilities) != 1:
         raise GovernanceError("SKILL_CAPABILITY_REJECTED", "Executable skills require exactly the read-only-file capability.")
     steps = definition.get("steps")
-    if not isinstance(steps, list) or len(steps) != 1 or not isinstance(steps[0], dict):
-        raise GovernanceError("SKILL_DEFINITION_INVALID", "A skill must contain exactly one declarative step.")
-    step = steps[0]
-    if set(step) != {"tool", "arguments"} or step.get("tool") != "file.read_text":
-        raise GovernanceError("SKILL_TOOL_DISABLED", "Only the approved local file-read tool can execute in a skill.")
-    arguments = step.get("arguments")
-    if not isinstance(arguments, dict) or set(arguments) != {"path"}:
-        raise GovernanceError("SKILL_ARGUMENTS_INVALID", "The file-read step requires exactly one path argument.")
-    path = arguments.get("path")
-    normalized = path.replace("\\", "/") if isinstance(path, str) else ""
-    parts = normalized.split("/") if normalized else []
-    if (
-        not isinstance(path, str)
-        or not normalized.strip()
-        or len(normalized) > 512
-        or "\x00" in path
-        or normalized.startswith("/")
-        or any(part in {"", ".", ".."} for part in parts)
-        or any(part.startswith(".") for part in parts)
-        or ":" in normalized
-    ):
-        raise GovernanceError("SKILL_PATH_INVALID", "Skill paths must be clean, relative, visible text-file paths.")
-    return {"schema_version": 1, "steps": [{"tool": "file.read_text", "arguments": {"path": normalized}}]}
+    if not isinstance(steps, list) or not 1 <= len(steps) <= 3 or not all(isinstance(step, dict) for step in steps):
+        raise GovernanceError("SKILL_DEFINITION_INVALID", "A skill must contain between one and three declarative steps.")
+
+    normalized_steps = []
+    for step in steps:
+        if set(step) != {"tool", "arguments"} or step.get("tool") != "file.read_text":
+            raise GovernanceError("SKILL_TOOL_DISABLED", "Only the approved local file-read tool can execute in a skill.")
+        arguments = step.get("arguments")
+        if not isinstance(arguments, dict) or set(arguments) != {"path"}:
+            raise GovernanceError("SKILL_ARGUMENTS_INVALID", "The file-read step requires exactly one path argument.")
+        path = arguments.get("path")
+        normalized = path.replace("\\", "/") if isinstance(path, str) else ""
+        parts = normalized.split("/") if normalized else []
+        if (
+            not isinstance(path, str)
+            or not normalized.strip()
+            or len(normalized) > 512
+            or "\x00" in path
+            or normalized.startswith("/")
+            or any(part in {"", ".", ".."} for part in parts)
+            or any(part.startswith(".") for part in parts)
+            or ":" in normalized
+        ):
+            raise GovernanceError("SKILL_PATH_INVALID", "Skill paths must be clean, relative, visible text-file paths.")
+        normalized_steps.append({"tool": "file.read_text", "arguments": {"path": normalized}})
+    return {"schema_version": 1, "steps": normalized_steps}
 
 
 def validate_connector_endpoint(endpoint: str) -> str:

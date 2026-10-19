@@ -51,6 +51,69 @@ class SkillExecutionTests(unittest.TestCase):
             finally:
                 service.close()
 
+    def test_approved_multi_step_skill_reads_at_most_three_files_and_audits_hashes(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            workspace = root / "workspace"
+            workspace.mkdir(parents=True)
+            (workspace / "first.md").write_text("first private note", encoding="utf-8")
+            (workspace / "second.txt").write_text("second private note", encoding="utf-8")
+            service = MyLastAIGirlfriendsService(make_config(root))
+            try:
+                manifest = {
+                    "schema_version": 1,
+                    "steps": [
+                        {"tool": "file.read_text", "arguments": {"path": "first.md"}},
+                        {"tool": "file.read_text", "arguments": {"path": "second.txt"}},
+                    ],
+                }
+                skill = approve(service, manifest=manifest)
+                result = service.execute_skill(skill["id"])
+                self.assertEqual(result["status"], "SUCCEEDED")
+                self.assertEqual(result["step_count"], 2)
+                self.assertEqual(
+                    result["output"],
+                    "[first.md]\nfirst private note\n\n[second.txt]\nsecond private note",
+                )
+                row = service.db.connection.execute(
+                    "SELECT metadata_json FROM audit_events WHERE event = 'skill_execution_succeeded' ORDER BY rowid DESC LIMIT 1"
+                ).fetchone()
+                audit = json.loads(row[0])
+                self.assertEqual(audit["step_count"], 2)
+                self.assertEqual([item["path"] for item in audit["step_hashes"]], ["first.md", "second.txt"])
+                self.assertNotIn("first private note", row[0])
+                self.assertNotIn("second private note", row[0])
+            finally:
+                service.close()
+
+    def test_multi_step_skill_failure_returns_no_partial_output_and_audits_step(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            workspace = root / "workspace"
+            workspace.mkdir(parents=True)
+            (workspace / "first.md").write_text("do not leak partial output", encoding="utf-8")
+            service = MyLastAIGirlfriendsService(make_config(root))
+            try:
+                manifest = {
+                    "schema_version": 1,
+                    "steps": [
+                        {"tool": "file.read_text", "arguments": {"path": "first.md"}},
+                        {"tool": "file.read_text", "arguments": {"path": "missing.md"}},
+                    ],
+                }
+                skill = approve(service, manifest=manifest)
+                with self.assertRaisesRegex(GovernanceError, "does not exist"):
+                    service.execute_skill(skill["id"])
+                row = service.db.connection.execute(
+                    "SELECT metadata_json FROM audit_events WHERE event = 'skill_execution_failed' ORDER BY rowid DESC LIMIT 1"
+                ).fetchone()
+                audit = json.loads(row[0])
+                self.assertEqual(audit["step_number"], 2)
+                self.assertEqual(audit["error_code"], "FILE_NOT_FOUND")
+                self.assertNotIn("do not leak partial output", row[0])
+            finally:
+                service.close()
+
     def test_unapproved_metadata_only_and_invalid_skills_cannot_execute(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -73,9 +136,10 @@ class SkillExecutionTests(unittest.TestCase):
                     service.execute_skill(metadata_only["id"])
 
                 invalid = [
-                    ({"schema_version": 1, "steps": []}, "exactly one"),
+                    ({"schema_version": 1, "steps": []}, "between one and three"),
                     ({"schema_version": 1, "steps": [{"tool": "code.execute", "arguments": {}}]}, "local file-read"),
                     (definition("../notes.md"), "relative"),
+                    ({"schema_version": 1, "steps": [definition()["steps"][0]] * 4}, "between one and three"),
                 ]
                 for manifest, message in invalid:
                     with self.assertRaisesRegex(GovernanceError, message):

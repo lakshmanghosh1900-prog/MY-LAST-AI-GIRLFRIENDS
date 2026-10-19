@@ -531,23 +531,55 @@ class MyLastAIGirlfriendsService:
 
         execution_id = self.db.new_id()
         definition_hash = hashlib.sha256(canonical_json(normalized).encode("utf-8")).hexdigest()
-        arguments = normalized["steps"][0]["arguments"]
-        decision = self.policy.check_tool("file.read_text", arguments)
-        if decision.decision != Decision.ALLOW:
-            self.db.add_audit(
-                "skill_execution_failed",
-                {"execution_id": execution_id, "skill_id": skill_id, "version": skill["version"], "definition_hash": definition_hash, "status": "FAILED", "error_code": decision.code},
-            )
-            raise GovernanceError(decision.code, decision.reason)
-        try:
-            result = execute_registered_tool("file.read_text", arguments, file_tool=self.file_tool, web_tool=self.web_tool)
-        except ToolExecutionError as exc:
-            self.db.add_audit(
-                "skill_execution_failed",
-                {"execution_id": execution_id, "skill_id": skill_id, "version": skill["version"], "definition_hash": definition_hash, "status": "FAILED", "error_code": exc.code},
-            )
-            raise GovernanceError(exc.code, str(exc)) from exc
-        output = result["text"]
+        steps = normalized["steps"]
+
+        # Validate every step before executing any of them. Skill capabilities
+        # remain strictly read-only and handlers remain registry-bound.
+        for step_number, step in enumerate(steps, start=1):
+            decision = self.policy.check_tool(step["tool"], step["arguments"])
+            if decision.decision != Decision.ALLOW:
+                self.db.add_audit(
+                    "skill_execution_failed",
+                    {
+                        "execution_id": execution_id,
+                        "skill_id": skill_id,
+                        "version": skill["version"],
+                        "definition_hash": definition_hash,
+                        "step_number": step_number,
+                        "status": "FAILED",
+                        "error_code": decision.code,
+                    },
+                )
+                raise GovernanceError(decision.code, decision.reason)
+
+        step_outputs = []
+        for step_number, step in enumerate(steps, start=1):
+            try:
+                result = execute_registered_tool(
+                    step["tool"], step["arguments"], file_tool=self.file_tool, web_tool=self.web_tool
+                )
+            except ToolExecutionError as exc:
+                self.db.add_audit(
+                    "skill_execution_failed",
+                    {
+                        "execution_id": execution_id,
+                        "skill_id": skill_id,
+                        "version": skill["version"],
+                        "definition_hash": definition_hash,
+                        "step_number": step_number,
+                        "status": "FAILED",
+                        "error_code": exc.code,
+                    },
+                )
+                raise GovernanceError(exc.code, str(exc)) from exc
+            step_outputs.append({"path": step["arguments"]["path"], "text": result["text"]})
+
+        # Keep the single-step response byte-for-byte compatible. Multi-step
+        # output is deterministic, path-labelled, and bounded as one result.
+        if len(step_outputs) == 1:
+            output = step_outputs[0]["text"]
+        else:
+            output = "\n\n".join(f"[{item['path']}]\n{item['text']}" for item in step_outputs)
         truncated = len(output) > self.config.max_message_chars
         output = output[: self.config.max_message_chars]
         self.db.add_audit(
@@ -558,6 +590,11 @@ class MyLastAIGirlfriendsService:
                 "version": skill["version"],
                 "definition_hash": definition_hash,
                 "output_hash": hashlib.sha256(output.encode("utf-8")).hexdigest(),
+                "step_count": len(step_outputs),
+                "step_hashes": [
+                    {"path": item["path"], "output_hash": hashlib.sha256(item["text"].encode("utf-8")).hexdigest()}
+                    for item in step_outputs
+                ],
                 "status": "SUCCEEDED",
                 "truncated": truncated,
             },
@@ -568,6 +605,7 @@ class MyLastAIGirlfriendsService:
             "version": skill["version"],
             "status": "SUCCEEDED",
             "output": output,
+            "step_count": len(step_outputs),
             "truncated": truncated,
         }
 
