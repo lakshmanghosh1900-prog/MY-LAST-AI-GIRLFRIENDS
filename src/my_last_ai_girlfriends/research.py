@@ -100,10 +100,17 @@ def analyze_claims(claims: list[str], sources: list[dict]) -> dict:
 def validate_research_url(url: str) -> str:
     if not isinstance(url, str) or len(url) > 2048:
         raise ResearchError("RESEARCH_URL_INVALID", "Each research URL must be a bounded HTTPS URL.")
-    parts = urlsplit(url)
+    try:
+        parts = urlsplit(url)
+    except ValueError as exc:
+        raise ResearchError("RESEARCH_URL_INVALID", "Research URL syntax is invalid.") from exc
     if parts.scheme != "https" or not parts.netloc or parts.username or parts.password or parts.fragment:
         raise ResearchError("RESEARCH_URL_INVALID", "Research accepts credential-free HTTPS URLs without fragments.")
-    if parts.port not in {None, 443}:
+    try:
+        port = parts.port
+    except ValueError as exc:
+        raise ResearchError("RESEARCH_URL_PORT", "Research accepts only HTTPS port 443.") from exc
+    if port not in {None, 443}:
         raise ResearchError("RESEARCH_URL_PORT", "Research accepts only HTTPS port 443.")
     for key, _ in parse_qsl(parts.query, keep_blank_values=True):
         if key.lower() in _SECRET_QUERY_KEYS or any(marker in key.lower() for marker in ("token", "secret", "password", "api")):

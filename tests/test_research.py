@@ -22,6 +22,19 @@ class ResearchTests(unittest.TestCase):
             validate_research_url("https://example.com/article?api_key=hidden")
         self.assertEqual(validate_research_url("https://example.com/article?topic=local"), "https://example.com/article?topic=local")
 
+    def test_research_url_malformed_authority_is_a_controlled_error(self):
+        with self.assertRaises(ResearchError) as caught_ipv6:
+            validate_research_url("https://[::1")
+        self.assertEqual(caught_ipv6.exception.code, "RESEARCH_URL_INVALID")
+
+        with self.assertRaises(ResearchError) as caught_port:
+            validate_research_url("https://example.com:not-a-port/article")
+        self.assertEqual(caught_port.exception.code, "RESEARCH_URL_PORT")
+
+        with self.assertRaises(ResearchError) as caught_range:
+            validate_research_url("https://example.com:65536/article")
+        self.assertEqual(caught_range.exception.code, "RESEARCH_URL_PORT")
+
     def test_research_run_persists_sources_citations_and_partial_failures(self):
         with tempfile.TemporaryDirectory() as raw:
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))
