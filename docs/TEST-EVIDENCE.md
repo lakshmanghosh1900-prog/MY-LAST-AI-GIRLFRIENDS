@@ -1,5 +1,19 @@
 # MY LAST AI GIRLFRIENDS — Test Evidence
 
+## Latest verified published checkpoint — 19 October 2026
+
+- Feature branch HEAD: `0ff5f3cfbfdc4706ee2d007328b559e557a041d2`.
+- Exact-head push CI: [39179274883](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39179274883) — PASS.
+- Exact-head pull-request CI: [39179278103](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39179278103) — PASS.
+- Both workflows report `make check`: 121 tests passed, zero failures and zero skips; `uv lock --check`, `uv sync --locked`, compilation and `uv build` passed.
+- The Docker CI job passes source-revision/source-label provenance, isolated read-only container startup, security-header/runtime checks and cleanup on this head. Docker sub-verification is now evidenced by CI; this does not close the entire release gate.
+- Recent hardening includes pinned public-fetch boundaries, closing HTTP responses on all fetch paths, CI container provenance/smoke, and Ollama negative token-usage rejection with regression coverage.
+- PR #1 remains open, draft and unmerged. `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
+- Release status remains partial: live canonical SQLite restoration has not been performed; the canonical file is invalid and protected, while the recovery candidate is only verified in isolation. Do not run against or overwrite the canonical file. Owner-controlled restoration and remaining voice, Android, encrypted transport and external-integration acceptance remain outstanding.
+
+This checkpoint supersedes older status statements that GitHub authentication or Docker availability prevented publishing or CI-based container verification. Historical checkpoint notes below are retained as history.
+
+
 ## Current local continuation checkpoint — 18 October 2026
 
 The local continuation through `b3af8ad` and the recovery-hardening increment
