@@ -580,23 +580,30 @@ class MyLastAIGirlfriendsService:
             path = step["arguments"]["path"]
             step_text = result["text"]
             if len(steps) == 1:
-                segment = step_text
+                prefix = ""
             elif step_number == 1:
-                segment = f"[{path}]\n{step_text}"
+                prefix = f"[{path}]\n"
             else:
-                segment = f"\n\n[{path}]\n{step_text}"
-            aggregate_length += len(segment)
+                prefix = f"\n\n[{path}]\n"
+            aggregate_length += len(prefix) + len(step_text)
+
+            # Append only the part that fits. Avoid creating a second
+            # full-size string by concatenating a potentially-large file read
+            # with its label before truncation.
             remaining = max_output_chars - captured_length
             if remaining > 0:
-                bounded_segment = segment[:remaining]
-                output_parts.append(bounded_segment)
-                captured_length += len(bounded_segment)
+                bounded_prefix = prefix[:remaining]
+                output_parts.append(bounded_prefix)
+                captured_length += len(bounded_prefix)
+                remaining = max_output_chars - captured_length
+                if remaining > 0:
+                    bounded_text = step_text[:remaining]
+                    output_parts.append(bounded_text)
+                    captured_length += len(bounded_text)
             step_hashes.append(
                 {"path": path, "output_hash": hashlib.sha256(step_text.encode("utf-8")).hexdigest()}
             )
-            # Do not retain each potentially-large raw step output in the
-            # aggregate list; only this bounded prefix survives the iteration.
-            del segment, step_text, result
+            del prefix, step_text, result
 
         output = "".join(output_parts)
         truncated = aggregate_length > max_output_chars
