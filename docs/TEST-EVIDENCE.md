@@ -1,5 +1,23 @@
 # MY LAST AI GIRLFRIENDS — Test Evidence
 
+## Latest verified published checkpoint — 19 October 2026
+
+- Feature branch HEAD: `d3f4999b8cebf9b5b4504917bac7166c7dbb7b67`.
+- Exact-head push CI: [39181363777](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39181363777) — PASS.
+- Exact-head pull-request CI: [39181368184](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39181368184) — PASS.
+- Both workflows: 136 tests passed, zero failures and zero skips; locked dependency validation, compilation and sdist/wheel build passed.
+- Docker CI verifies exact image source revision and repository labels, isolated read-only runtime/health/security headers, and container cleanup; all passed on this head.
+- Recent verified hardening: invalid existing SQLite headers are rejected before SQLite opens a writable connection; tests prove invalid bytes remain unchanged and no WAL/SHM sidecars are created. This does not restore or repair the canonical owner database.
+- Stage 17 supports at most three registered, read-only local text-file skill steps, preflights every step's policy, bounds aggregation memory/output, and records hashes rather than raw file contents in audit metadata.
+- Stage 18 local deterministic pipeline validates integer limits and returns explicit `execution_mode=local_deterministic`, `ai_generated=false` markers.
+- Stage 21 returns a controlled 400 for malformed request targets; malformed research URL authorities and non-finite decimal settings are rejected; doctor readiness now uses startup validation and reports a safe diagnostic reason. Scheduler start/stop races are covered.
+- Secret-like URL query parameters (including access keys, sessions, JWTs and credentials) are rejected in research URLs and redacted in HTTP audit logs.
+- PR #1 remains open, draft and unmerged. `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
+- Release status is still partial. The canonical SQLite database is invalid and has not been restored/replaced; the recovery candidate is verified only in isolation. Real voice/audio-provider integration, native Android deliverable/device verification, encrypted PC–phone transport, provider-backed multi-step agents, live external email/calendar effects, device mesh and owner-controlled data restoration remain incomplete or require external evidence.
+
+This checkpoint supersedes older current-state statements; prior entries are retained as historical evidence.
+
+
 ## Latest verified published checkpoint — 19 October 2026 (reliability hardening)
 
 - Feature branch HEAD: `1d9b705303077fc75ae29c9b8499c92c397439b6`.
