@@ -66,6 +66,18 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
     def _error(self, status: int, code: str, message: str, request_id: str) -> None:
         self._send(status, {"error": {"code": code, "message": message}}, request_id)
 
+    def _request_path(self, request_id: str) -> str | None:
+        try:
+            return urlsplit(self.path).path
+        except ValueError:
+            self._error(
+                HTTPStatus.BAD_REQUEST,
+                "REQUEST_TARGET_INVALID",
+                "The request target is invalid.",
+                request_id,
+            )
+            return None
+
     def _host_ok(self) -> bool:
         host = self.headers.get("Host", "").lower()
         port = self.server.server_address[1]
@@ -116,7 +128,9 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         request_id = self._request_id()
-        path = urlsplit(self.path).path
+        path = self._request_path(request_id)
+        if path is None:
+            return
         if path == "/":
             data = INDEX_HTML.encode("utf-8")
             self.send_response(HTTPStatus.OK)
@@ -221,7 +235,9 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
         request_id = self._request_id()
         if not self._authorized(request_id):
             return
-        path = urlsplit(self.path).path
+        path = self._request_path(request_id)
+        if path is None:
+            return
         payload = self._json_body(request_id)
         if payload is None:
             return

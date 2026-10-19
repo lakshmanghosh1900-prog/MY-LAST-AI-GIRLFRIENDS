@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 from my_last_ai_girlfriends.auth import AuthManager
-from my_last_ai_girlfriends.http_api import MyLastAIGirlfriendsHTTPServer
+from my_last_ai_girlfriends.http_api import MyLastAIGirlfriendsHTTPServer, MyLastAIGirlfriendsRequestHandler
 from my_last_ai_girlfriends.service import MyLastAIGirlfriendsService
 
 from test_budget_service import make_config
@@ -49,6 +49,22 @@ class HttpApiTests(unittest.TestCase):
                 server.shutdown()
                 server.server_close()
                 service.close()
+
+    def test_request_path_rejects_malformed_authority_as_controlled_400(self):
+        handler = object.__new__(MyLastAIGirlfriendsRequestHandler)
+        handler.path = "//[malformed"
+        errors = []
+        handler._error = lambda *args: errors.append(args)
+
+        self.assertIsNone(handler._request_path("request-1"))
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0][0], 400)
+        self.assertEqual(errors[0][1], "REQUEST_TARGET_INVALID")
+
+    def test_request_path_extracts_normal_origin_form_path(self):
+        handler = object.__new__(MyLastAIGirlfriendsRequestHandler)
+        handler.path = "/v1/health?safe=1"
+        self.assertEqual(handler._request_path("request-2"), "/v1/health")
 
     def test_auth_manager_does_not_accept_query_style_token(self):
         manager = AuthManager("T" * 64)
