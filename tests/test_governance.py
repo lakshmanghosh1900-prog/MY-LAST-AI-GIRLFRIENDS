@@ -188,10 +188,15 @@ class GovernanceTests(unittest.TestCase):
             service = MyLastAIGirlfriendsService(make_config(Path(raw)))
             result = service.run_agents("prepare a local plan")
             self.assertEqual(result["status"], "SUCCEEDED")
+            self.assertEqual(result["execution_mode"], "local_deterministic")
+            self.assertFalse(result["ai_generated"])
             self.assertEqual(result["capability_set"], ["read-only-file", "public-fetch"])
             stored = service.db.connection.execute("SELECT id FROM agent_runs WHERE id = ?", (result["run_id"],)).fetchone()
             self.assertIsNotNone(stored)
-            self.assertEqual(service.list_agent_runs()[0]["id"], result["run_id"])
+            listed = service.list_agent_runs()[0]
+            self.assertEqual(listed["id"], result["run_id"])
+            self.assertEqual(listed["execution_mode"], "local_deterministic")
+            self.assertFalse(listed["ai_generated"])
             service.close()
 
 

@@ -27,6 +27,8 @@ class AgentRun:
         return {
             "run_id": self.run_id,
             "status": self.status,
+            "execution_mode": "local_deterministic",
+            "ai_generated": False,
             "roles": list(self.roles),
             "depth": self.depth,
             "capability_set": list(self.capability_set),

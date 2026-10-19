@@ -699,6 +699,8 @@ class MyLastAIGirlfriendsService:
             item = dict(row)
             item["roles"] = json.loads(item.pop("roles_json"))
             item["evidence"] = json.loads(item.pop("evidence_json"))
+            item["execution_mode"] = "local_deterministic"
+            item["ai_generated"] = False
             runs.append(item)
         return runs
 
