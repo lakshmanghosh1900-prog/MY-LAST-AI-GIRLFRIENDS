@@ -162,6 +162,23 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
         if path == "/v1/tools":
             self._send(HTTPStatus.OK, {"tools": list_tools()}, request_id)
             return
+        if path == "/v1/audit":
+            query = parse_qs(urlsplit(self.path).query)
+            raw_limit = query.get("limit", ["50"])[0]
+            event = query.get("event", [None])[0]
+            if not raw_limit.isdigit() or len(raw_limit) > 3 or not 1 <= int(raw_limit) <= 200:
+                self._error(HTTPStatus.BAD_REQUEST, "AUDIT_LIMIT_INVALID", "limit must be an integer between 1 and 200.", request_id)
+                return
+            if event is not None and (not event.strip() or len(event) > 64):
+                self._error(HTTPStatus.BAD_REQUEST, "AUDIT_EVENT_INVALID", "event must be a short event name.", request_id)
+                return
+            try:
+                events = self.server.service.audit_events(int(raw_limit), event)
+            except ValueError as exc:
+                self._error(HTTPStatus.BAD_REQUEST, "AUDIT_QUERY_INVALID", str(exc), request_id)
+                return
+            self._send(HTTPStatus.OK, {"events": events}, request_id)
+            return
         if path == "/v1/capabilities":
             self._send(HTTPStatus.OK, {"capabilities": self.server.service.capability_inventory()}, request_id)
             return

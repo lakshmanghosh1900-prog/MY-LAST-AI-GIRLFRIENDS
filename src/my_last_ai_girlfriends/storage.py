@@ -203,6 +203,7 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, created_at, id);
 CREATE INDEX IF NOT EXISTS idx_tasks_conversation ON tasks(conversation_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_budget_bucket ON budget_events(bucket_month);
+CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_events(created_at, id);
 """
 
 
@@ -704,6 +705,36 @@ class Database:
                 "INSERT INTO audit_events(id, task_id, event, metadata_json, created_at) VALUES (?, ?, ?, ?, ?)",
                 (self.new_id(), task_id, event, json.dumps(metadata, sort_keys=True, separators=(",", ":")), utc_now()),
             )
+
+    @_serialized_database_access
+    def list_audit_events(self, limit: int = 50, event: str | None = None) -> list[dict]:
+        """Read back recent audit events newest-first with parsed metadata."""
+
+        bounded = max(1, min(200, int(limit)))
+        if event is None:
+            rows = self.connection.execute(
+                "SELECT id, task_id, event, metadata_json, created_at FROM audit_events ORDER BY created_at DESC, id DESC LIMIT ?",
+                (bounded,),
+            ).fetchall()
+        else:
+            rows = self.connection.execute(
+                "SELECT id, task_id, event, metadata_json, created_at FROM audit_events WHERE event = ? ORDER BY created_at DESC, id DESC LIMIT ?",
+                (event, bounded),
+            ).fetchall()
+        events: list[dict] = []
+        for row in rows:
+            item = dict(row)
+            raw = item.pop("metadata_json", "{}")
+            if isinstance(raw, str):
+                try:
+                    parsed = json.loads(raw)
+                except (TypeError, ValueError):
+                    parsed = {}
+            else:
+                parsed = {}
+            item["metadata"] = parsed if isinstance(parsed, dict) else {}
+            events.append(item)
+        return events
 
     @_serialized_database_access
     def get_setting(self, key: str, default: str = "") -> str:
