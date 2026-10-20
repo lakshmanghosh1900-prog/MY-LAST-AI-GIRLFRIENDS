@@ -9,6 +9,7 @@ from __future__ import annotations
 import http.client
 import ipaddress
 import json
+import math
 import socket
 import ssl
 import uuid
@@ -21,6 +22,17 @@ class ConnectorError(RuntimeError):
     def __init__(self, code: str, message: str):
         super().__init__(message)
         self.code = code
+
+
+def _reject_non_finite_constant(value: str):
+    raise ValueError(f"Non-standard JSON numeric constant: {value}")
+
+
+def _parse_finite_json_float(value: str) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise ValueError("JSON number is outside the supported finite range")
+    return parsed
 
 
 def _resolve_public(host: str) -> str:
@@ -121,8 +133,12 @@ def call_mcp(endpoint: str, method: str, params: dict, timeout_seconds: int = 10
     if len(raw) > max_bytes:
         raise ConnectorError("MCP_RESPONSE_TOO_LARGE", "The connector response exceeded the configured limit.")
     try:
-        payload = json.loads(raw.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        payload = json.loads(
+            raw.decode("utf-8"),
+            parse_constant=_reject_non_finite_constant,
+            parse_float=_parse_finite_json_float,
+        )
+    except (UnicodeDecodeError, ValueError) as exc:
         raise ConnectorError("MCP_RESPONSE_INVALID", "The connector returned invalid JSON.") from exc
     if not isinstance(payload, dict) or payload.get("jsonrpc") != "2.0" or payload.get("id") != request_id:
         raise ConnectorError("MCP_RESPONSE_INVALID", "The connector returned an invalid JSON-RPC response.")

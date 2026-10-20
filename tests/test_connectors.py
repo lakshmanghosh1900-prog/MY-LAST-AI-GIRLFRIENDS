@@ -155,6 +155,18 @@ class ConnectorTests(unittest.TestCase):
                 with self.assertRaisesRegex(ConnectorError, "JSON data"):
                     call_mcp("https://example.com/mcp", "tools/list", {"value": value})
 
+    def test_mcp_rejects_non_finite_json_numbers_in_response(self):
+        for value in (float("nan"), float("inf"), float("-inf"), 1e309):
+            with self.subTest(value=value):
+                connection = FakeConnection(result={"value": value})
+                with patch("my_last_ai_girlfriends.connectors._resolve_public", return_value="93.184.216.34"), patch(
+                    "my_last_ai_girlfriends.connectors._PinnedHTTPSConnection", return_value=connection
+                ):
+                    with self.assertRaisesRegex(ConnectorError, "invalid JSON"):
+                        call_mcp("https://example.com/mcp", "tools/list", {})
+                self.assertTrue(connection.closed)
+                self.assertTrue(connection.response.closed)
+
     def test_connector_endpoints_reject_query_parameters(self):
         with self.assertRaisesRegex(ConnectorError, "query parameters"):
             call_mcp("https://example.com/mcp?access_token=secret", "tools/list", {})
