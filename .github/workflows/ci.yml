@@ -1,0 +1,156 @@
+name: My Last AI Girlfriends CI
+
+on:
+  push:
+    branches:
+      - main
+      - feat/mlag-real-ai-premium-ui
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mlag-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Locked Python checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.5.31"
+
+      - name: Validate dependency lock
+        run: uv lock --check
+
+      - name: Install locked project
+        run: uv sync --locked
+
+      - name: Compile source and tests
+        run: uv run --locked python -m compileall -q src tests
+
+      - name: Run project checks
+        run: make check
+
+      - name: Build distributable package
+        run: uv build
+
+  container-smoke:
+    name: Docker provenance, runtime and cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Build image with source revision provenance
+        env:
+          VCS_REF: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          image="mlag-ci:${VCS_REF}"
+          docker build --pull --build-arg VCS_REF="${VCS_REF}" -t "${image}" .
+          actual="$(docker image inspect --format='{{ index .Config.Labels "org.opencontainers.image.revision" }}' "${image}")"
+          test "${actual}" = "${VCS_REF}"
+          source="$(docker image inspect --format='{{ index .Config.Labels "org.opencontainers.image.source" }}' "${image}")"
+          test "${source}" = "https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS"
+          echo "image_revision=${actual}"
+          echo "image_source=${source}"
+
+      - name: Run isolated read-only container smoke and verify cleanup
+        env:
+          VCS_REF: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          image="mlag-ci:${VCS_REF}"
+          container="mlag-smoke-${RUN_ID}-${RUN_ATTEMPT}"
+          token="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
+          echo "::add-mask::${token}"
+          cleanup() {
+            result=$?
+            trap - EXIT
+            if [ "${result}" -ne 0 ] && docker container inspect "${container}" >/dev/null 2>&1; then
+              docker logs "${container}" || true
+            fi
+            docker rm -f "${container}" >/dev/null 2>&1 || true
+            docker image rm -f "${image}" >/dev/null 2>&1 || true
+            exit "${result}"
+          }
+          trap cleanup EXIT
+          docker run -d \
+            --name "${container}" \
+            --label "org.opencontainers.image.revision=${VCS_REF}" \
+            --publish 127.0.0.1:8787:8787 \
+            --read-only \
+            --cap-drop=ALL \
+            --security-opt=no-new-privileges \
+            --pids-limit=128 \
+            --memory=256m \
+            --cpus=1.0 \
+            --tmpfs /tmp:rw,noexec,nosuid,size=16m \
+            --tmpfs /app/data:rw,noexec,nosuid,size=64m \
+            --tmpfs /app/workspace:rw,noexec,nosuid,size=64m \
+            --env MLAG_AUTH_TOKEN="${token}" \
+            --env MLAG_MODE=offline \
+            --env MLAG_DATA_DIR=/app/data \
+            --env MLAG_ALLOWED_ROOT=/app/workspace \
+            "${image}" >/dev/null
+
+          ready=0
+          for attempt in $(seq 1 30); do
+            if curl --silent --show-error --fail --max-time 2 http://127.0.0.1:8787/ >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "${ready}" -eq 1
+
+          headers="$(curl --silent --show-error --fail --dump-header - --output /dev/null http://127.0.0.1:8787/)"
+          printf '%s\n' "${headers}" | grep -qi '^Content-Security-Policy:'
+          printf '%s\n' "${headers}" | grep -qi '^X-Frame-Options: DENY'
+          unauth_code="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8787/v1/health)"
+          test "${unauth_code}" = "401"
+
+          health="$(curl --silent --show-error --fail --max-time 3 -H "Authorization: Bearer ${token}" http://127.0.0.1:8787/v1/health)"
+          printf '%s' "${health}" | python3 -c 'import json,sys; p=json.load(sys.stdin); assert p["assistant"] == "My Companion"; assert p["mode"] == "offline"; assert p["database"] == "ready"'
+          readiness="$(curl --silent --show-error --fail --max-time 3 -H "Authorization: Bearer ${token}" http://127.0.0.1:8787/v1/readiness/local)"
+          printf '%s' "${readiness}" | python3 -c 'import json,sys; p=json.load(sys.stdin); assert p["database_integrity"] is True; assert p["ready_for_local_tests"] is True'
+
+          running_revision="$(docker inspect --format='{{ index .Config.Labels "org.opencontainers.image.revision" }}' "${container}")"
+          test "${running_revision}" = "${VCS_REF}"
+          echo "authenticated_health=PASS"
+          echo "unauthenticated_health=401"
+          echo "readiness_integrity=PASS"
+          echo "read_only_container=PASS"
+          docker stop --time 5 "${container}" >/dev/null
+          docker rm "${container}" >/dev/null
+          if docker container inspect "${container}" >/dev/null 2>&1; then
+            echo "container_cleanup=FAIL"
+            exit 1
+          fi
+          docker image rm "${image}" >/dev/null
+          if docker image inspect "${image}" >/dev/null 2>&1; then
+            echo "image_cleanup=FAIL"
+            exit 1
+          fi
+          echo "container_cleanup=PASS"
+          echo "image_cleanup=PASS"
+          trap - EXIT

@@ -1,7 +1,7 @@
 [project]
-name = "jarvis-omega"
-version = "0.1.0"
-description = "JARVIS OMEGA local-first, read-only AI assistant vertical slice"
+name = "my-last-ai-girlfriends"
+version = "0.2.0"
+description = "MY LAST AI GIRLFRIENDS local-first personal companion"
 requires-python = ">=3.12,<3.13"
 readme = "README.md"
 license = { text = "MIT" }
@@ -9,7 +9,7 @@ authors = [{ name = "Lakshman Ghosh" }]
 dependencies = []
 
 [project.scripts]
-jarvis-omega = "jarvis_omega.main:main"
+my-last-ai-girlfriends = "my_last_ai_girlfriends.main:main"
 
 [build-system]
 requires = ["setuptools>=75,<76"]

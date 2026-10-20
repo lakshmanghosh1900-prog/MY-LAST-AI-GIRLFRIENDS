@@ -1,0 +1,39 @@
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+
+from my_last_ai_girlfriends.evaluation import EVALUATION_VERSION, run_local_evaluation
+from my_last_ai_girlfriends.service import MyLastAIGirlfriendsService
+
+from test_budget_service import make_config
+
+
+class EvaluationTests(unittest.TestCase):
+    def test_local_evaluation_is_versioned_and_truthful(self):
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            before = {table: service.db.connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in ("conversations", "messages", "tasks", "memory_items")}
+            report = run_local_evaluation(service)
+            self.assertEqual(report.version, EVALUATION_VERSION)
+            self.assertTrue(report.passed)
+            self.assertEqual(len(report.cases), 6)
+            self.assertEqual(
+                {case.name for case in report.cases},
+                {
+                    "offline_truthful_label",
+                    "prohibited_input_safe_stop",
+                    "explicit_memory_created",
+                    "memory_recall",
+                    "conversation_memory_scope",
+                    "conversation_isolation",
+                },
+            )
+            after = {table: service.db.connection.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in before}
+            self.assertEqual(after, before)
+            service.close()
+
+
+if __name__ == "__main__":
+    unittest.main()

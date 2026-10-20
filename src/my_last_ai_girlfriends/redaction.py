@@ -9,6 +9,12 @@ PATTERNS = (
     (re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]+"), r"\1[REDACTED]"),
     (re.compile(r"(?i)(api[_ -]?key\s*[:=]\s*)[^\s,;]+"), r"\1[REDACTED]"),
     (re.compile(r"(?i)(password\s*[:=]\s*)[^\s,;]+"), r"\1[REDACTED]"),
+    (
+        re.compile(
+            r"(?i)([?&][a-z0-9_.-]*(?:token|secret|password|passwd|api[_-]?key|access[_-]?key|private[_-]?key|client[_-]?key|session(?:[_-]?id)?|jwt|bearer|signature|credential|authorization|auth)[a-z0-9_.-]*=)[^&#\s]*"
+        ),
+        r"\1[REDACTED]",
+    ),
     (re.compile(r"\b(?:sk|AIza)[A-Za-z0-9_-]{16,}\b"), "[REDACTED_KEY]"),
     (re.compile(r"\b\d{10,19}\b"), "[REDACTED_NUMBER]"),
 )

@@ -1,0 +1,243 @@
+from __future__ import annotations
+
+import http.client
+import json
+import tempfile
+import threading
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+from my_last_ai_girlfriends.governance import GovernanceError
+from my_last_ai_girlfriends.http_api import MyLastAIGirlfriendsHTTPServer
+from my_last_ai_girlfriends.service import MyLastAIGirlfriendsService
+
+from test_budget_service import make_config
+
+
+def definition(path: str = "notes.md") -> dict:
+    return {
+        "schema_version": 1,
+        "steps": [{"tool": "file.read_text", "arguments": {"path": path}}],
+    }
+
+
+def approve(service: MyLastAIGirlfriendsService, capabilities: list[str] | None = None, manifest: dict | None = None) -> dict:
+    skill = service.create_skill("local reader", "1.0.0", "local-test", capabilities or ["read-only-file"], manifest or definition())
+    service.transition_skill(skill["id"], "REVIEW")
+    service.transition_skill(skill["id"], "APPROVED")
+    return skill
+
+
+class SkillExecutionTests(unittest.TestCase):
+    def test_approved_declarative_skill_reads_only_local_text_and_audits_hashes(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "workspace").mkdir(parents=True)
+            (root / "workspace" / "notes.md").write_text("private local note", encoding="utf-8")
+            service = MyLastAIGirlfriendsService(make_config(root))
+            try:
+                skill = approve(service)
+                result = service.execute_skill(skill["id"])
+                self.assertEqual(result["status"], "SUCCEEDED")
+                self.assertEqual(result["output"], "private local note")
+                self.assertFalse(result["truncated"])
+                self.assertEqual(service.db.connection.execute("SELECT COUNT(*) FROM tasks").fetchone()[0], 0)
+                self.assertEqual(service.db.connection.execute("SELECT COUNT(*) FROM provider_calls").fetchone()[0], 0)
+                audit = service.db.connection.execute(
+                    "SELECT metadata_json FROM audit_events WHERE event = 'skill_execution_succeeded'"
+                ).fetchone()[0]
+                self.assertNotIn("private local note", audit)
+                self.assertIn("output_hash", audit)
+            finally:
+                service.close()
+
+    def test_approved_multi_step_skill_reads_at_most_three_files_and_audits_hashes(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            workspace = root / "workspace"
+            workspace.mkdir(parents=True)
+            (workspace / "first.md").write_text("first private note", encoding="utf-8")
+            (workspace / "second.txt").write_text("second private note", encoding="utf-8")
+            service = MyLastAIGirlfriendsService(make_config(root))
+            try:
+                manifest = {
+                    "schema_version": 1,
+                    "steps": [
+                        {"tool": "file.read_text", "arguments": {"path": "first.md"}},
+                        {"tool": "file.read_text", "arguments": {"path": "second.txt"}},
+                    ],
+                }
+                skill = approve(service, manifest=manifest)
+                result = service.execute_skill(skill["id"])
+                self.assertEqual(result["status"], "SUCCEEDED")
+                self.assertEqual(result["step_count"], 2)
+                self.assertEqual(
+                    result["output"],
+                    "[first.md]\nfirst private note\n\n[second.txt]\nsecond private note",
+                )
+                row = service.db.connection.execute(
+                    "SELECT metadata_json FROM audit_events WHERE event = 'skill_execution_succeeded' ORDER BY rowid DESC LIMIT 1"
+                ).fetchone()
+                audit = json.loads(row[0])
+                self.assertEqual(audit["step_count"], 2)
+                self.assertEqual([item["path"] for item in audit["step_hashes"]], ["first.md", "second.txt"])
+                self.assertNotIn("first private note", row[0])
+                self.assertNotIn("second private note", row[0])
+            finally:
+                service.close()
+
+    def test_multi_step_skill_aggregate_output_is_bounded(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "workspace").mkdir(parents=True)
+            service = MyLastAIGirlfriendsService(make_config(root))
+            try:
+                manifest = {
+                    "schema_version": 1,
+                    "steps": [
+                        {"tool": "file.read_text", "arguments": {"path": "first.md"}},
+                        {"tool": "file.read_text", "arguments": {"path": "second.md"}},
+                        {"tool": "file.read_text", "arguments": {"path": "third.md"}},
+                    ],
+                }
+                skill = approve(service, manifest=manifest)
+                limit = service.config.max_message_chars
+                large_texts = ["A" * (limit + 10), "B" * (limit + 20), "C" * (limit + 30)]
+                with patch(
+                    "my_last_ai_girlfriends.service.execute_registered_tool",
+                    side_effect=[{"text": item} for item in large_texts],
+                ):
+                    result = service.execute_skill(skill["id"])
+                self.assertEqual(result["status"], "SUCCEEDED")
+                self.assertTrue(result["truncated"])
+                self.assertEqual(len(result["output"]), limit)
+                row = service.db.connection.execute(
+                    "SELECT metadata_json FROM audit_events WHERE event = 'skill_execution_succeeded' ORDER BY rowid DESC LIMIT 1"
+                ).fetchone()
+                audit = json.loads(row[0])
+                self.assertTrue(audit["truncated"])
+                self.assertEqual(audit["step_count"], 3)
+                self.assertEqual(len(audit["step_hashes"]), 3)
+                self.assertNotIn("A" * 100, row[0])
+                self.assertNotIn("B" * 100, row[0])
+                self.assertNotIn("C" * 100, row[0])
+            finally:
+                service.close()
+
+    def test_multi_step_skill_failure_returns_no_partial_output_and_audits_step(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            workspace = root / "workspace"
+            workspace.mkdir(parents=True)
+            (workspace / "first.md").write_text("do not leak partial output", encoding="utf-8")
+            service = MyLastAIGirlfriendsService(make_config(root))
+            try:
+                manifest = {
+                    "schema_version": 1,
+                    "steps": [
+                        {"tool": "file.read_text", "arguments": {"path": "first.md"}},
+                        {"tool": "file.read_text", "arguments": {"path": "missing.md"}},
+                    ],
+                }
+                skill = approve(service, manifest=manifest)
+                with self.assertRaisesRegex(GovernanceError, "does not exist"):
+                    service.execute_skill(skill["id"])
+                row = service.db.connection.execute(
+                    "SELECT metadata_json FROM audit_events WHERE event = 'skill_execution_failed' ORDER BY rowid DESC LIMIT 1"
+                ).fetchone()
+                audit = json.loads(row[0])
+                self.assertEqual(audit["step_number"], 2)
+                self.assertEqual(audit["error_code"], "FILE_NOT_FOUND")
+                self.assertNotIn("do not leak partial output", row[0])
+            finally:
+                service.close()
+
+    def test_unapproved_metadata_only_and_invalid_skills_cannot_execute(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "workspace").mkdir(parents=True)
+            service = MyLastAIGirlfriendsService(make_config(root))
+            try:
+                draft = service.create_skill("draft", "1.0.0", "local-test", ["read-only-file"], definition())
+                with self.assertRaisesRegex(GovernanceError, "approved"):
+                    service.execute_skill(draft["id"])
+                service.transition_skill(draft["id"], "REVIEW")
+                service.transition_skill(draft["id"], "APPROVED")
+                service.transition_skill(draft["id"], "REVOKED")
+                with self.assertRaisesRegex(GovernanceError, "approved"):
+                    service.execute_skill(draft["id"])
+
+                metadata_only = service.create_skill("metadata", "1.0.0", "local-test", ["read-only-text"])
+                service.transition_skill(metadata_only["id"], "REVIEW")
+                service.transition_skill(metadata_only["id"], "APPROVED")
+                with self.assertRaisesRegex(GovernanceError, "no executable definition"):
+                    service.execute_skill(metadata_only["id"])
+
+                invalid = [
+                    ({"schema_version": 1, "steps": []}, "between one and three"),
+                    ({"schema_version": 1, "steps": [{"tool": "code.execute", "arguments": {}}]}, "local file-read"),
+                    (definition("../notes.md"), "relative"),
+                    ({"schema_version": 1, "steps": [definition()["steps"][0]] * 4}, "between one and three"),
+                ]
+                for manifest, message in invalid:
+                    with self.assertRaisesRegex(GovernanceError, message):
+                        service.create_skill("invalid", "1.0.0", "local-test", ["read-only-file"], manifest)
+            finally:
+                service.close()
+
+    def test_missing_file_is_audited_without_returning_raw_content(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "workspace").mkdir(parents=True)
+            service = MyLastAIGirlfriendsService(make_config(root))
+            try:
+                skill = approve(service, manifest=definition("missing.md"))
+                with self.assertRaisesRegex(GovernanceError, "does not exist"):
+                    service.execute_skill(skill["id"])
+                row = service.db.connection.execute(
+                    "SELECT metadata_json FROM audit_events WHERE event = 'skill_execution_failed'"
+                ).fetchone()
+                self.assertIsNotNone(row)
+                self.assertIn("FILE_NOT_FOUND", row[0])
+            finally:
+                service.close()
+
+    def test_authenticated_http_skill_run_is_strict_and_bounded(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            (root / "workspace").mkdir(parents=True)
+            (root / "workspace" / "notes.md").write_text("http skill", encoding="utf-8")
+            service = MyLastAIGirlfriendsService(make_config(root))
+            skill = approve(service)
+            server = MyLastAIGirlfriendsHTTPServer(("127.0.0.1", 0), service)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=3)
+            headers = {"Authorization": "Bearer " + "T" * 48, "Content-Type": "application/json"}
+            try:
+                connection.request("POST", f"/v1/skills/{skill['id']}/run", body="{}", headers={"Content-Type": "application/json"})
+                response = connection.getresponse()
+                self.assertEqual(response.status, 401)
+                response.read()
+                connection.request("POST", f"/v1/skills/{skill['id']}/run", body="{}", headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                self.assertEqual(json.loads(response.read())["output"], "http skill")
+                connection.request("POST", f"/v1/skills/{skill['id']}/run", body='{"path":"notes.md"}', headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 400)
+                self.assertEqual(json.loads(response.read())["error"]["code"], "SKILL_RUN_BODY_INVALID")
+                connection.request("POST", "/v1/skills/missing/run", body="{}", headers=headers)
+                response = connection.getresponse()
+                self.assertEqual(response.status, 404)
+                self.assertEqual(json.loads(response.read())["error"]["code"], "SKILL_NOT_FOUND")
+            finally:
+                connection.close()
+                server.shutdown()
+                server.server_close()
+                service.close()
+
+
+if __name__ == "__main__":
+    unittest.main()

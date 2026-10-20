@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from urllib.parse import urlsplit
 
+from .tool_registry import ToolRegistryError, get_tool
+
 
 class DataClass(StrEnum):
     PUBLIC = "PUBLIC"
@@ -32,14 +34,15 @@ class PolicyEngine:
     version = "policy-0.1.0"
     allowed_tools = frozenset({"file.read_text", "web.fetch"})
 
-    def __init__(self, max_message_chars: int, allow_remote_personal_data: bool):
+    def __init__(self, max_message_chars: int, allow_remote_personal_data: bool, max_memory_chars: int = 2000):
         self.max_message_chars = max_message_chars
         self.allow_remote_personal_data = allow_remote_personal_data
+        self.max_memory_chars = max_memory_chars
 
     def classify(self, message: str) -> DataClass:
         lower = message.lower()
-        prohibited_markers = ("password", "api key", "apikey", "secret", "otp", "pin", "private key", "session cookie")
-        sensitive_markers = ("health", "medical", "bank", "finance", "account number", "notification", "sms", "/file ")
+        prohibited_markers = ("password", "api key", "apikey", "secret", "otp", "pin", "private key", "session cookie", "access token", "bearer token")
+        sensitive_markers = ("health", "medical", "bank", "finance", "account number", "notification", "sms", "diagnosis", "prescription", "/file ")
         if any(marker in lower for marker in prohibited_markers):
             return DataClass.PROHIBITED
         if any(marker in lower for marker in sensitive_markers):
@@ -48,7 +51,7 @@ class PolicyEngine:
             return DataClass.PUBLIC
         return DataClass.PERSONAL
 
-    def check_message(self, message: str, provider: str) -> PolicyDecision:
+    def check_message(self, message: str, provider: str, remote_consent: bool = False) -> PolicyDecision:
         if not message.strip():
             return PolicyDecision(Decision.DENY, "EMPTY_MESSAGE", "Message is empty.", DataClass.PERSONAL)
         if len(message) > self.max_message_chars:
@@ -56,15 +59,30 @@ class PolicyEngine:
         data_class = self.classify(message)
         if data_class == DataClass.PROHIBITED:
             return PolicyDecision(Decision.DENY, "PROHIBITED_SECRET_DATA", "Credentials and authentication secrets are never sent to a model.", data_class)
-        if provider != "fake" and data_class in {DataClass.PERSONAL, DataClass.SENSITIVE} and not self.allow_remote_personal_data:
-            return PolicyDecision(Decision.SAFE_STOP, "REMOTE_PERSONAL_DATA_DISABLED", "Remote personal-data processing is disabled; local safe mode is required.", data_class)
+        if provider == "gemini" and data_class == DataClass.SENSITIVE:
+            return PolicyDecision(Decision.SAFE_STOP, "SENSITIVE_REMOTE_BLOCKED", "Sensitive content stays local and cannot be sent to the remote provider.", data_class)
+        if provider == "gemini" and data_class == DataClass.PERSONAL and (not self.allow_remote_personal_data or not remote_consent):
+            return PolicyDecision(Decision.SAFE_STOP, "REMOTE_CONSENT_REQUIRED", "Enable local remote-conversation consent before ordinary personal text can leave this device.", data_class)
         return PolicyDecision(Decision.ALLOW, "MESSAGE_ALLOWED", "Message is within the configured data policy.", data_class)
 
+    def check_memory(self, content: str) -> PolicyDecision:
+        if not isinstance(content, str) or not content.strip():
+            return PolicyDecision(Decision.DENY, "MEMORY_CONTENT_REQUIRED", "Memory content is required.", DataClass.PERSONAL)
+        if len(content) > self.max_memory_chars:
+            return PolicyDecision(Decision.DENY, "MEMORY_TOO_LARGE", "Memory exceeds the configured limit.", self.classify(content))
+        data_class = self.classify(content)
+        if data_class == DataClass.PROHIBITED:
+            return PolicyDecision(Decision.DENY, "MEMORY_PROHIBITED_DATA", "Credentials and authentication secrets cannot be stored as memory.", data_class)
+        if data_class == DataClass.SENSITIVE:
+            return PolicyDecision(Decision.DENY, "MEMORY_SENSITIVE_DATA", "Sensitive memory is not enabled in this local memory slice.", data_class)
+        return PolicyDecision(Decision.ALLOW, "MEMORY_EXPLICIT_ALLOWED", "Explicit local memory is allowed.", data_class)
+
     def check_tool(self, name: str, arguments: dict) -> PolicyDecision:
-        if name not in self.allowed_tools:
-            return PolicyDecision(Decision.DENY, "TOOL_NOT_ALLOWLISTED", "The requested tool is not registered.", DataClass.PERSONAL)
-        if not isinstance(arguments, dict):
-            return PolicyDecision(Decision.DENY, "TOOL_ARGUMENTS_INVALID", "Tool arguments must be an object.", DataClass.PERSONAL)
+        try:
+            spec = get_tool(name)
+            spec.validate(arguments)
+        except ToolRegistryError as exc:
+            return PolicyDecision(Decision.DENY, exc.code, str(exc), DataClass.PERSONAL)
         if name == "file.read_text":
             path = arguments.get("path")
             if not isinstance(path, str) or not path.strip():
@@ -75,7 +93,11 @@ class PolicyEngine:
             if not isinstance(url, str):
                 return PolicyDecision(Decision.DENY, "URL_REQUIRED", "An HTTPS URL is required.", DataClass.PUBLIC)
             parts = urlsplit(url)
-            if parts.scheme != "https" or parts.username or parts.password or parts.port not in {None, 443}:
+            try:
+                port = parts.port
+            except ValueError:
+                return PolicyDecision(Decision.DENY, "UNSAFE_URL", "Only credential-free HTTPS URLs on port 443 are allowed.", DataClass.PUBLIC)
+            if parts.scheme != "https" or parts.username or parts.password or port not in {None, 443}:
                 return PolicyDecision(Decision.DENY, "UNSAFE_URL", "Only credential-free HTTPS URLs on port 443 are allowed.", DataClass.PUBLIC)
             return PolicyDecision(Decision.ALLOW, "PUBLIC_FETCH_ALLOWED", "Constrained public fetch is allowlisted.", DataClass.PUBLIC)
         return PolicyDecision(Decision.DENY, "TOOL_NOT_ALLOWLISTED", "The requested tool is not registered.", DataClass.PERSONAL)
