@@ -43,8 +43,11 @@ class VerifyRecoveryTests(unittest.TestCase):
 
                 VERIFY_RECOVERY.create_isolated_database(candidate, isolated)
 
-                with sqlite3.connect(isolated) as isolated_connection:
+                isolated_connection = sqlite3.connect(isolated)
+                try:
                     rows = isolated_connection.execute("SELECT id, value FROM records ORDER BY id").fetchall()
+                finally:
+                    isolated_connection.close()
                 self.assertEqual(
                     rows,
                     [(1, "first committed row"), (2, "second committed row"), (3, "third committed row")],

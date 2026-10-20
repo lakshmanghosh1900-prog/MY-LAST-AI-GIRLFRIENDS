@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from .auth import AuthManager
+from .connectors import ConnectorError
 from .documents import DocumentError
 from .evaluation import run_local_evaluation
 from .governance import GovernanceError, SkillNotFoundError
@@ -24,6 +25,18 @@ from .service import MyLastAIGirlfriendsService
 
 
 INDEX_HTML = (Path(__file__).parent / "web" / "index.html").read_text(encoding="utf-8")
+
+CONNECTOR_REQUEST_ERRORS = frozenset(
+    {
+        "CONNECTOR_ENDPOINT_INVALID",
+        "CONNECTOR_PORT_INVALID",
+        "CONNECTOR_PRIVATE_ENDPOINT",
+        "MCP_METHOD_UNSUPPORTED",
+        "MCP_PARAMS_INVALID",
+        "MCP_RESPONSE_LIMIT_INVALID",
+        "MCP_TIMEOUT_INVALID",
+    }
+)
 
 
 class MyLastAIGirlfriendsHTTPServer(ThreadingHTTPServer):
@@ -484,7 +497,8 @@ class MyLastAIGirlfriendsRequestHandler(BaseHTTPRequestHandler):
             self._error(HTTPStatus.UNPROCESSABLE_ENTITY, exc.code, str(exc), request_id)
             return
         except ConnectorError as exc:
-            self._error(HTTPStatus.BAD_GATEWAY, exc.code, str(exc), request_id)
+            status = HTTPStatus.UNPROCESSABLE_ENTITY if exc.code in CONNECTOR_REQUEST_ERRORS else HTTPStatus.BAD_GATEWAY
+            self._error(status, exc.code, str(exc), request_id)
             return
         except RuntimeError as exc:
             self._error(HTTPStatus.SERVICE_UNAVAILABLE, "SERVICE_NOT_READY", str(exc), request_id)

@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import http.client
 import json
 import socket
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 from my_last_ai_girlfriends.connectors import ConnectorError, call_mcp, _resolve_public
 from my_last_ai_girlfriends.governance import GovernanceError
+from my_last_ai_girlfriends.http_api import MyLastAIGirlfriendsHTTPServer
 from my_last_ai_girlfriends.service import MyLastAIGirlfriendsService
 
 from test_budget_service import make_config
@@ -181,6 +184,54 @@ class ConnectorTests(unittest.TestCase):
             with self.assertRaisesRegex(GovernanceError, "public HTTPS"):
                 service.register_connector("local", "https://localhost/mcp", "read:tools/list")
             service.close()
+
+    def test_connector_transport_failure_returns_structured_502_over_http(self):
+        class FailingConnection:
+            def request(self, *_args, **_kwargs):
+                raise OSError("connection refused")
+
+            def close(self):
+                return None
+
+        with tempfile.TemporaryDirectory() as raw:
+            service = MyLastAIGirlfriendsService(make_config(Path(raw)))
+            connector = service.register_connector("mcp", "https://example.com/mcp", "read:*")
+            service.transition_connector(connector["id"], "APPROVED")
+            server = MyLastAIGirlfriendsHTTPServer(("127.0.0.1", 0), service)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            connection = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+            headers = {"Authorization": "Bearer " + "T" * 48, "Content-Type": "application/json"}
+            try:
+                with patch("my_last_ai_girlfriends.connectors._resolve_public", return_value="93.184.216.34"), patch(
+                    "my_last_ai_girlfriends.connectors._PinnedHTTPSConnection", return_value=FailingConnection()
+                ):
+                    connection.request(
+                        "POST",
+                        f"/v1/connectors/{connector['id']}/call",
+                        body=json.dumps({"method": "tools/list", "params": {}}),
+                        headers=headers,
+                    )
+                    response = connection.getresponse()
+                    payload = json.loads(response.read())
+                self.assertEqual(response.status, 502)
+                self.assertEqual(payload["error"]["code"], "MCP_TRANSPORT_ERROR")
+
+                connection.request(
+                    "POST",
+                    f"/v1/connectors/{connector['id']}/call",
+                    body=json.dumps({"method": "resources/read", "params": {}}),
+                    headers=headers,
+                )
+                response = connection.getresponse()
+                payload = json.loads(response.read())
+                self.assertEqual(response.status, 422)
+                self.assertEqual(payload["error"]["code"], "MCP_METHOD_UNSUPPORTED")
+            finally:
+                connection.close()
+                server.shutdown()
+                server.server_close()
+                service.close()
 
 
 if __name__ == "__main__":
