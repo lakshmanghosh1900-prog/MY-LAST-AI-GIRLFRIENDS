@@ -1,5 +1,19 @@
 # MY LAST AI GIRLFRIENDS — 21-Stage Execution Roadmap
 
+## Latest verified published checkpoint — 20 October 2026 (Stage 12B tool-execution audit)
+
+- Feature branch HEAD: `b29c6cf676085468c89d598931191296637864ce`.
+- Exact-head push CI: [39421841400](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39421841400) — PASS.
+- Exact-head pull-request CI: [39421846260](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39421846260) — PASS.
+- Both workflows: 147 tests passed, zero failures and zero skips; locked dependency validation, compilation and sdist/wheel build passed.
+- Stage 12B: allowed, rejected and failed read-only tool calls now write `tool_executed`, `tool_rejected` and `tool_failed` audit events with SHA-256 argument hashes, result byte counts and error codes; contents, paths and URLs are never stored in audit metadata. Authenticated `GET /v1/audit` provides bounded, newest-first, event-filtered readback with controlled 400 responses for invalid queries.
+- Connector transport failures return structured 422 for request-side validation errors and 502 for transport/provider failures instead of resetting connections; a cross-platform committed container smoke runner verifies provenance, isolation, health, offline conversation and cleanup in CI and locally.
+- PR #1 remains open, draft and unmerged. `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
+- Release status is still partial. The canonical SQLite database is invalid and has not been restored/replaced; the recovery candidate is verified only in isolation. Real voice/audio-provider integration, native Android deliverable/device verification, encrypted PC–phone transport, provider-backed multi-step agents, live external email/calendar effects, device mesh and owner-controlled data restoration remain incomplete or require external evidence.
+
+This checkpoint supersedes older current-state statements; prior entries are retained as historical evidence.
+
+
 ## Latest verified published checkpoint — 19 October 2026
 
 - Feature branch HEAD: `d3f4999b8cebf9b5b4504917bac7166c7dbb7b67`.
@@ -135,21 +149,21 @@ local grounded evidence answers, and explicit public-URL research with source
 provenance; they do not close their full stages or authorize remote
 memory/document transfer.
 
-The latest published implementation commit is `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83`. Both push and pull-request GitHub Actions pass 83 tests, locked dependency validation, compileall and `uv build`. Draft PR #1 is open and unmerged. Current status is:
+The latest published implementation commit is `b29c6cf676085468c89d598931191296637864ce`. Both push and pull-request GitHub Actions pass 147 tests, locked dependency validation, compileall and `uv build`. Draft PR #1 is open and unmerged. Current status is:
 
-The current local continuation adds Stage 08C, Stage 09B and Stage 16A in
-commits `35e2589`, `300cc48`, `3ef975d` and `b3af8ad`, followed by release and
-storage hardening. Local verification is 98 tests with zero failures/skips,
-locked dependency validation, compileall and `uv build`. These commits are not
-yet published to the feature branch. The invalid canonical database remains
-untouched; isolated recovery is WAL-aware, migrations are transaction-safe,
-readiness requires schema 11, migration installation is inter-process locked
-and no-clobber, cancelled due schedules are skipped safely, and approved local
-schedules execute once with a persisted next-run timestamp.
+The continuation since the earlier 83-test publication added Stage 08C, Stage
+09B and Stage 16A, release and storage hardening, connector HTTP error mapping,
+cross-platform container smoke coverage and the Stage 12B tool-execution audit
+described below; all of it is published on the feature branch. The invalid
+canonical database remains untouched; isolated recovery is WAL-aware, migrations
+are transaction-safe, readiness requires schema 11, migration installation is
+inter-process locked and no-clobber, cancelled due schedules are skipped safely,
+and approved local schedules execute once with a persisted next-run timestamp.
 
 | Stage | Current status | Implemented slice / remaining gate |
 |---|---|---|
 | 10 | `PARTIAL — 10B IMPLEMENTED` | Recurring hourly/daily/weekly UTC schedules, occurrence idempotency, restart advancement and bounded worker lifecycle are implemented/tested; planner quality and operational soak remain open. |
+| 12 | `PARTIAL — 12A/12B IMPLEMENTED` | Read-only least-privilege tool registry with exact argument schemas, capability disclosure, per-call execution auditing (hashed arguments, no content) and authenticated bounded `/v1/audit` readback; execution cancellation, broader tool classes and side-effecting authorization remain open. |
 | 14 | `BLOCKED_EXTERNAL / CONTRACT PARTIAL` | Capability inventory truthfully reports missing Android toolchain/device evidence. |
 | 15 | `PARTIAL — LOCAL GOVERNANCE` | Hashed device enrollment, one-time replay-resistant pairing, diagnostics, identity verification, last-seen tracking, revocation and authenticated routes; no encrypted PC–phone transport. |
 | 16 | `PARTIAL — 16A HARDENED READ-ONLY MCP` | Public credential-free HTTPS JSON-RPC `tools/list`/`tools/call` transport validates endpoint class, bounds and object responses under explicit read scopes; write/external scopes disabled. |
@@ -159,12 +173,21 @@ schedules execute once with a persisted next-run timestamp.
 | 20 | `PARTIAL — LOCAL PROVIDER` | Device/local-brain inventory and optional loopback Ollama adapter; no local service/device mesh verified. |
 | 21 | `PARTIAL — LOCAL GATE` | Integrity/schema/secret-free readiness endpoints; Docker cleanup, provenance, PR and `main` integration remain open. |
 
-The published deterministic suite at `1ca32e2bbf5df79194e2f5a9c82d3097d4b97b83` is 83 passing tests, confirmed by both push and pull-request GitHub Actions. The canonical SQLite path
+The published deterministic suite at `b29c6cf676085468c89d598931191296637864ce` is 147 passing tests, confirmed by both push and pull-request GitHub Actions. The canonical SQLite path
 is `data/my_last_ai_girlfriends.sqlite3`; it is preserved and not migrated
 because its header is invalid. The verified recovery candidate remains in
 `data/migration-backups/`, and migrations through version 11 have only been
 executed on an isolated copy with all existing row counts preserved. No live
 replacement has been performed.
+
+
+## Current delivery checkpoint — 20 October 2026
+
+- Latest source-code implementation commit verified by push and PR CI: `b29c6cf676085468c89d598931191296637864ce`; it adds Stage 12B tool-execution auditing with authenticated `/v1/audit` readback, on top of connector HTTP error mapping and committed cross-platform container smoke coverage.
+- Its exact implementation-head CI: [push run 39421841400](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39421841400) and [PR run 39421846260](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39421846260) — PASS; 147 tests, dependency lock/sync, compileall and package build pass, and the container-smoke job verifies provenance, isolated read-only runtime, health/security headers and cleanup.
+- Draft PR #1 remains open and unmerged; `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
+- Database restoration, full Stage 11 voice, Stage 14 native Android, full PC–phone transport, broad MCP/skill/agent execution, external actions, device mesh and final hardening remain incomplete.
+- Stage status labels in this roadmap refer to engineering scope; the current release and database blockers are not waived by a green unit-test/packaging workflow.
 
 
 ## Current delivery checkpoint — 18 October 2026

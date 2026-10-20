@@ -1,5 +1,20 @@
 # MY LAST AI GIRLFRIENDS — Test Evidence
 
+## Latest verified published checkpoint — 20 October 2026 (Stage 12B tool-execution audit)
+
+- Feature branch HEAD: `b29c6cf676085468c89d598931191296637864ce`.
+- Exact-head push CI: [39421841400](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39421841400) — PASS (`Ran 147 tests in 8.152s`).
+- Exact-head pull-request CI: [39421846260](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39421846260) — PASS.
+- Both workflows: 147 tests passed, zero failures and zero skips; locked dependency validation, compilation and sdist/wheel build passed. Local Windows verification reports 147 tests, one failure-free run with a single Windows-only symlink skip.
+- Stage 12B evidence (4 new tests in `tests/test_audit.py`): allowed tool calls emit exactly one `tool_executed` event with a 64-character argument hash, positive result byte count and no raw content or path in any audit JSON; policy rejections emit `tool_rejected` with DENY code and execution failures emit `tool_failed` with `FILE_NOT_FOUND`; `/v1/audit` requires a bearer token, honors `limit=1`, returns newest-first bounded lists, filters by `event`, and returns 400 for `limit=0`, `limit=201`, `limit=abc`, overlong digit limits and blank event filters.
+- Connector error mapping evidence (in `tests/test_connectors.py`): an HTTP-level transport failure returns a structured 502 `MCP_TRANSPORT_ERROR` payload and unsupported connector methods return 422, instead of resetting the connection.
+- Container smoke evidence (4 tests in `tests/test_docker_smoke.py` plus the `container-smoke` CI job): the committed runner builds with provenance, runs with `--network none --read-only --cap-drop ALL --security-opt no-new-privileges --tmpfs /app/data`, probes health/readiness/conversation/offline message, and always removes the container; Docker-unavailable hosts report `{"blocked": "DOCKER_UNAVAILABLE"}` with exit code 2.
+- PR #1 remains open, draft and unmerged. `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
+- Release status is still partial. The canonical SQLite database is invalid and has not been restored/replaced; the recovery candidate is verified only in isolation. Real voice/audio-provider integration, native Android deliverable/device verification, encrypted PC–phone transport, provider-backed multi-step agents, live external email/calendar effects, device mesh and owner-controlled data restoration remain incomplete or require external evidence.
+
+This checkpoint supersedes older current-state statements; prior entries are retained as historical evidence.
+
+
 ## Latest verified published checkpoint — 19 October 2026
 
 - Feature branch HEAD: `d3f4999b8cebf9b5b4504917bac7166c7dbb7b67`.

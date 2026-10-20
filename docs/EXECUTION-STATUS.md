@@ -1,5 +1,21 @@
 # MY LAST AI GIRLFRIENDS — Execution Status
 
+## Latest verified published checkpoint — 20 October 2026 (Stage 12B tool-execution audit)
+
+- Feature branch HEAD: `b29c6cf676085468c89d598931191296637864ce`.
+- Exact-head push CI: [39421841400](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39421841400) — PASS.
+- Exact-head pull-request CI: [39421846260](https://github.com/lakshmanghosh1900-prog/MY-LAST-AI-GIRLFRIENDS/actions/runs/39421846260) — PASS.
+- Both workflows: 147 tests passed, zero failures and zero skips; locked dependency validation, compilation and sdist/wheel build passed. Local Windows verification reports the same 147 tests with one Windows-only symlink skip.
+- Docker CI verifies exact image source revision and repository labels, isolated read-only runtime/health/security headers, and container cleanup; all passed on this head. The same smoke runner is committed as `scripts/docker_smoke.py` and is runnable on any host with Docker.
+- Stage 12B now audits tool execution: allowed, rejected and failed read-only tool calls write `tool_executed`, `tool_rejected` and `tool_failed` audit events carrying SHA-256 argument hashes, result byte counts, data classes and error codes. File contents, local paths and URLs are never stored in audit metadata.
+- Authenticated `GET /v1/audit` returns newest-first audit events with a validated bounded `limit` (1–200, default 50) and an optional short `event` filter; out-of-range, non-numeric or overlong queries return controlled 400 responses (`AUDIT_LIMIT_INVALID`, `AUDIT_EVENT_INVALID`).
+- Connector transport failures return structured HTTP responses instead of resetting connections: request-side connector validation failures map to 422 and transport/provider failures to 502 with typed MCP codes.
+- PR #1 remains open, draft and unmerged. `main` remains `c98a091330a05ef73823d9744bfd58d5c973059f`.
+- Release status is still partial. The canonical SQLite database is invalid and has not been restored/replaced; the recovery candidate is verified only in isolation. Real voice/audio-provider integration, native Android deliverable/device verification, encrypted PC–phone transport, provider-backed multi-step agents, live external email/calendar effects, device mesh and owner-controlled data restoration remain incomplete or require external evidence.
+
+This checkpoint supersedes older current-state statements; prior entries are retained as historical evidence.
+
+
 ## Latest verified published checkpoint — 19 October 2026
 
 - Feature branch HEAD: `d3f4999b8cebf9b5b4504917bac7166c7dbb7b67`.
@@ -583,7 +599,25 @@ remain unavailable. Full Stage 12 requires broader approved tools, execution
 verification, cancellation and audit coverage.
 
 Evidence: 1 registry test plus the published 48-test suite passed; current local
-continuation passes 76 tests.
+continuation passes 147 tests.
+
+## Stage 12B — Tool execution audit and readback
+
+**Status:** `PARTIAL — IMPLEMENTATION EXISTS, CRITERIA REMAIN`
+
+Every allowed, rejected and failed read-only tool call now writes a
+`tool_executed`, `tool_rejected` or `tool_failed` audit event bound to the task,
+with a SHA-256 hash of the canonical arguments, the result byte count or error
+code and the resulting data class; raw file contents, paths and URLs are never
+audited. Authenticated `GET /v1/audit` provides newest-first, bounded and
+event-filtered readback so the owner can verify executions locally, with strict
+query validation and controlled 400 responses.
+
+Evidence: 4 audit tests plus the published suite passed on head `b29c6cf`
+(147 tests total, both push and pull-request CI green).
+
+Remaining Stage 12 gates: execution cancellation, broader approved tool
+classes, and provider-backed side-effecting tool authorization.
 
 ## Stage 13A — Deterministic local evaluation
 
